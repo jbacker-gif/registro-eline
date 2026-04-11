@@ -153,7 +153,7 @@ export default function Dashboard() {
           {secciones.length === 0 && !cargando && (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-xl mb-8 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-lg">¡Bienvenido a RegistroApp!</h3>
+                <h3 className="font-bold text-lg">¡Bienvenido a Eline App!</h3>
                 <p>Para empezar a trabajar, primero necesitas crear tu grado y sección (Ej. 1ro A).</p>
               </div>
               <button onClick={() => router.push('/dashboard/secciones')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
