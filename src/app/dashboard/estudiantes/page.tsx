@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import Link from 'next/link'
 
@@ -13,7 +13,10 @@ export default function MisEstudiantes() {
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Nuevos estados del formulario completo
+  // Referencia para el input oculto de archivos
+  const archivoInputRef = useRef<HTMLInputElement>(null)
+
+  // Estados del formulario
   const [nuevoNumero, setNuevoNumero] = useState('')
   const [nombres, setNombres] = useState('')
   const [apellidos, setApellidos] = useState('')
@@ -74,7 +77,6 @@ export default function MisEstudiantes() {
     setMensaje('Guardando...')
     
     try {
-      // Unimos nombres y apellidos para no romper los módulos de Asistencia y Notas
       const nombreCompletoGenerado = `${apellidos}, ${nombres}`
 
       const { error } = await supabase.from('estudiantes').insert([{ 
@@ -93,15 +95,79 @@ export default function MisEstudiantes() {
       if (error) throw error
 
       setMensaje('✅ ¡Estudiante registrado con éxito!')
-      // Limpiar formulario
       setNombres(''); setApellidos(''); setSexo(''); setNacionalidad('Dominicana'); setTutor(''); setTelefono('');
-      
       cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje(''), 3000)
     } catch (error) {
-      console.error(error)
       setMensaje('❌ Error al guardar.')
     }
+  }
+
+  // ==========================================
+  // MAGIA: Lector de Excel a CSV
+  // ==========================================
+  const manejarImportacionCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !seccionId || !userId) return
+
+    setMensaje('⏳ Procesando archivo Excel/CSV...')
+    const reader = new FileReader()
+
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string
+        
+        // Separamos por líneas y limpiamos espacios o retornos de carro invisibles
+        const lineas = text.split('\n').map(line => line.replace('\r', '').trim()).filter(line => line !== '')
+
+        // Saltamos la fila 1 (los títulos) y procesamos el resto
+        const datosAInsertar = lineas.slice(1).map(linea => {
+          // Soporta CSV separados por coma (,) o por punto y coma (;)
+          const valores = linea.split(/,|;/)
+          
+          const numero = Number(valores[0]) || 0
+          const nom = valores[1]?.trim() || ''
+          const ape = valores[2]?.trim() || ''
+          const sex = valores[3]?.trim()?.toUpperCase() || ''
+          const nac = valores[4]?.trim() || 'Dominicana'
+
+          return {
+            numero_orden: numero,
+            nombres: nom,
+            apellidos: ape,
+            nombre_completo: `${ape}, ${nom}`,
+            sexo: sex,
+            nacionalidad: nac,
+            seccion_id: seccionId,
+            user_id: userId
+          }
+        }).filter(est => est.nombres !== '') // Evitamos guardar filas vacías
+
+        if (datosAInsertar.length === 0) {
+          setMensaje('⚠️ El archivo parece estar vacío o no tiene el formato correcto.')
+          return
+        }
+
+        setMensaje(`⏳ Guardando ${datosAInsertar.length} estudiantes en la base de datos...`)
+
+        const { error } = await supabase.from('estudiantes').insert(datosAInsertar)
+        if (error) throw error
+
+        setMensaje(`✅ ¡${datosAInsertar.length} estudiantes importados con éxito!`)
+        cargarEstudiantes(seccionId, userId)
+        
+        // Limpiamos el input para que pueda subir otro archivo si quiere
+        if (archivoInputRef.current) archivoInputRef.current.value = ''
+        setTimeout(() => setMensaje(''), 4000)
+
+      } catch (error) {
+        console.error(error)
+        setMensaje('❌ Error al leer el archivo. Verifica que sea un CSV válido.')
+      }
+    }
+    
+    // Leemos el archivo en español/latino (UTF-8) para no perder tildes ni la 'ñ'
+    reader.readAsText(file, 'UTF-8')
   }
 
   const eliminarEstudiante = async (id: string, nombre: string) => {
@@ -116,43 +182,56 @@ export default function MisEstudiantes() {
   }
 
   if (cargando) return <div className="p-10 text-center">Cargando base de datos... ⏳</div>
-
-  if (!seccionId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-xl shadow-md max-w-md text-center border border-red-200">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Falta Contexto</h2>
-          <p className="text-gray-600 mb-6">Por favor, selecciona una sección en el Panel Principal.</p>
-          <Link href="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">Ir al Dashboard</Link>
-        </div>
-      </div>
-    )
-  }
+  if (!seccionId) return <div className="p-10 text-center text-red-500 font-bold">Falta contexto. Vuelve al Dashboard.</div>
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <Link href="/dashboard" className="text-blue-600 hover:underline text-sm font-medium mb-4 inline-block">← Volver al Dashboard</Link>
       
-      <div className="mb-8 flex justify-between items-end border-b border-gray-200 pb-4">
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-gray-200 pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Registro de Estudiantes</h1>
-          <p className="text-gray-600">Completa la ficha técnica oficial de cada alumno.</p>
+          <p className="text-gray-600">Completa la ficha o importa tu lista completa.</p>
         </div>
-        {infoSeccion && (
-          <div className="bg-blue-50 text-blue-800 border border-blue-200 px-4 py-2 rounded-lg text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-500">Sección Activa</p>
-            <p className="text-xl font-bold">{infoSeccion.grado} "{infoSeccion.identificador}"</p>
-          </div>
-        )}
+        
+        <div className="flex items-center gap-4">
+          {/* INPUT OCULTO DE ARCHIVO */}
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={archivoInputRef}
+            onChange={manejarImportacionCSV} 
+            className="hidden" 
+          />
+          {/* BOTÓN QUE ACTIVA EL INPUT */}
+          <button 
+            onClick={() => archivoInputRef.current?.click()} 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2"
+          >
+            📂 Importar CSV
+          </button>
+
+          {infoSeccion && (
+            <div className="bg-blue-50 text-blue-800 border border-blue-200 px-4 py-2 rounded-lg text-center hidden sm:block">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-500">Sección Activa</p>
+              <p className="text-xl font-bold">{infoSeccion.grado} "{infoSeccion.identificador}"</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {mensaje && (
+        <div className={`mb-6 p-3 rounded-lg text-center font-bold text-sm ${mensaje.includes('Error') || mensaje.includes('⚠️') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          {mensaje}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
-        {/* Formulario Completo */}
+        {/* Formulario Individual */}
         <div className="xl:col-span-1">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 sticky top-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Ficha del Alumno</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Agregar uno por uno</h2>
             
             <form onSubmit={agregarEstudiante} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -185,48 +264,30 @@ export default function MisEstudiantes() {
                 <input type="text" required value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full border border-gray-300 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500"/>
               </div>
 
-              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-4">
-                <p className="text-xs font-bold text-gray-500 uppercase mb-3">Datos de Contacto</p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Nombre del Padre, Madre o Tutor</label>
-                    <input type="text" required value={tutor} onChange={(e) => setTutor(e.target.value)} className="w-full border border-gray-300 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Teléfono</label>
-                    <input type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 809-555-5555" className="w-full border border-gray-300 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
-                  </div>
-                </div>
-              </div>
-
               <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors mt-2 shadow-sm">
-                + Guardar Ficha
+                + Guardar Alumno
               </button>
-              
-              {mensaje && <p className={`text-sm text-center font-bold p-2 rounded ${mensaje.includes('Error') ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>{mensaje}</p>}
             </form>
           </div>
         </div>
 
-        {/* Tabla Extendida */}
+        {/* Tabla */}
         <div className="xl:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-gray-800 text-white text-xs uppercase tracking-wider">
                   <th className="p-3 text-center w-12">No.</th>
                   <th className="p-3 w-48">Apellidos, Nombres</th>
                   <th className="p-3 text-center w-16">Sexo</th>
                   <th className="p-3 w-24">Nacionalidad</th>
-                  <th className="p-3">Tutor Principal</th>
-                  <th className="p-3 w-32">Teléfono</th>
                   <th className="p-3 text-center w-16">Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {estudiantes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500 italic">No hay estudiantes en esta sección.</td>
+                    <td colSpan={5} className="p-8 text-center text-gray-500 italic">No hay estudiantes en esta sección.</td>
                   </tr>
                 ) : (
                   estudiantes.map((est) => (
@@ -235,10 +296,8 @@ export default function MisEstudiantes() {
                       <td className="p-3 font-bold text-gray-800">{est.nombre_completo}</td>
                       <td className="p-3 text-center font-medium">{est.sexo || '-'}</td>
                       <td className="p-3 text-gray-600 truncate">{est.nacionalidad || '-'}</td>
-                      <td className="p-3 text-gray-600 truncate">{est.nombre_tutor || '-'}</td>
-                      <td className="p-3 font-medium text-gray-700">{est.telefono_contacto || '-'}</td>
                       <td className="p-3 text-center">
-                        <button onClick={() => eliminarEstudiante(est.id, est.nombre_completo)} className="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors" title="Eliminar estudiante">🗑️</button>
+                        <button onClick={() => eliminarEstudiante(est.id, est.nombre_completo)} className="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors">🗑️</button>
                       </td>
                     </tr>
                   ))
