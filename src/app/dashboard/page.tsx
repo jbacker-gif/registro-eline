@@ -99,10 +99,10 @@ export default function Dashboard() {
           <button onClick={() => navegarConContexto('/dashboard/asistencia')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
             📅 <span>Pasar Asistencia</span>
           </button>
-          <button onClick={() => navegarConContexto('/dashboard/boletines')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+          {/* <button onClick={() => navegarConContexto('/dashboard/boletines')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
             📊 <span>Boletines Finales</span>
           </button>
-
+          */}
           <p className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">Administración</p>
           <button onClick={() => navegarConContexto('/dashboard/estudiantes')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
             👥 <span>Mis Estudiantes</span>
