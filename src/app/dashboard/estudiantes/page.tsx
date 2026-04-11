@@ -208,7 +208,7 @@ export default function MisEstudiantes() {
             onClick={() => archivoInputRef.current?.click()} 
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all flex items-center gap-2"
           >
-            📂 Importar CSV
+            📂 Importar listado estudiantes
           </button>
 
           {infoSeccion && (
