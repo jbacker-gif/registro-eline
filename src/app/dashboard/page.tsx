@@ -87,7 +87,7 @@ export default function Dashboard() {
       
       <aside className="w-64 bg-gray-900 text-white flex flex-col shadow-xl hidden md:flex">
         <div className="p-6 border-b border-gray-800">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Registro<span className="text-blue-500">App</span></h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Eline<span className="text-blue-500">App</span></h2>
           <p className="text-xs text-gray-400 mt-1">Gestión Escolar Inteligente</p>
         </div>
 
