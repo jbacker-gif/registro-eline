@@ -100,23 +100,32 @@ export default function MatrizCalificaciones() {
   }
 
   // =================================================================
-  // MAGIA 1: NAVEGACIÓN TIPO EXCEL CON LA TECLA ENTER
+  // MAGIA 1 ACTUALIZADA: NAVEGACIÓN TIPO EXCEL (DE ARRIBA HACIA ABAJO)
   // =================================================================
   const manejarTeclaEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.preventDefault(); // Evitamos que haga un salto de línea o envíe un formulario
+      e.preventDefault(); 
       
-      // Buscamos todos los inputs numéricos de la tabla que NO estén deshabilitados
-      const inputs = Array.from(document.querySelectorAll('input[type="number"]:not([disabled])')) as HTMLInputElement[];
+      // Tomamos TODOS los inputs numéricos de la tabla (incluyendo los deshabilitados para no romper la cuadrícula)
+      const inputs = Array.from(document.querySelectorAll('tbody input[type="number"]')) as HTMLInputElement[];
       
-      // Encontramos en qué posición de la lista está el input actual
+      // Calculamos cuántos inputs hay exactamente en UNA fila
+      const inputsPorFila = document.querySelector('tbody tr')?.querySelectorAll('input[type="number"]').length || 1;
+      
       const index = inputs.indexOf(e.currentTarget);
       
-      // Si no es el último input de la tabla, saltamos al siguiente (hacia la derecha)
-      if (index > -1 && index < inputs.length - 1) {
-        const nextInput = inputs[index + 1];
-        nextInput.focus();
-        nextInput.select(); // Selecciona el texto existente (Estilo Excel)
+      // El input de abajo está a una distancia exacta equivalente al total de inputs de una fila
+      let nextIndex = index + inputsPorFila;
+
+      // Buscamos hacia abajo. Si la fila de abajo está "Retirada" (disabled), saltamos a la siguiente.
+      while (nextIndex < inputs.length) {
+        const nextInput = inputs[nextIndex];
+        if (!nextInput.disabled) {
+          nextInput.focus();
+          nextInput.select();
+          break;
+        }
+        nextIndex += inputsPorFila; // Sumamos otra fila para seguir bajando
       }
     }
   }
@@ -245,14 +254,11 @@ export default function MatrizCalificaciones() {
           </button>
         </div>
 
-        {/* =================================================================
-            MAGIA 2: TABLA ESTILO EXCEL (Border Collapse, Banded Rows)
-            ================================================================= */}
+        {/* TABLA ESTILO EXCEL */}
         <div className="bg-white shadow-md border border-slate-300 overflow-hidden w-full min-w-0">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[900px] text-sm">
               
-              {/* CABECERAS EXCEL (Azul Sólido con Bordes) */}
               <thead className="bg-blue-600 text-white">
                 {vista === 'RESUMEN' ? (
                   <tr className="uppercase tracking-wider">
@@ -274,7 +280,6 @@ export default function MatrizCalificaciones() {
                   </tr>
                 )}
                 
-                {/* Subcabecera de Recuperación (Azul Claro) */}
                 {vista !== 'RESUMEN' && !esPrimerCiclo && (
                   <tr className="bg-blue-100 text-blue-900 text-xs font-bold uppercase tracking-wider">
                     <th className="p-2 border border-slate-300"></th>
@@ -289,11 +294,9 @@ export default function MatrizCalificaciones() {
                 )}
               </thead>
 
-              {/* FILAS DE LA TABLA (Alternadas Gris Claro y Blanco) */}
               <tbody className="bg-white">
                 {estudiantes.map((est, index) => {
                   const esRetirado = est.estado === 'Retirado';
-                  // Estilo Excel: Filas pares grises, impares blancas. Al pasar el mouse, amarillo.
                   const rowClass = esRetirado 
                     ? 'bg-slate-200 grayscale opacity-60 pointer-events-none' 
                     : index % 2 === 0 ? 'bg-white hover:bg-yellow-50' : 'bg-slate-50 hover:bg-yellow-50';
@@ -322,7 +325,6 @@ export default function MatrizCalificaciones() {
                     )
                   }
 
-                  // MATRIZ DE ENTRADA DE DATOS (Con inputs estilo celda de Excel)
                   return (
                     <tr key={est.id} className={rowClass}>
                       <td className="p-2 text-center text-slate-500 font-bold border border-slate-300">{est.numero}</td>
@@ -338,15 +340,13 @@ export default function MatrizCalificaciones() {
                         return (
                           <td key={comp} colSpan={esPrimerCiclo ? 1 : 2} className="p-0 border border-slate-300">
                             <div className="flex h-full w-full">
-                              
-                              {/* INPUT NOTA (P) */}
                               <div className="flex-1 border-r border-slate-200">
                                 <input 
                                   type="number" 
                                   value={est.notas[vista][comp]} 
                                   disabled={esRetirado}
                                   onChange={(e) => manejarCambioNota(est.id, vista, comp, e.target.value)} 
-                                  onKeyDown={manejarTeclaEnter} // EL EVENTO DE LA TECLA ENTER
+                                  onKeyDown={manejarTeclaEnter} 
                                   className={`w-full h-full text-center p-2 outline-none font-bold transition-all focus:ring-2 focus:ring-inset focus:ring-blue-600 ${
                                     !esPrimerCiclo && est.notas[vista][`${comp}_RP`] 
                                       ? 'text-slate-400 line-through bg-slate-100' 
@@ -356,7 +356,6 @@ export default function MatrizCalificaciones() {
                                 />
                               </div>
 
-                              {/* INPUT RECUPERACIÓN (RP) - Solo para 3ro a 6to */}
                               {!esPrimerCiclo && (
                                 <div className="flex-1 bg-orange-50/30">
                                   <input 
@@ -364,7 +363,7 @@ export default function MatrizCalificaciones() {
                                     value={est.notas[vista][`${comp}_RP`]} 
                                     disabled={deshabilitarRP}
                                     onChange={(e) => manejarCambioNota(est.id, vista, `${comp}_RP`, e.target.value)} 
-                                    onKeyDown={manejarTeclaEnter} // EL EVENTO DE LA TECLA ENTER
+                                    onKeyDown={manejarTeclaEnter} 
                                     className={`w-full h-full text-center p-2 outline-none font-bold transition-all focus:ring-2 focus:ring-inset focus:ring-blue-600 ${
                                       deshabilitarRP 
                                         ? 'bg-transparent cursor-not-allowed text-transparent placeholder-transparent' 
