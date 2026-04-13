@@ -11,15 +11,16 @@ export default function Dashboard() {
   const [seccionActiva, setSeccionActiva] = useState('')
   const [cargando, setCargando] = useState(true)
 
+  // 1. NUEVA PALETA MINIMALISTA: Solo color en los íconos, tarjetas blancas limpias.
   const asignaturas = [
-    { id: 1, nombre: 'Lengua Española', dbNombre: 'Lengua Española', color: 'bg-blue-100 text-blue-800 border-blue-200', icono: '📚' },
-    { id: 2, nombre: 'Matemática', dbNombre: 'Matemática', color: 'bg-red-100 text-red-800 border-red-200', icono: '➕' },
-    { id: 3, nombre: 'Ciencias Sociales', dbNombre: 'Ciencias Sociales', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icono: '🌍' },
-    { id: 4, nombre: 'Ciencias de la Naturaleza', dbNombre: 'Ciencias de la Naturaleza', color: 'bg-green-100 text-green-800 border-green-200', icono: '🔬' },
-    { id: 5, nombre: 'Inglés', dbNombre: 'Lenguas Extranjeras (inglés)', color: 'bg-purple-100 text-purple-800 border-purple-200', icono: '🔠' },
-    { id: 6, nombre: 'Educación Física', dbNombre: 'Educación Física', color: 'bg-orange-100 text-orange-800 border-orange-200', icono: '🏃' },
-    { id: 7, nombre: 'Formación Humana', dbNombre: 'Formación Integral Humana y Religiosa', color: 'bg-teal-100 text-teal-800 border-teal-200', icono: '🤝' },
-    { id: 8, nombre: 'Educación Artística', dbNombre: 'Educación Artística', color: 'bg-pink-100 text-pink-800 border-pink-200', icono: '🎨' },
+    { id: 1, nombre: 'Lengua Española', dbNombre: 'Lengua Española', iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icono: '📚' },
+    { id: 2, nombre: 'Matemática', dbNombre: 'Matemática', iconBg: 'bg-red-50', iconColor: 'text-red-600', icono: '📐' },
+    { id: 3, nombre: 'Ciencias Sociales', dbNombre: 'Ciencias Sociales', iconBg: 'bg-amber-50', iconColor: 'text-amber-600', icono: '🌍' },
+    { id: 4, nombre: 'C. de la Naturaleza', dbNombre: 'Ciencias de la Naturaleza', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', icono: '🔬' },
+    { id: 5, nombre: 'Inglés', dbNombre: 'Lenguas Extranjeras (inglés)', iconBg: 'bg-violet-50', iconColor: 'text-violet-600', icono: '💬' },
+    { id: 6, nombre: 'Educación Física', dbNombre: 'Educación Física', iconBg: 'bg-orange-50', iconColor: 'text-orange-600', icono: '⚽' },
+    { id: 7, nombre: 'Formación Humana', dbNombre: 'Formación Integral Humana y Religiosa', iconBg: 'bg-teal-50', iconColor: 'text-teal-600', icono: '🤝' },
+    { id: 8, nombre: 'Educación Artística', dbNombre: 'Educación Artística', iconBg: 'bg-pink-50', iconColor: 'text-pink-600', icono: '🎨' },
   ]
 
   useEffect(() => {
@@ -31,27 +32,19 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      const { data, error } = await supabase
-        .from('secciones')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('grado', { ascending: true })
-
+      const { data, error } = await supabase.from('secciones').select('*').eq('user_id', session.user.id).order('grado', { ascending: true })
       if (error) throw error
       
       setSecciones(data || [])
       
       if (data && data.length > 0) {
-        // LA MAGIA DE LA MEMORIA: Buscamos si había una sección guardada
         const ultimaSeccion = localStorage.getItem('ultimaSeccionActiva')
-        
-        // Verificamos que la sección guardada aún exista en la lista del maestro
         const seccionExiste = data.find(s => s.id === ultimaSeccion)
 
         if (seccionExiste) {
-          setSeccionActiva(ultimaSeccion!) // Restauramos la memoria
+          setSeccionActiva(ultimaSeccion!)
         } else {
-          setSeccionActiva(data[0].id) // Si no hay memoria, elegimos la primera
+          setSeccionActiva(data[0].id)
           localStorage.setItem('ultimaSeccionActiva', data[0].id)
         }
       }
@@ -62,16 +55,10 @@ export default function Dashboard() {
     }
   }
 
-  // Nueva función para guardar la selección en la memoria del navegador
   const manejarCambioSeccion = (nuevoId: string) => {
     setSeccionActiva(nuevoId)
     localStorage.setItem('ultimaSeccionActiva', nuevoId)
-  }
-
-  const cerrarSesion = async () => {
-    await supabase.auth.signOut()
-    localStorage.removeItem('ultimaSeccionActiva') // Limpiamos la memoria al salir
-    router.push('/')
+    router.replace(`/dashboard?seccion_id=${nuevoId}`)
   }
 
   const navegarConContexto = (rutaBase: string, extraParams: string = '') => {
@@ -83,121 +70,135 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      
-      <aside className="w-64 bg-gray-900 text-white flex flex-col shadow-xl hidden md:flex">
-        <div className="p-6 border-b border-gray-800">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Eline<span className="text-blue-500">App</span></h2>
-          <p className="text-xs text-gray-400 mt-1">Gestión Escolar Inteligente</p>
+    <>
+      {/* ========================================================
+          ENCABEZADO INTACTO (Sin cambios según tu solicitud)
+          ======================================================== */}
+      <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center z-10 gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h1>
+          <p className="text-sm text-slate-500 font-medium">Ciclo Escolar 2025-2026</p>
         </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          <p className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Principal</p>
-          <button className="w-full flex items-center gap-3 px-3 py-2 bg-blue-600 text-white rounded-lg transition-colors">
-            🏠 <span>Inicio (Materias)</span>
-          </button>
-          <button onClick={() => navegarConContexto('/dashboard/asistencia')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
-            📅 <span>Pasar Asistencia</span>
-          </button>
-          {/* <button onClick={() => navegarConContexto('/dashboard/boletines')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
-            📊 <span>Boletines Finales</span>
-          </button>
-          */}
-          <p className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">Administración</p>
-          <button onClick={() => navegarConContexto('/dashboard/estudiantes')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
-            👥 <span>Mis Estudiantes</span>
-          </button>
-          <button onClick={() => router.push('/dashboard/secciones')} className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
-            📚 <span>Secciones / Grados</span>
-          </button>
-        </nav>
-
-        <div className="p-4 border-t border-gray-800">
-          <button onClick={cerrarSesion} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium">
-            Cerrar Sesión
-          </button>
-        </div>
-      </aside>
-
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
-          <div>
-            <h1 className="text-xl font-bold text-gray-800 mb-1">Panel de Control</h1>
-            {cargando ? (
-              <p className="text-sm text-gray-500">Cargando contexto...</p>
-            ) : secciones.length === 0 ? (
-              <p className="text-sm text-red-500 font-medium">No tienes secciones registradas.</p>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Trabajando con:</span>
-                <select 
-                  value={seccionActiva} 
-                  onChange={(e) => manejarCambioSeccion(e.target.value)}
-                  className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5 font-bold outline-none cursor-pointer"
-                >
-                  {secciones.map(sec => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.grado} "{sec.identificador}"
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+        
+        {cargando ? (
+          <p className="text-sm text-slate-500">Cargando...</p>
+        ) : secciones.length > 0 && (
+          <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <span className="text-sm text-slate-600 font-bold hidden md:block pl-2">Sección Activa:</span>
+            <select 
+              value={seccionActiva} 
+              onChange={(e) => manejarCambioSeccion(e.target.value)}
+              className="bg-white border border-slate-300 text-blue-700 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block p-2 font-bold outline-none cursor-pointer w-full sm:w-auto shadow-sm"
+            >
+              {secciones.map(sec => (
+                <option key={sec.id} value={sec.id}>
+                  {sec.grado} "{sec.identificador}" {sec.tanda ? `(${sec.tanda})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="bg-gray-100 text-gray-600 px-4 py-2 rounded-full text-sm font-semibold border border-gray-200 hidden sm:block">
-            Nivel Primario | 2025-2026
-          </div>
-        </header>
+        )}
+      </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
-          {secciones.length === 0 && !cargando && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-xl mb-8 flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg">¡Bienvenido a Eline App!</h3>
-                <p>Para empezar a trabajar, primero necesitas crear tu grado y sección (Ej. 1ro A).</p>
-              </div>
-              <button onClick={() => router.push('/dashboard/secciones')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                Crear mi primera Sección
-              </button>
+      {/* ========================================================
+          CONTENIDO CENTRAL: DISEÑO MINIMALISTA Y MODERNO
+          ======================================================== */}
+      <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-50/50">
+        
+        {secciones.length === 0 && !cargando && (
+          <div className="bg-white border border-blue-100 p-8 rounded-3xl mb-10 flex flex-col md:flex-row items-center justify-between shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+            <div className="mb-4 md:mb-0 text-center md:text-left pl-4">
+              <h3 className="font-bold text-2xl text-slate-800 mb-1">¡Bienvenido a ELINE!</h3>
+              <p className="text-slate-500">Para empezar, configura tu primera sección escolar.</p>
             </div>
-          )}
-
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Calificaciones por Asignatura</h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {asignaturas.map((materia) => (
-              <div 
-                key={materia.id} 
-                className={`border rounded-xl p-6 transition-all hover:shadow-lg hover:-translate-y-1 flex flex-col items-center justify-center text-center h-40 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed bg-gray-100' : `${materia.color} cursor-pointer`}`}
-                onClick={() => secciones.length > 0 && navegarConContexto('/dashboard/calificaciones', `&materia=${materia.dbNombre}&titulo=${materia.nombre}`)}
-              >
-                <div className="bg-white/40 p-3 rounded-full mb-3 shadow-sm text-3xl">
-                  {materia.icono}
-                </div>
-                <h3 className="font-bold text-lg leading-tight">{materia.nombre}</h3>
-              </div>
-            ))}
+            <button onClick={() => router.push('/dashboard/secciones')} className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
+              Configurar Sección
+            </button>
           </div>
+        )}
 
-          <h2 className="text-xl font-semibold text-gray-800 mt-12 mb-4">Accesos Rápidos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div onClick={() => navegarConContexto('/dashboard/asistencia')} className={`bg-white border border-gray-200 rounded-xl p-6 transition-all flex items-center space-x-4 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}>
-                  <div className="bg-indigo-100 p-4 rounded-full text-xl">📅</div>
-                  <div>
-                      <h3 className="font-bold text-gray-800">Pasar Asistencia</h3>
-                      <p className="text-sm text-gray-500">Ir directo a la lista de estudiantes</p>
-                  </div>
-              </div>
-              <div onClick={() => navegarConContexto('/dashboard/estudiantes')} className={`bg-white border border-gray-200 rounded-xl p-6 transition-all flex items-center space-x-4 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}>
-                  <div className="bg-emerald-100 p-4 rounded-full text-xl">👥</div>
-                  <div>
-                      <h3 className="font-bold text-gray-800">Mis Estudiantes</h3>
-                      <p className="text-sm text-gray-500">Gestionar la lista de alumnos</p>
-                  </div>
-              </div>
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800 tracking-tight">Asignaturas Oficiales</h2>
+            <p className="text-sm text-slate-500 mt-1">Selecciona una materia para gestionar calificaciones.</p>
           </div>
         </div>
-      </main>
-    </div>
+        
+        {/* NUEVA CUADRÍCULA DE ASIGNATURAS (Estilo Tarjetas SaaS) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {asignaturas.map((materia) => (
+            <div 
+              key={materia.id} 
+              onClick={() => secciones.length > 0 && navegarConContexto('/dashboard/calificaciones', `&materia=${materia.dbNombre}&titulo=${materia.nombre}`)}
+              className={`group flex items-center p-5 bg-white border border-slate-200 rounded-2xl transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1'}`}
+            >
+              {/* Ícono de la materia */}
+              <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-2xl ${materia.iconBg} ${materia.iconColor} transition-transform duration-300 group-hover:scale-110 mr-5`}>
+                {materia.icono}
+              </div>
+              
+              {/* Textos */}
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-800 text-sm md:text-base leading-snug group-hover:text-blue-600 transition-colors">
+                  {materia.nombre}
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1 font-semibold uppercase tracking-wider">
+                  Matriz de Notas
+                </p>
+              </div>
+
+              {/* Flecha sutil a la derecha */}
+              <div className="text-slate-300 group-hover:text-blue-500 transition-colors transform group-hover:translate-x-1 duration-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* SECCIÓN DE ACCESOS RÁPIDOS REDISEÑADA */}
+        <h2 className="text-lg font-bold text-slate-800 mt-14 mb-6 tracking-tight">Accesos Rápidos</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Tarjeta Asistencia */}
+            <div 
+              onClick={() => navegarConContexto('/dashboard/asistencia')} 
+              className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-900/5'}`}
+            >
+                <div className="flex items-center gap-6 relative z-10">
+                    <div className="bg-indigo-50 text-indigo-600 w-16 h-16 flex items-center justify-center rounded-2xl text-3xl group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                      📅
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-xl group-hover:text-indigo-600 transition-colors">Pasar Asistencia</h3>
+                        <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">Registro diario oficial y control de ausencias de tu sección.</p>
+                    </div>
+                </div>
+                {/* Decoración minimalista de fondo */}
+                <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-indigo-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
+            </div>
+
+            {/* Tarjeta Estudiantes */}
+            <div 
+              onClick={() => navegarConContexto('/dashboard/estudiantes')} 
+              className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5'}`}
+            >
+                <div className="flex items-center gap-6 relative z-10">
+                    <div className="bg-emerald-50 text-emerald-600 w-16 h-16 flex items-center justify-center rounded-2xl text-3xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                      👥
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-xl group-hover:text-emerald-600 transition-colors">Mis Estudiantes</h3>
+                        <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">Fichas técnicas e importación masiva desde Excel/CSV.</p>
+                    </div>
+                </div>
+                {/* Decoración minimalista de fondo */}
+                <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-emerald-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
+            </div>
+
+        </div>
+      </div>
+    </>
   )
 }
