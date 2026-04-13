@@ -1,195 +1,355 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
-import Link from 'next/link'
 
-export default function RegistroAsistencia() {
+export default function Asistencia() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
-  const [mensaje, setMensaje] = useState('')
+  const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
   
-  // Contexto
   const [seccionId, setSeccionId] = useState<string | null>(null)
-  const [infoSeccion, setInfoSeccion] = useState<any>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [infoSeccion, setInfoSeccion] = useState<any>(null)
 
-  const hoy = new Date().toISOString().split('T')[0]
-  const [fecha, setFecha] = useState(hoy)
-  const [registro, setRegistro] = useState<Record<string, string>>({})
+  // Control del Tiempo
+  const fechaActual = new Date()
+  const [mesActual, setMesActual] = useState(fechaActual.getMonth()) // 0 = Enero, 11 = Diciembre
+  const [anioActual, setAnioActual] = useState(fechaActual.getFullYear())
+
+  // Estado de Asistencias y Días Bloqueados (Diccionarios para búsqueda rápida)
+  const [asistencia, setAsistencia] = useState<Record<string, string>>({})
+  const [diasBloqueados, setDiasBloqueados] = useState<string[]>([])
+
+  const contenedorPrincipalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const secId = params.get('seccion_id')
-    
     if (secId) {
       setSeccionId(secId)
-      inicializarAsistencia(secId)
+      inicializarDatos(secId)
     } else {
       setCargando(false)
     }
-  }, [fecha]) // Si cambia la fecha, refrescamos la lista
+  }, [mesActual, anioActual])
 
-  const inicializarAsistencia = async (secId: string) => {
+  const inicializarDatos = async (secId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       setUserId(session.user.id)
 
-      // 1. Cargar info de la sección (Grado/Sección)
-      const { data: secData } = await supabase
-        .from('secciones')
-        .select('grado, identificador')
-        .eq('id', secId)
-        .single()
-      if (secData) setInfoSeccion(secData)
+      const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).single()
+      setInfoSeccion(secData)
 
-      // 2. Cargar estudiantes de ESTA sección y maestro
-      const { data: listaEstudiantes } = await supabase
-        .from('estudiantes')
+      // 1. Cargar Estudiantes
+      const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).order('numero_orden', { ascending: true })
+      setEstudiantes(listaEst || [])
+
+      // Rango de fechas del mes seleccionado
+      const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
+      const ultimoDia = new Date(anioActual, mesActual + 1, 0).getDate()
+      const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia}`
+
+      // 2. Cargar Asistencias del Mes
+      const { data: asistBD } = await supabase.from('asistencia')
         .select('*')
         .eq('seccion_id', secId)
-        .eq('user_id', session.user.id)
-        .order('numero_orden', { ascending: true })
-
-      if (listaEstudiantes) setEstudiantes(listaEstudiantes)
-
-      // 3. Buscar si ya hay asistencia guardada para esta fecha y sección
-      const { data: asistenciasHoy } = await supabase
-        .from('asistencias')
-        .select('*')
-        .eq('fecha', fecha)
-        .eq('seccion_id', secId)
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin)
 
       const mapaAsistencia: Record<string, string> = {}
-      listaEstudiantes?.forEach(est => {
-        const guardada = asistenciasHoy?.find(a => a.estudiante_id === est.id)
-        mapaAsistencia[est.id] = guardada ? guardada.estado : 'Presente'
+      asistBD?.forEach(reg => {
+        mapaAsistencia[`${reg.estudiante_id}_${reg.fecha}`] = reg.estado
       })
-      setRegistro(mapaAsistencia)
+      setAsistencia(mapaAsistencia)
+
+      // 3. Cargar Días Bloqueados del Mes
+      const { data: diasBD } = await supabase.from('dias_bloqueados')
+        .select('fecha')
+        .eq('seccion_id', secId)
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin)
+      
+      setDiasBloqueados(diasBD?.map(d => d.fecha) || [])
 
     } catch (error) {
-      console.error(error)
+      setMensaje({ texto: 'Error al cargar el registro de asistencia.', tipo: 'error' })
     } finally {
       setCargando(false)
     }
   }
 
-  const marcar = (id: string, estado: string) => {
-    setRegistro(prev => ({ ...prev, [id]: estado }))
+  // ==========================================
+  // LÓGICA DE CALENDARIO
+  // ==========================================
+  const diasDelMes = new Date(anioActual, mesActual + 1, 0).getDate()
+  const arrayDias = Array.from({ length: diasDelMes }, (_, i) => i + 1)
+  
+  const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  const inicialesDias = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+
+  const cambiarMes = (direccion: number) => {
+    let nuevoMes = mesActual + direccion
+    let nuevoAnio = anioActual
+    if (nuevoMes > 11) { nuevoMes = 0; nuevoAnio++ }
+    if (nuevoMes < 0) { nuevoMes = 11; nuevoAnio-- }
+    setMesActual(nuevoMes)
+    setAnioActual(nuevoAnio)
+    setCargando(true)
   }
 
-  const guardarLista = async () => {
-    if (!seccionId || !userId) return
-    setMensaje('Guardando en la nube...')
+  const obtenerFechaISO = (dia: number) => {
+    return `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+  }
+
+  // ==========================================
+  // MAGIA 1: CICLO DE ASISTENCIA Y BLOQUEO
+  // ==========================================
+  const alternarAsistencia = (estudianteId: string, dia: number) => {
+    const fecha = obtenerFechaISO(dia)
+    if (diasBloqueados.includes(fecha)) return // No se puede editar un día bloqueado
+
+    const clave = `${estudianteId}_${fecha}`
+    const estadoActual = asistencia[clave]
     
-    try {
-      // Borramos lo anterior de este día/sección para evitar duplicados
-      await supabase.from('asistencias')
-        .delete()
-        .eq('fecha', fecha)
-        .eq('seccion_id', seccionId)
+    // Ciclo: Presente(P) -> Ausente(A) -> Excusa(E) -> Tardanza(T) -> Vacío
+    let nuevoEstado = ''
+    if (!estadoActual) nuevoEstado = 'P'
+    else if (estadoActual === 'P') nuevoEstado = 'A'
+    else if (estadoActual === 'A') nuevoEstado = 'E'
+    else if (estadoActual === 'E') nuevoEstado = 'T'
+    else if (estadoActual === 'T') nuevoEstado = ''
 
-      const datos = estudiantes.map(est => ({
-        estudiante_id: est.id,
-        seccion_id: seccionId,
-        user_id: userId,
-        fecha: fecha,
-        estado: registro[est.id]
-      }))
-
-      const { error } = await supabase.from('asistencias').insert(datos)
-      if (error) throw error
-
-      setMensaje('✅ ¡Asistencia guardada correctamente!')
-      setTimeout(() => setMensaje(''), 3000)
-    } catch (error) {
-      setMensaje('❌ Error al guardar.')
-    }
+    setAsistencia(prev => {
+      const copia = { ...prev }
+      if (nuevoEstado === '') delete copia[clave]
+      else copia[clave] = nuevoEstado
+      return copia
+    })
   }
 
-  if (cargando) return <div className="p-10 text-center">Cargando lista... ⏳</div>
-
-  if (!seccionId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-xl font-bold mb-4">⚠️ No has seleccionado una sección</h2>
-        <Link href="/dashboard" className="bg-blue-600 text-white px-6 py-2 rounded-lg">Volver al Panel</Link>
-      </div>
+  const alternarDiaBloqueado = (dia: number) => {
+    const fecha = obtenerFechaISO(dia)
+    setDiasBloqueados(prev => 
+      prev.includes(fecha) ? prev.filter(d => d !== fecha) : [...prev, fecha]
     )
   }
 
-  return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <Link href="/dashboard" className="text-blue-600 hover:underline text-sm font-medium mb-4 inline-block">
-        ← Volver al Dashboard
-      </Link>
+  // ==========================================
+  // GUARDAR EN BASE DE DATOS
+  // ==========================================
+  const guardarRegistro = async () => {
+    if (!seccionId || !userId) return
+    setMensaje({ texto: 'Guardando registro mensual...', tipo: 'info' })
+    
+    try {
+      const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
+      const ultimoDia = new Date(anioActual, mesActual + 1, 0).getDate()
+      const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia}`
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Pase de Lista</h1>
-          <p className="text-gray-500 font-medium">
-            {infoSeccion?.grado} "{infoSeccion?.identificador}" - Nivel Primario
-          </p>
+      // 1. Limpiamos el mes actual para la sección (Evita duplicados)
+      await supabase.from('asistencia').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
+      await supabase.from('dias_bloqueados').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
+
+      // 2. Preparamos las nuevas asistencias (Solo de estudiantes activos)
+      const nuevosRegistros: any[] = []
+      estudiantes.forEach(est => {
+        if (est.estado === 'Retirado') return // Ignoramos retirados
+        
+        arrayDias.forEach(dia => {
+          const fecha = obtenerFechaISO(dia)
+          const estado = asistencia[`${est.id}_${fecha}`]
+          if (estado && !diasBloqueados.includes(fecha)) {
+            nuevosRegistros.push({
+              estudiante_id: est.id, seccion_id: seccionId, user_id: userId, fecha: fecha, estado: estado
+            })
+          }
+        })
+      })
+
+      // 3. Preparamos los días bloqueados
+      const registrosBloqueados = diasBloqueados.map(fecha => ({
+        seccion_id: seccionId, fecha: fecha
+      }))
+
+      // 4. Insertamos todo
+      if (nuevosRegistros.length > 0) await supabase.from('asistencia').insert(nuevosRegistros)
+      if (registrosBloqueados.length > 0) await supabase.from('dias_bloqueados').insert(registrosBloqueados)
+
+      setMensaje({ texto: '✅ ¡Asistencia guardada exitosamente!', tipo: 'exito' })
+      setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
+    } catch (error) {
+      setMensaje({ texto: '❌ Error al guardar en la base de datos.', tipo: 'error' })
+    }
+  }
+
+  // Utilidades visuales
+  const obtenerColorCelda = (estado: string) => {
+    if (estado === 'P') return 'bg-emerald-100 text-emerald-700 font-black border-emerald-300'
+    if (estado === 'A') return 'bg-red-100 text-red-700 font-black border-red-300'
+    if (estado === 'E') return 'bg-amber-100 text-amber-700 font-black border-amber-300'
+    if (estado === 'T') return 'bg-orange-100 text-orange-700 font-black border-orange-300'
+    return 'bg-white hover:bg-slate-50 text-transparent'
+  }
+
+  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando calendario... ⏳</div>
+  if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una sección en el Panel de Control.</div>
+
+  return (
+    <div ref={contenedorPrincipalRef} className="h-full w-full overflow-y-auto bg-slate-50/50 pb-20">
+      <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
+        
+        {/* ENCABEZADO */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
+            <p className="text-sm text-slate-500 font-medium mt-1">Sección: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
+          </div>
+          
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* NAVEGADOR DE MESES */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm p-1">
+              <button onClick={() => cambiarMes(-1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <div className="w-36 text-center font-bold text-slate-700 text-sm">
+                {nombresMeses[mesActual]} {anioActual}
+              </div>
+              <button onClick={() => cambiarMes(1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+
+            <button onClick={guardarRegistro} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2">
+              💾 Guardar Mes
+            </button>
+          </div>
+        </div>
+
+        {/* LEYENDA */}
+        <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-500 uppercase tracking-widest">
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded"></div> Presente (P)</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div> Ausente (A)</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-amber-100 border border-amber-300 rounded"></div> Excusa (E)</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div> Tardanza (T)</span>
+          <span className="flex items-center gap-1.5 ml-auto text-slate-400"><div className="w-4 h-4 bg-slate-200 rounded"></div> Feriado/No Laborable</span>
+        </div>
+
+        {mensaje.texto && (
+          <div className={`mb-6 p-4 rounded-lg text-sm font-semibold border shadow-sm ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+            {mensaje.texto}
+          </div>
+        )}
+
+        {/* =================================================================
+            MAGIA 2: TABLA DE ASISTENCIA (Sticky Columns + Heatmap)
+            ================================================================= */}
+        <div className="bg-white shadow-md border border-slate-300 rounded-2xl w-full min-w-0 relative">
+          <div className="overflow-x-auto w-full custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-[1200px] text-sm">
+              
+              <thead className="bg-slate-800 text-white select-none">
+                <tr className="uppercase tracking-wider">
+                  {/* COLUMNAS FIJAS */}
+                  <th className="p-3 text-center w-12 font-bold border border-slate-700 sticky left-0 z-20 bg-slate-800">No.</th>
+                  <th className="p-3 font-bold border border-slate-700 sticky left-12 z-20 bg-slate-800 min-w-[250px]">Nombre del Estudiante</th>
+                  
+                  {/* COLUMNAS DE DÍAS */}
+                  {arrayDias.map(dia => {
+                    const esFinSemana = [0, 6].includes(new Date(anioActual, mesActual, dia).getDay())
+                    const fechaISO = obtenerFechaISO(dia)
+                    const estaBloqueado = diasBloqueados.includes(fechaISO)
+                    
+                    return (
+                      <th key={dia} className={`p-0 min-w-[40px] max-w-[45px] border border-slate-700 text-center transition-colors ${estaBloqueado ? 'bg-slate-600' : esFinSemana ? 'bg-slate-700' : ''}`}>
+                        <div className="flex flex-col items-center justify-center py-2 h-full">
+                          <span className="text-[10px] text-slate-300 mb-0.5">{inicialesDias[new Date(anioActual, mesActual, dia).getDay()]}</span>
+                          <span className="font-bold">{dia}</span>
+                          
+                          {/* BOTÓN BLOQUEAR DÍA */}
+                          <button 
+                            onClick={() => alternarDiaBloqueado(dia)} 
+                            className={`mt-1 p-1 rounded-md transition-colors ${estaBloqueado ? 'text-red-400 hover:text-white bg-slate-700' : 'text-slate-500 hover:text-white'}`}
+                            title={estaBloqueado ? "Desbloquear Día" : "Marcar como No Laborable"}
+                          >
+                            {estaBloqueado ? '⛔' : '🔓'}
+                          </button>
+                        </div>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+
+              <tbody className="bg-white">
+                {estudiantes.map((est, index) => {
+                  const esRetirado = est.estado === 'Retirado';
+                  const rowClass = esRetirado 
+                    ? 'bg-slate-100 grayscale opacity-50 pointer-events-none' 
+                    : index % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50 hover:bg-blue-50/50';
+
+                  return (
+                    <tr key={est.id} className={rowClass}>
+                      {/* COLUMNAS FIJAS (Con sombra para efecto flotante) */}
+                      <td className={`p-2 text-center text-slate-500 font-bold border border-slate-300 sticky left-0 z-10 ${esRetirado ? 'bg-slate-200' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
+                        {est.numero_orden}
+                      </td>
+                      <td className={`p-2 font-semibold text-slate-800 border border-slate-300 sticky left-12 z-10 ${esRetirado ? 'bg-slate-200' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">{est.nombre_completo}</span>
+                          {esRetirado && <span className="text-[9px] bg-slate-300 text-slate-700 px-2 py-0.5 rounded uppercase font-bold ml-2 shrink-0">Retirado</span>}
+                        </div>
+                      </td>
+                      
+                      {/* CELDAS DE ASISTENCIA */}
+                      {arrayDias.map(dia => {
+                        const fechaISO = obtenerFechaISO(dia)
+                        const estaBloqueado = diasBloqueados.includes(fechaISO)
+                        const esFinSemana = [0, 6].includes(new Date(anioActual, mesActual, dia).getDay())
+                        const estado = asistencia[`${est.id}_${fechaISO}`] || ''
+
+                        return (
+                          <td 
+                            key={dia} 
+                            onClick={() => !estaBloqueado && !esRetirado && alternarAsistencia(est.id, dia)}
+                            className={`p-0 border border-slate-200 text-center align-middle cursor-pointer transition-colors duration-150 select-none
+                              ${estaBloqueado ? 'bg-slate-200/80 pointer-events-none' : ''}
+                              ${!estaBloqueado && esFinSemana && !estado ? 'bg-slate-100' : ''}
+                            `}
+                          >
+                            <div className={`w-full h-full min-h-[38px] flex items-center justify-center border-[1.5px] m-[1px] rounded-sm 
+                              ${estaBloqueado ? 'border-transparent text-slate-400' : obtenerColorCelda(estado)}`}>
+                              {estaBloqueado ? '—' : estado || ''}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <input 
-            type="date" 
-            value={fecha} 
-            onChange={(e) => setFecha(e.target.value)}
-            className="border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button onClick={guardarLista} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-md">
-            Guardar Todo
-          </button>
+        <div className="mt-6 bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-4">
+          <span className="text-xl">💡</span>
+          <p className="text-sm text-blue-800 font-medium">
+            <strong className="font-black">Truco de velocidad:</strong> Haz clic repetidas veces en una casilla blanca para cambiar entre Presente (P), Ausente (A), Excusa (E) y Tardanza (T). Usa el candado abierto 🔓 arriba de cada día para bloquear fechas completas por ser feriados o reuniones docentes.
+          </p>
         </div>
-      </div>
 
-      {mensaje && (
-        <div className={`mb-6 p-3 rounded-lg text-center font-bold animate-pulse ${mensaje.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-          {mensaje}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-800 text-white">
-            <tr>
-              <th className="p-4 text-center w-16">No.</th>
-              <th className="p-4">Estudiante</th>
-              <th className="p-4 text-center">Estado (MINERD)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {estudiantes.map((est) => (
-              <tr key={est.id} className="border-b hover:bg-gray-50 transition-colors">
-                <td className="p-4 text-center font-bold text-gray-400">{est.numero_orden}</td>
-                <td className="p-4 font-semibold text-gray-700">{est.nombre_completo}</td>
-                <td className="p-4">
-                  <div className="flex justify-center gap-2">
-                    {[
-                      { l: 'P', n: 'Presente', c: 'bg-green-100 text-green-700 border-green-400' },
-                      { l: 'A', n: 'Ausente', c: 'bg-red-100 text-red-700 border-red-400' },
-                      { l: 'T', n: 'Tardanza', c: 'bg-orange-100 text-orange-700 border-orange-400' },
-                      { l: 'E', n: 'Excusa', c: 'bg-blue-100 text-blue-700 border-blue-400' }
-                    ].map((btn) => (
-                      <button
-                        key={btn.l}
-                        onClick={() => marcar(est.id, btn.n)}
-                        className={`w-10 h-10 rounded-full font-bold border-2 transition-all ${registro[est.id] === btn.n ? btn.c : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300'}`}
-                        title={btn.n}
-                      >
-                        {btn.l}
-                      </button>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
+      
+      {/* Estilo CSS para que la barra de scroll inferior sea delgada y elegante */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      `}} />
     </div>
   )
 }
