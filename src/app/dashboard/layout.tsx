@@ -1,25 +1,28 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+// ❌ Quitamos useSearchParams de aquí:
+import { useRouter, usePathname } from 'next/navigation' 
 import { supabase } from '../../lib/supabase'
 import Image from 'next/image'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const pathname = usePathname()
   
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [seccionId, setSeccionId] = useState<string | null>(null)
 
+  // ✅ Ahora leemos la URL directamente del navegador (window.location)
   useEffect(() => {
-    let id = searchParams.get('seccion_id')
+    const params = new URLSearchParams(window.location.search)
+    let id = params.get('seccion_id')
+    
     if (!id) {
       id = localStorage.getItem('ultimaSeccionActiva')
     }
     setSeccionId(id)
-  }, [searchParams])
+  }, [pathname]) // Se actualiza si cambia la ruta
 
   const cerrarSesion = async () => {
     await supabase.auth.signOut()
