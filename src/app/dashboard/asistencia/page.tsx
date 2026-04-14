@@ -7,17 +7,13 @@ export default function Asistencia() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
-  
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
 
-  // Control del Tiempo
   const fechaActual = new Date()
-  const [mesActual, setMesActual] = useState(fechaActual.getMonth()) // 0 = Enero, 11 = Diciembre
+  const [mesActual, setMesActual] = useState(fechaActual.getMonth())
   const [anioActual, setAnioActual] = useState(fechaActual.getFullYear())
-
-  // Estado de Asistencias y Días Bloqueados (Diccionarios para búsqueda rápida)
   const [asistencia, setAsistencia] = useState<Record<string, string>>({})
   const [diasBloqueados, setDiasBloqueados] = useState<string[]>([])
 
@@ -29,64 +25,56 @@ export default function Asistencia() {
     if (secId) {
       setSeccionId(secId)
       inicializarDatos(secId)
-    } else {
-      setCargando(false)
-    }
+    } else { setCargando(false) }
   }, [mesActual, anioActual])
+
+  const obtenerFechaISO = (dia: number, mes: number, anio: number) => {
+    return `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+  }
 
   const inicializarDatos = async (secId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       setUserId(session.user.id)
-
       const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).single()
       setInfoSeccion(secData)
 
-      // 1. Cargar Estudiantes
       const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).order('numero_orden', { ascending: true })
       setEstudiantes(listaEst || [])
 
-      // Rango de fechas del mes seleccionado
       const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
       const ultimoDia = new Date(anioActual, mesActual + 1, 0).getDate()
       const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia}`
 
-      // 2. Cargar Asistencias del Mes
-      const { data: asistBD } = await supabase.from('asistencia')
-        .select('*')
-        .eq('seccion_id', secId)
-        .gte('fecha', fechaInicio)
-        .lte('fecha', fechaFin)
-
+      // 1. Cargar Asistencias
+      const { data: asistBD } = await supabase.from('asistencia').select('*').eq('seccion_id', secId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
       const mapaAsistencia: Record<string, string> = {}
-      asistBD?.forEach(reg => {
-        mapaAsistencia[`${reg.estudiante_id}_${reg.fecha}`] = reg.estado
-      })
+      asistBD?.forEach(reg => { mapaAsistencia[`${reg.estudiante_id}_${reg.fecha}`] = reg.estado })
       setAsistencia(mapaAsistencia)
 
-      // 3. Cargar Días Bloqueados del Mes
-      const { data: diasBD } = await supabase.from('dias_bloqueados')
-        .select('fecha')
-        .eq('seccion_id', secId)
-        .gte('fecha', fechaInicio)
-        .lte('fecha', fechaFin)
-      
-      setDiasBloqueados(diasBD?.map(d => d.fecha) || [])
+      // 2. Cargar Días Bloqueados de la BD
+      const { data: diasBD } = await supabase.from('dias_bloqueados').select('fecha').eq('seccion_id', secId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
+      const bloqueadosBD = diasBD?.map(d => d.fecha) || []
 
-    } catch (error) {
-      setMensaje({ texto: 'Error al cargar el registro de asistencia.', tipo: 'error' })
-    } finally {
-      setCargando(false)
-    }
+      // 3. MAGIA: Identificar fines de semana del mes actual
+      const finesDeSemana: string[] = []
+      for (let d = 1; d <= ultimoDia; d++) {
+        const fechaD = new Date(anioActual, mesActual, d)
+        if (fechaD.getDay() === 0 || fechaD.getDay() === 6) { // 0 = Domingo, 6 = Sábado
+          finesDeSemana.push(obtenerFechaISO(d, mesActual, anioActual))
+        }
+      }
+
+      // Combinamos ambos (BD + Fines de semana) sin duplicar
+      const todosBloqueados = Array.from(new Set([...bloqueadosBD, ...finesDeSemana]))
+      setDiasBloqueados(todosBloqueados)
+
+    } catch (error) { console.error(error) } finally { setCargando(false) }
   }
 
-  // ==========================================
-  // LÓGICA DE CALENDARIO
-  // ==========================================
   const diasDelMes = new Date(anioActual, mesActual + 1, 0).getDate()
   const arrayDias = Array.from({ length: diasDelMes }, (_, i) => i + 1)
-  
   const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
   const inicialesDias = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
 
@@ -100,21 +88,11 @@ export default function Asistencia() {
     setCargando(true)
   }
 
-  const obtenerFechaISO = (dia: number) => {
-    return `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
-  }
-
-  // ==========================================
-  // MAGIA 1: CICLO DE ASISTENCIA Y BLOQUEO
-  // ==========================================
   const alternarAsistencia = (estudianteId: string, dia: number) => {
-    const fecha = obtenerFechaISO(dia)
-    if (diasBloqueados.includes(fecha)) return // No se puede editar un día bloqueado
-
+    const fecha = obtenerFechaISO(dia, mesActual, anioActual)
+    if (diasBloqueados.includes(fecha)) return
     const clave = `${estudianteId}_${fecha}`
     const estadoActual = asistencia[clave]
-    
-    // Ciclo: Presente(P) -> Ausente(A) -> Excusa(E) -> Tardanza(T) -> Vacío
     let nuevoEstado = ''
     if (!estadoActual) nuevoEstado = 'P'
     else if (estadoActual === 'P') nuevoEstado = 'A'
@@ -131,224 +109,211 @@ export default function Asistencia() {
   }
 
   const alternarDiaBloqueado = (dia: number) => {
-    const fecha = obtenerFechaISO(dia)
-    setDiasBloqueados(prev => 
-      prev.includes(fecha) ? prev.filter(d => d !== fecha) : [...prev, fecha]
-    )
+    const fecha = obtenerFechaISO(dia, mesActual, anioActual)
+    setDiasBloqueados(prev => prev.includes(fecha) ? prev.filter(d => d !== fecha) : [...prev, fecha])
   }
 
-  // ==========================================
-  // GUARDAR EN BASE DE DATOS
-  // ==========================================
+  const totalDiasLaborables = arrayDias.length - diasBloqueados.length
+
+  const calcularResumenEstudiante = (id: string) => {
+    let p = 0, a = 0, e = 0, t = 0
+    arrayDias.forEach(dia => {
+      const estado = asistencia[`${id}_${obtenerFechaISO(dia, mesActual, anioActual)}`]
+      if (estado === 'P') p++
+      else if (estado === 'A') a++
+      else if (estado === 'E') e++
+      else if (estado === 'T') t++
+    })
+    return { p, a, e, t }
+  }
+
+  const contarPresentesDia = (dia: number) => {
+    const fecha = obtenerFechaISO(dia, mesActual, anioActual)
+    return estudiantes.filter(est => est.estado !== 'Retirado' && asistencia[`${est.id}_${fecha}`] === 'P').length
+  }
+
   const guardarRegistro = async () => {
     if (!seccionId || !userId) return
-    setMensaje({ texto: 'Guardando registro mensual...', tipo: 'info' })
-    
+    setMensaje({ texto: 'Guardando registro...', tipo: 'info' })
     try {
       const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
-      const ultimoDia = new Date(anioActual, mesActual + 1, 0).getDate()
-      const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia}`
+      const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${diasDelMes}`
 
-      // 1. Limpiamos el mes actual para la sección (Evita duplicados)
       await supabase.from('asistencia').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
       await supabase.from('dias_bloqueados').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
 
-      // 2. Preparamos las nuevas asistencias (Solo de estudiantes activos)
       const nuevosRegistros: any[] = []
       estudiantes.forEach(est => {
-        if (est.estado === 'Retirado') return // Ignoramos retirados
-        
+        if (est.estado === 'Retirado') return
         arrayDias.forEach(dia => {
-          const fecha = obtenerFechaISO(dia)
+          const fecha = obtenerFechaISO(dia, mesActual, anioActual)
           const estado = asistencia[`${est.id}_${fecha}`]
           if (estado && !diasBloqueados.includes(fecha)) {
-            nuevosRegistros.push({
-              estudiante_id: est.id, seccion_id: seccionId, user_id: userId, fecha: fecha, estado: estado
-            })
+            nuevosRegistros.push({ estudiante_id: est.id, seccion_id: seccionId, user_id: userId, fecha, estado })
           }
         })
       })
 
-      // 3. Preparamos los días bloqueados
-      const registrosBloqueados = diasBloqueados.map(fecha => ({
-        seccion_id: seccionId, fecha: fecha
-      }))
-
-      // 4. Insertamos todo
+      const registrosBloqueados = diasBloqueados.map(fecha => ({ seccion_id: seccionId, fecha }))
       if (nuevosRegistros.length > 0) await supabase.from('asistencia').insert(nuevosRegistros)
       if (registrosBloqueados.length > 0) await supabase.from('dias_bloqueados').insert(registrosBloqueados)
 
-      setMensaje({ texto: '✅ ¡Asistencia guardada exitosamente!', tipo: 'exito' })
+      setMensaje({ texto: '✅ Asistencia guardada correctamente.', tipo: 'exito' })
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
-    } catch (error) {
-      setMensaje({ texto: '❌ Error al guardar en la base de datos.', tipo: 'error' })
-    }
+    } catch (error) { setMensaje({ texto: '❌ Error al guardar.', tipo: 'error' }) }
   }
 
-  // Utilidades visuales
   const obtenerColorCelda = (estado: string) => {
-    if (estado === 'P') return 'bg-emerald-100 text-emerald-700 font-black border-emerald-300'
-    if (estado === 'A') return 'bg-red-100 text-red-700 font-black border-red-300'
-    if (estado === 'E') return 'bg-amber-100 text-amber-700 font-black border-amber-300'
-    if (estado === 'T') return 'bg-orange-100 text-orange-700 font-black border-orange-300'
-    return 'bg-white hover:bg-slate-50 text-transparent'
+    if (estado === 'P') return 'bg-emerald-100 text-emerald-700 border-emerald-300'
+    if (estado === 'A') return 'bg-red-100 text-red-700 border-red-300'
+    if (estado === 'E') return 'bg-amber-100 text-amber-700 border-amber-300'
+    if (estado === 'T') return 'bg-orange-100 text-orange-700 border-orange-300'
+    return 'bg-white text-transparent border-slate-100'
   }
 
-  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando calendario... ⏳</div>
-  if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una sección en el Panel de Control.</div>
+  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando registro de asistencia... ⏳</div>
 
   return (
     <div ref={contenedorPrincipalRef} className="h-full w-full overflow-y-auto bg-slate-50/50 pb-20">
-      <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
+      <div className="p-4 md:p-8 max-w-[1750px] mx-auto">
         
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">Sección: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
+          <div className="flex items-center gap-6">
+            <div>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
+              <p className="text-sm text-slate-500 font-medium mt-1">Sección: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
+            </div>
+            <div className="bg-white border-2 border-blue-600 rounded-2xl p-3 shadow-sm flex flex-col items-center min-w-[100px]">
+               <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Días Laborables</span>
+               <span className="text-2xl font-black text-slate-800">{totalDiasLaborables}</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4 w-full md:w-auto">
-            {/* NAVEGADOR DE MESES */}
             <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm p-1">
-              <button onClick={() => cambiarMes(-1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              </button>
+              <button onClick={() => cambiarMes(-1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">◀</button>
               <div className="w-36 text-center font-bold text-slate-700 text-sm">
                 {nombresMeses[mesActual]} {anioActual}
               </div>
-              <button onClick={() => cambiarMes(1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
+              <button onClick={() => cambiarMes(1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">▶</button>
             </div>
-
-            <button onClick={guardarRegistro} className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2">
-              💾 Guardar Mes
-            </button>
+            <button onClick={guardarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all">💾 Guardar Mes</button>
           </div>
         </div>
 
         {/* LEYENDA */}
         <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-500 uppercase tracking-widest">
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded"></div> Presente (P)</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div> Ausente (A)</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-amber-100 border border-amber-300 rounded"></div> Excusa (E)</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div> Tardanza (T)</span>
-          <span className="flex items-center gap-1.5 ml-auto text-slate-400"><div className="w-4 h-4 bg-slate-200 rounded"></div> Feriado/No Laborable</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded"></div> P</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div> A</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-amber-100 border border-amber-300 rounded"></div> E</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div> T</span>
+          <span className="flex items-center gap-1.5 ml-auto text-slate-400"><div className="w-4 h-4 bg-slate-200 rounded"></div> Bloqueado / Fines de Semana</span>
         </div>
 
         {mensaje.texto && (
-          <div className={`mb-6 p-4 rounded-lg text-sm font-semibold border shadow-sm ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+          <div className={`mb-6 p-4 rounded-xl text-sm font-semibold border shadow-sm ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
             {mensaje.texto}
           </div>
         )}
 
-        {/* =================================================================
-            MAGIA 2: TABLA DE ASISTENCIA (Sticky Columns + Heatmap)
-            ================================================================= */}
         <div className="bg-white shadow-md border border-slate-300 rounded-2xl w-full min-w-0 relative">
           <div className="overflow-x-auto w-full custom-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[1200px] text-sm">
+            <table className="w-full text-left border-collapse min-w-[1400px] text-sm table-fixed">
               
-              <thead className="bg-slate-800 text-white select-none">
+              <thead className="bg-slate-700 text-white select-none border-b border-slate-800">
                 <tr className="uppercase tracking-wider">
-                  {/* COLUMNAS FIJAS */}
-                  <th className="p-3 text-center w-12 font-bold border border-slate-700 sticky left-0 z-20 bg-slate-800">No.</th>
-                  <th className="p-3 font-bold border border-slate-700 sticky left-12 z-20 bg-slate-800 min-w-[250px]">Nombre del Estudiante</th>
+                  <th className="p-3 text-center w-12 font-bold border-r border-slate-600 sticky left-0 z-30 bg-slate-800">No.</th>
+                  <th className="p-3 font-bold border-r border-slate-600 sticky left-12 z-30 bg-slate-800 w-56">Estudiante</th>
                   
-                  {/* COLUMNAS DE DÍAS */}
                   {arrayDias.map(dia => {
+                    const fechaISO = obtenerFechaISO(dia, mesActual, anioActual)
+                    const esBloqueado = diasBloqueados.includes(fechaISO)
                     const esFinSemana = [0, 6].includes(new Date(anioActual, mesActual, dia).getDay())
-                    const fechaISO = obtenerFechaISO(dia)
-                    const estaBloqueado = diasBloqueados.includes(fechaISO)
                     
                     return (
-                      <th key={dia} className={`p-0 min-w-[40px] max-w-[45px] border border-slate-700 text-center transition-colors ${estaBloqueado ? 'bg-slate-600' : esFinSemana ? 'bg-slate-700' : ''}`}>
-                        <div className="flex flex-col items-center justify-center py-2 h-full">
-                          <span className="text-[10px] text-slate-300 mb-0.5">{inicialesDias[new Date(anioActual, mesActual, dia).getDay()]}</span>
-                          <span className="font-bold">{dia}</span>
-                          
-                          {/* BOTÓN BLOQUEAR DÍA */}
-                          <button 
-                            onClick={() => alternarDiaBloqueado(dia)} 
-                            className={`mt-1 p-1 rounded-md transition-colors ${estaBloqueado ? 'text-red-400 hover:text-white bg-slate-700' : 'text-slate-500 hover:text-white'}`}
-                            title={estaBloqueado ? "Desbloquear Día" : "Marcar como No Laborable"}
-                          >
-                            {estaBloqueado ? '⛔' : '🔓'}
+                      <th key={dia} className={`p-1 w-10 border-r border-slate-600 text-center ${esBloqueado ? 'bg-slate-900 text-slate-500' : esFinSemana ? 'bg-slate-600 text-slate-300' : 'bg-slate-700 text-white'}`}>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[9px] font-bold opacity-80">{inicialesDias[new Date(anioActual, mesActual, dia).getDay()]}</span>
+                          <span className="font-black text-sm">{dia}</span>
+                          <button onClick={() => alternarDiaBloqueado(dia)} className={`mt-1 text-[10px] transition-colors ${esBloqueado ? 'text-red-500 hover:text-red-400' : 'text-slate-400 hover:text-white'}`}>
+                            {esBloqueado ? '⛔' : '🔓'}
                           </button>
                         </div>
                       </th>
                     )
                   })}
+
+                  <th className="p-2 w-12 bg-emerald-600 text-white font-black text-center border-l border-slate-600">P</th>
+                  <th className="p-2 w-12 bg-red-600 text-white font-black text-center border-l border-slate-600">A</th>
+                  <th className="p-2 w-12 bg-amber-500 text-white font-black text-center border-l border-slate-600">E</th>
+                  <th className="p-2 w-12 bg-orange-500 text-white font-black text-center border-l border-slate-600">T</th>
                 </tr>
               </thead>
 
               <tbody className="bg-white">
                 {estudiantes.map((est, index) => {
-                  const esRetirado = est.estado === 'Retirado';
-                  const rowClass = esRetirado 
-                    ? 'bg-slate-100 grayscale opacity-50 pointer-events-none' 
-                    : index % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-slate-50 hover:bg-blue-50/50';
-
+                  const res = calcularResumenEstudiante(est.id)
+                  const esRetirado = est.estado === 'Retirado'
                   return (
-                    <tr key={est.id} className={rowClass}>
-                      {/* COLUMNAS FIJAS (Con sombra para efecto flotante) */}
-                      <td className={`p-2 text-center text-slate-500 font-bold border border-slate-300 sticky left-0 z-10 ${esRetirado ? 'bg-slate-200' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
-                        {est.numero_orden}
+                    <tr key={est.id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                      <td className={`p-2 text-center text-slate-500 font-bold sticky left-0 z-10 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>{est.numero_orden}</td>
+                      <td className={`p-2 font-semibold text-slate-800 sticky left-12 z-10 border-r border-slate-200 truncate shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                        {est.nombre_completo} {esRetirado && <span className="text-[8px] bg-red-100 text-red-600 px-1 rounded ml-2 font-bold">Retirado</span>}
                       </td>
-                      <td className={`p-2 font-semibold text-slate-800 border border-slate-300 sticky left-12 z-10 ${esRetirado ? 'bg-slate-200' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`}>
-                        <div className="flex items-center justify-between">
-                          <span className="truncate">{est.nombre_completo}</span>
-                          {esRetirado && <span className="text-[9px] bg-slate-300 text-slate-700 px-2 py-0.5 rounded uppercase font-bold ml-2 shrink-0">Retirado</span>}
-                        </div>
-                      </td>
-                      
-                      {/* CELDAS DE ASISTENCIA */}
                       {arrayDias.map(dia => {
-                        const fechaISO = obtenerFechaISO(dia)
+                        const fechaISO = obtenerFechaISO(dia, mesActual, anioActual)
                         const estaBloqueado = diasBloqueados.includes(fechaISO)
-                        const esFinSemana = [0, 6].includes(new Date(anioActual, mesActual, dia).getDay())
                         const estado = asistencia[`${est.id}_${fechaISO}`] || ''
-
                         return (
-                          <td 
-                            key={dia} 
-                            onClick={() => !estaBloqueado && !esRetirado && alternarAsistencia(est.id, dia)}
-                            className={`p-0 border border-slate-200 text-center align-middle cursor-pointer transition-colors duration-150 select-none
-                              ${estaBloqueado ? 'bg-slate-200/80 pointer-events-none' : ''}
-                              ${!estaBloqueado && esFinSemana && !estado ? 'bg-slate-100' : ''}
-                            `}
-                          >
-                            <div className={`w-full h-full min-h-[38px] flex items-center justify-center border-[1.5px] m-[1px] rounded-sm 
-                              ${estaBloqueado ? 'border-transparent text-slate-400' : obtenerColorCelda(estado)}`}>
-                              {estaBloqueado ? '—' : estado || ''}
+                          <td key={dia} onClick={() => !estaBloqueado && !esRetirado && alternarAsistencia(est.id, dia)} className={`p-0 border-r border-slate-100 text-center cursor-pointer ${estaBloqueado || esRetirado ? 'bg-slate-200/50 pointer-events-none' : ''}`}>
+                            <div className={`w-full h-8 flex items-center justify-center font-bold text-xs border ${obtenerColorCelda(estado)}`}>
+                              {estaBloqueado ? '—' : estado}
                             </div>
                           </td>
                         )
                       })}
+                      <td className="p-1 text-center font-black bg-emerald-50/50 text-emerald-700 border-l border-slate-200">{res.p}</td>
+                      <td className="p-1 text-center font-black bg-red-50/50 text-red-700 border-l border-slate-200">{res.a}</td>
+                      <td className="p-1 text-center font-black bg-amber-50/50 text-amber-700 border-l border-slate-200">{res.e}</td>
+                      <td className="p-1 text-center font-black bg-orange-50/50 text-orange-700 border-l border-slate-200">{res.t}</td>
                     </tr>
                   )
                 })}
               </tbody>
+
+              <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
+                <tr>
+                  <td colSpan={2} className="p-3 text-right text-[10px] uppercase tracking-tighter text-slate-500 sticky left-0 bg-slate-100 z-10">Presentes:</td>
+                  {arrayDias.map(dia => {
+                    const cant = contarPresentesDia(dia)
+                    const estaBloqueado = diasBloqueados.includes(obtenerFechaISO(dia, mesActual, anioActual))
+                    return (
+                      <td key={dia} className={`p-2 text-center border-r border-slate-200 ${estaBloqueado ? 'text-slate-400' : 'text-blue-600'}`}>
+                        {estaBloqueado ? '—' : cant}
+                      </td>
+                    )
+                  })}
+                  <td colSpan={4} className="bg-slate-100"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
-        
+
+        {/* TRUCO DE VELOCIDAD */}
         <div className="mt-6 bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-4">
           <span className="text-xl">💡</span>
           <p className="text-sm text-blue-800 font-medium">
-            <strong className="font-black">Truco de velocidad:</strong> Haz clic repetidas veces en una casilla blanca para cambiar entre Presente (P), Ausente (A), Excusa (E) y Tardanza (T). Usa el candado abierto 🔓 arriba de cada día para bloquear fechas completas por ser feriados o reuniones docentes.
+            <strong className="font-black">Truco de velocidad:</strong> Haz clic repetidas veces en una casilla blanca para rotar entre (P), (A), (E) y (T). Los fines de semana se bloquean automáticamente, pero puedes usar el ícono 🔓 para habilitarlos si hubo clases un sábado.
           </p>
         </div>
 
       </div>
-      
-      {/* Estilo CSS para que la barra de scroll inferior sea delgada y elegante */}
       <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar { height: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
       `}} />
     </div>
   )
