@@ -14,10 +14,9 @@ interface EstadoMensaje {
 
 export default function Login() {
   const router = useRouter()
-  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [verPassword, setVerPassword] = useState(false) // NUEVO: Estado para ver contraseña
+  const [verPassword, setVerPassword] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState<EstadoMensaje>({ texto: '', tipo: '' })
 
@@ -31,103 +30,106 @@ export default function Login() {
       if (error) throw error
       setMensaje({ texto: '¡Acceso concedido! Redirigiendo...', tipo: 'exito' })
       router.push('/dashboard')
-    } catch (error: any) {
+    } catch {
       setMensaje({ texto: 'Credenciales incorrectas. Verifica tu correo y contraseña.', tipo: 'error' })
       setCargando(false)
     }
   }
 
   const clasesMensaje = {
-    info: 'bg-blue-50 text-blue-700 border-blue-200',
-    exito: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    error: 'bg-red-50 text-red-700 border-red-200',
-    '': 'hidden'
+    info: 'border-sky-200 bg-sky-50 text-sky-700',
+    exito: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    error: 'border-rose-200 bg-rose-50 text-rose-700',
+    '': 'hidden',
   }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-slate-200 font-sans">
-      
-      {/* Lado Izquierdo: Branding */}
-      <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-b from-blue-900 to-blue-800 p-12 flex-col justify-between relative overflow-hidden shadow-2xl z-0">
-        <div className="relative z-10 flex flex-col h-full justify-center">
-          <div className="flex items-center gap-4 mb-10">
-            <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-sm border border-white/20 shadow-xl">
-              <Image src="/Logo.bmp" alt="ELINE Logo" width={80} height={80} className="object-contain" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-black text-white tracking-tight drop-shadow-sm">ELINE</h1>
-              <p className="text-xl font-medium text-blue-200 tracking-wide">Registro Escolar</p>
-            </div>
-          </div>
-          <h2 className="text-4xl font-bold text-white mb-6 leading-tight">Tu gestión educativa, <br/><span className="text-blue-300">más simple que nunca.</span></h2>
-          <p className="text-blue-100/80 text-lg max-w-md leading-relaxed font-light">Sistema adaptado a los estándares oficiales para el control de asistencia y calificaciones.</p>
-        </div>
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-10 text-slate-900">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_45%)]" />
 
-      {/* Lado Derecho: Formulario */}
-      <div className="w-full lg:w-7/12 flex items-center justify-center p-6 sm:p-12 relative z-10">
-        <div className="w-full max-w-md bg-white/90 backdrop-blur-md p-10 sm:p-12 rounded-[2rem] shadow-2xl border border-white">
-          
-          <div className="mb-8 text-center lg:text-left">
-            <h2 className="text-2xl font-bold text-slate-800">Iniciar Sesión</h2>
-            <p className="text-slate-500 mt-2 text-sm">Ingresa tus datos de acceso institucional.</p>
+      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:grid-cols-2">
+        <aside className="hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <div className="mb-12 flex items-center gap-3">
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-2">
+                <Image src="/Logo.bmp" alt="ELINE" width={44} height={44} className="object-contain" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight">ELINE</h1>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Registro escolar</p>
+              </div>
+            </div>
+            <h2 className="text-3xl font-semibold leading-tight text-balance">
+              Gestión educativa clara, rápida y sin distracciones.
+            </h2>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-300">
+              Controla asistencia, calificaciones y secciones con una interfaz moderna enfocada en lo esencial.
+            </p>
+          </div>
+          <p className="text-xs text-slate-400">Ciclo 2025–2026 · Panel docente</p>
+        </aside>
+
+        <section className="p-7 sm:p-10 lg:p-12">
+          <div className="mb-8">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Bienvenido</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Iniciar sesión</h2>
+            <p className="mt-2 text-sm text-slate-500">Ingresa tus credenciales institucionales para continuar.</p>
           </div>
 
-          <form onSubmit={manejarLogin} className="space-y-6">
+          <form onSubmit={manejarLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Correo Electrónico</label>
-              <input 
-                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium"
-                placeholder="docente@institucion.edu.do" disabled={cargando}
+              <label className="mb-2 block text-sm font-medium text-slate-700">Correo electrónico</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={cargando}
+                placeholder="docente@institucion.edu.do"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Contraseña</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Contraseña</label>
               <div className="relative">
-                <input 
-                  type={verPassword ? "text" : "password"} // Cambia dinámicamente
-                  required value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium pr-12"
-                  placeholder="••••••••" disabled={cargando}
+                <input
+                  type={verPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={cargando}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
-                {/* BOTÓN OJO */}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setVerPassword(!verPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                  aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {verPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-                  )}
+                  {verPassword ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
 
             {mensaje.tipo !== '' && (
-              <div className={`p-4 rounded-xl text-sm font-semibold border ${clasesMensaje[mensaje.tipo]} animate-in fade-in slide-in-from-top-2`}>
-                {mensaje.texto}
-              </div>
+              <p className={`rounded-xl border px-4 py-3 text-sm font-medium ${clasesMensaje[mensaje.tipo]}`}>{mensaje.texto}</p>
             )}
 
-            <button 
-              type="submit" disabled={cargando}
-              className={`w-full text-white font-bold py-4 rounded-xl transition-all shadow-lg mt-2 flex justify-center items-center gap-2 ${cargando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-800 active:scale-[0.98]'}`}
+            <button
+              type="submit"
+              disabled={cargando}
+              className={`flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition ${
+                cargando ? 'cursor-not-allowed bg-slate-400' : 'bg-slate-900 hover:bg-slate-800'
+              }`}
             >
-              {cargando ? 'Verificando...' : 'Acceder al Sistema'}
+              {cargando ? 'Verificando…' : 'Entrar al sistema'}
             </button>
           </form>
 
-          <div className="mt-10 border-t border-slate-100 pt-6">
-            <p className="text-center text-xs font-medium text-slate-400">
-              &copy; {new Date().getFullYear()} ELINE Registro Escolar <br/>
-              <span className="inline-block mt-1 px-2 py-1 bg-slate-100 rounded-md text-slate-500">Versión 1.0</span>
-            </p>
-          </div>
-        </div>
+          <p className="mt-8 text-center text-xs text-slate-500">© {new Date().getFullYear()} ELINE · Versión 1.1</p>
+        </section>
       </div>
     </div>
   )
