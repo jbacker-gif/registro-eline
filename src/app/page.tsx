@@ -8,7 +8,6 @@ import Image from 'next/image'
 export default function HomeInstitucional() {
   const router = useRouter()
   
-  // Estados para el Login
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [verPassword, setVerPassword] = useState(false)
@@ -39,39 +38,36 @@ export default function HomeInstitucional() {
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200">
       
       {/* ==========================================
-          BARRA DE NAVEGACIÓN (Logo ADSP)
+          BARRA DE NAVEGACIÓN (Logo ADSP Ajustado)
           ========================================== */}
-      <nav className="fixed w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50">
+      <nav className="fixed w-full bg-white/95 backdrop-blur-md border-b border-slate-200 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-            <div className="relative w-12 h-12 overflow-hidden rounded-lg">
-              <Image 
-                src="/logo_adsp.jpg" 
-                alt="ADSP Logo" 
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-800 leading-none">ADSP</span>
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">Soluciones Profesionales</span>
-            </div>
+          <div className="flex items-center cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
+            {/* Logo de la empresa ajustado para verse completo */}
+            <Image 
+              src="/logo_adsp.jpg" 
+              alt="ADSP Logo" 
+              width={160} 
+              height={50} 
+              className="object-contain"
+              priority
+            />
           </div>
           <div className="hidden md:flex gap-8 font-bold text-sm text-slate-500 uppercase tracking-wider">
             <button onClick={() => scrollToSection('nosotros')} className="hover:text-blue-600 transition-colors">Nosotros</button>
             <button onClick={() => scrollToSection('historia')} className="hover:text-blue-600 transition-colors">Historia</button>
             <button onClick={() => scrollToSection('servicios')} className="hover:text-blue-600 transition-colors">Servicios</button>
           </div>
-          <button onClick={() => scrollToSection('portal-docente')} className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-md">
+          <button onClick={() => scrollToSection('portal-docente')} className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95">
             Acceso Docente
           </button>
         </div>
       </nav>
 
       {/* ==========================================
-          HERO SECTION & PORTAL ELINE (Logo Eline)
+          HERO SECTION & PORTAL ELINE
           ========================================== */}
-      <section id="portal-docente" className="pt-32 pb-20 px-6 lg:pt-48 lg:pb-32 bg-gradient-to-br from-slate-900 to-blue-900 relative overflow-hidden">
+      <section id="portal-docente" className="pt-32 pb-20 px-6 lg:pt-48 lg:pb-32 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-30">
           <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-blue-500 blur-[120px]"></div>
           <div className="absolute top-[60%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-500 blur-[120px]"></div>
@@ -84,32 +80,39 @@ export default function HomeInstitucional() {
               Innovación Digital para el <span className="text-blue-400">Éxito Escolar</span>
             </h1>
             <p className="text-lg lg:text-xl text-blue-100/80 mb-8 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
-              AD Soluciones Profesionales presenta **ELINE**, el entorno lógico diseñado para modernizar el registro de asistencia y calificaciones bajo los estándares de excelencia.
+              Descubre **ELINE**, la plataforma líder desarrollada por AD Soluciones Profesionales para la gestión moderna de asistencia y calificaciones.
             </p>
             <div className="flex flex-wrap justify-center lg:justify-start gap-4">
               <button onClick={() => scrollToSection('servicios')} className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-8 py-3.5 rounded-xl font-bold transition-all">
-                Ver Soluciones
+                Nuestros Servicios
               </button>
             </div>
           </div>
 
-          {/* Tarjeta de Login (Portal ELINE) */}
+          {/* Tarjeta de Login (Logo ELINE Corregido) */}
           <div className="w-full max-w-md mx-auto bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20">
             <div className="mb-8 text-center">
-              <div className="bg-slate-50 w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center p-2 shadow-inner border border-slate-100">
-                <Image src="/logo.bmp" alt="ELINE Logo" width={60} height={60} className="object-contain" />
+              {/* Contenedor del logo del sistema corregido */}
+              <div className="w-full h-20 flex items-center justify-center mb-4">
+                <Image 
+                  src="/logo.bmp" 
+                  alt="ELINE Logo" 
+                  width={140} 
+                  height={60} 
+                  className="object-contain"
+                />
               </div>
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">Portal ELINE</h2>
-              <p className="text-slate-500 mt-1 text-sm font-medium tracking-tight">Entorno Lógico Integrado Nacional Educativo</p>
+              <p className="text-slate-500 mt-1 text-xs font-bold uppercase tracking-widest">Registro Escolar Digital</p>
             </div>
 
             <form onSubmit={manejarLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Usuario / Email</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email</label>
                 <input 
                   type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                   className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
-                  placeholder="ejemplo@adsp.com.do" disabled={cargando}
+                  placeholder="usuario@adsp.com.do" disabled={cargando}
                 />
               </div>
 
@@ -139,7 +142,7 @@ export default function HomeInstitucional() {
               )}
 
               <button type="submit" disabled={cargando} className={`w-full text-white font-bold py-4 rounded-2xl transition-all shadow-xl mt-2 flex justify-center items-center gap-2 ${cargando ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'}`}>
-                {cargando ? 'Cargando Entorno...' : 'Entrar al Registro'}
+                {cargando ? 'Cargando...' : 'Entrar al Registro'}
               </button>
             </form>
           </div>
@@ -147,62 +150,62 @@ export default function HomeInstitucional() {
       </section>
 
       {/* ==========================================
-          SECCIÓN NOSOTROS (ADSP)
+          SECCIÓN NOSOTROS
           ========================================== */}
       <section id="nosotros" className="py-24 px-6 max-w-7xl mx-auto">
         <div className="flex flex-col items-center text-center mb-16">
-          <span className="text-blue-600 font-black text-xs uppercase tracking-[0.3em] mb-3">Quiénes Somos</span>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">Identidad ADSP</h2>
+          <span className="text-blue-600 font-black text-xs uppercase tracking-[0.3em] mb-3">Identidad Institucional</span>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">AD Soluciones Profesionales</h2>
           <div className="w-12 h-1 bg-blue-600 mt-6 rounded-full"></div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
             <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6">🎯</div>
             <h3 className="text-xl font-bold text-slate-800 mb-4">Misión</h3>
             <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Proveer soluciones profesionales de vanguardia que simplifiquen los procesos operativos y administrativos, permitiendo que las instituciones alcancen su máximo potencial a través de la eficiencia digital.
+              Ofrecer soluciones tecnológicas innovadoras que optimicen la gestión administrativa y pedagógica de los centros educativos.
             </p>
           </div>
 
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
             <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6">👁️</div>
             <h3 className="text-xl font-bold text-slate-800 mb-4">Visión</h3>
             <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Consolidarnos como el aliado tecnológico número uno para el desarrollo institucional en el Caribe, siendo reconocidos por nuestra integridad, seguridad y capacidad de respuesta.
+              Ser el referente nacional en la digitalización escolar, impulsando la excelencia a través de herramientas eficientes.
             </p>
           </div>
 
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6">🛡️</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Seguridad</h3>
+          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
+            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6">⭐</div>
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Valores</h3>
             <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Nuestra prioridad absoluta es la protección de la información. Implementamos arquitecturas robustas para garantizar que cada dato institucional esté respaldado y cifrado.
+              Integridad, innovación constante, compromiso con la educación y excelencia en el servicio al cliente.
             </p>
           </div>
         </div>
       </section>
 
       {/* ==========================================
-          FOOTER (Logo ADSP)
+          FOOTER (Logo ADSP Único)
           ========================================== */}
       <footer className="bg-slate-900 text-slate-400 py-16 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="flex items-center gap-4">
-            <div className="relative w-10 h-10 overflow-hidden rounded-lg grayscale opacity-50">
-              <Image src="/logo_adsp.jpg" alt="ADSP Logo" fill className="object-cover" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black text-slate-200 tracking-tight leading-none">ADSP</span>
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Soluciones Profesionales</span>
-            </div>
+          <div className="flex items-center">
+            {/* Solo el logo, ya que incluye el nombre */}
+            <Image 
+              src="/logo_adsp.jpg" 
+              alt="ADSP Logo" 
+              width={200} 
+              height={60} 
+              className="object-contain opacity-80 hover:opacity-100 transition-opacity" 
+            />
           </div>
           
           <div className="text-center md:text-right">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-2">Desarrollado por AD Soluciones Profesionales</p>
             <p className="text-[10px] font-medium opacity-60">
-              &copy; {new Date().getFullYear()} ADSP S.R.L. Santo Domingo, República Dominicana. <br/>
-              ELINE es una marca registrada bajo licencia de ADSP.
+              &copy; {new Date().getFullYear()} AD Soluciones Profesionales. Santo Domingo, República Dominicana. <br/>
+              Todos los derechos reservados.
             </p>
           </div>
         </div>
