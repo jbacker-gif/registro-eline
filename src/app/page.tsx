@@ -38,14 +38,14 @@ export default function HomeInstitucional() {
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200">
       
       {/* ==========================================
-          BARRA DE NAVEGACIÓN (Logo ADSP Ajustado)
+          BARRA DE NAVEGACIÓN
           ========================================== */}
       <nav className="fixed w-full bg-white/95 backdrop-blur-md border-b border-slate-200 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-            {/* Logo de la empresa ajustado para verse completo */}
+            {/* AHORA ESPERA UN PNG TRANSPARENTE */}
             <Image 
-              src="/logo_adsp.jpg" 
+              src="/logo_adsp.png" 
               alt="ADSP Logo" 
               width={160} 
               height={50} 
@@ -89,16 +89,15 @@ export default function HomeInstitucional() {
             </div>
           </div>
 
-          {/* Tarjeta de Login (Logo ELINE Corregido) */}
           <div className="w-full max-w-md mx-auto bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20">
             <div className="mb-8 text-center">
-              {/* Contenedor del logo del sistema corregido */}
-              <div className="w-full h-20 flex items-center justify-center mb-4">
+              {/* AHORA ESPERA UN PNG TRANSPARENTE DEL SISTEMA */}
+              <div className="w-full h-24 flex items-center justify-center mb-2">
                 <Image 
-                  src="/logo.bmp" 
+                  src="/logo.png" 
                   alt="ELINE Logo" 
-                  width={140} 
-                  height={60} 
+                  width={120} 
+                  height={120} 
                   className="object-contain"
                 />
               </div>
@@ -108,7 +107,7 @@ export default function HomeInstitucional() {
 
             <form onSubmit={manejarLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Institucional</label>
                 <input 
                   type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                   className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
@@ -142,7 +141,7 @@ export default function HomeInstitucional() {
               )}
 
               <button type="submit" disabled={cargando} className={`w-full text-white font-bold py-4 rounded-2xl transition-all shadow-xl mt-2 flex justify-center items-center gap-2 ${cargando ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'}`}>
-                {cargando ? 'Cargando...' : 'Entrar al Registro'}
+                {cargando ? 'Cargando Entorno...' : 'Entrar al Registro'}
               </button>
             </form>
           </div>
@@ -187,25 +186,28 @@ export default function HomeInstitucional() {
       </section>
 
       {/* ==========================================
-          FOOTER (Logo ADSP Único)
+          FOOTER (Fondo Claro para que el logo se vea perfecto)
           ========================================== */}
-      <footer className="bg-slate-900 text-slate-400 py-16 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
+      <footer className="bg-white text-slate-500 py-12 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center">
-            {/* Solo el logo, ya que incluye el nombre */}
+            {/* AHORA ESPERA UN PNG TRANSPARENTE Y SOBRE FONDO BLANCO SE VERÁ GENIAL */}
             <Image 
-              src="/logo_adsp.jpg" 
+              src="/logo_adsp.png" 
               alt="ADSP Logo" 
               width={200} 
               height={60} 
-              className="object-contain opacity-80 hover:opacity-100 transition-opacity" 
+              className="object-contain" 
             />
           </div>
           
           <div className="text-center md:text-right">
-            <p className="text-[10px] font-medium opacity-60">
-              &copy; {new Date().getFullYear()} AD Soluciones Profesionales. Santo Domingo, República Dominicana. <br/>
-              Todos los derechos reservados.
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-widest mb-1">
+              Desarrollado por AD Soluciones Profesionales
+            </p>
+            <p className="text-[10px] font-medium opacity-80">
+              &copy; {new Date().getFullYear()} ADSP S.R.L. Santo Domingo, República Dominicana. <br/>
+              ELINE es una marca registrada. Todos los derechos reservados.
             </p>
           </div>
         </div>
