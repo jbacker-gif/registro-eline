@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-slate-100">
       <div className="fixed left-0 top-0 z-50 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
         <div className="flex items-center gap-2">
-          <Image src="/Logo.bmp" alt="ELINE" width={24} height={24} className="rounded-md object-contain" />
+          <Image src="/logo.png" alt="ELINE" width={24} height={24} className="rounded-md object-contain" />
           <span className="text-sm font-semibold tracking-wide text-slate-900">ELINE</span>
         </div>
         <button onClick={() => setMenuAbierto(!menuAbierto)} className="rounded-lg border border-slate-200 p-2 text-slate-600">
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       >
         <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
-          <Image src="/Logo.bmp" alt="Logo" width={34} height={34} className="rounded-lg object-contain" />
+          <Image src="/logo.png" alt="Logo" width={34} height={34} className="rounded-lg object-contain" />
           <div>
             <h2 className="text-base font-semibold text-slate-900">ELINE</h2>
             <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Panel docente</p>
