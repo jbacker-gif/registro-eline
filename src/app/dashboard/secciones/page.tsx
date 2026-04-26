@@ -79,10 +79,11 @@ export default function MisSecciones() {
   }
 
   const eliminarSeccion = async (id: string, nombreCompleto: string) => {
+    if (!userId) return
     if (!window.confirm(`¿Estás seguro de que quieres eliminar la sección ${nombreCompleto}? Se borrarán todos sus estudiantes y notas.`)) return
     
     try {
-      const { error } = await supabase.from('secciones').delete().eq('id', id)
+      const { error } = await supabase.from('secciones').delete().eq('id', id).eq('user_id', userId)
       if (error) throw error
       
       // Si elimina la sección activa, la quitamos de la memoria
@@ -90,7 +91,7 @@ export default function MisSecciones() {
         localStorage.removeItem('ultimaSeccionActiva')
       }
       
-      if (userId) cargarSecciones(userId)
+      cargarSecciones(userId)
     } catch (error) {
       alert('Error al eliminar la sección.')
     }
