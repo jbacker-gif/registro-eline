@@ -102,7 +102,7 @@ export default function MisEstudiantes() {
       }
 
       if (idEditando) {
-        const { error } = await supabase.from('estudiantes').update(datosEstudiante).eq('id', idEditando)
+        const { error } = await supabase.from('estudiantes').update(datosEstudiante).eq('id', idEditando).eq('user_id', userId)
         if (error) throw error
         setMensaje({ texto: '✅ ¡Estudiante actualizado!', tipo: 'exito' })
       } else {
@@ -215,12 +215,13 @@ export default function MisEstudiantes() {
   // ACCIONES: RETIRAR Y ELIMINAR
   // ==========================================
   const cambiarEstadoEstudiante = async (id: string, nombre: string, estadoActual: string) => {
+    if (!userId) return
     const nuevoEstado = estadoActual === 'Activo' ? 'Retirado' : 'Activo'
     if (!window.confirm(`¿Seguro que quieres marcar a ${nombre} como ${nuevoEstado}?`)) return
     
     setMensaje({ texto: 'Actualizando estado...', tipo: 'info' })
     try {
-      const { error } = await supabase.from('estudiantes').update({ estado: nuevoEstado }).eq('id', id)
+      const { error } = await supabase.from('estudiantes').update({ estado: nuevoEstado }).eq('id', id).eq('user_id', userId)
       if (error) throw error
       
       setMensaje({ texto: `✅ Estudiante marcado como ${nuevoEstado}`, tipo: 'exito' })
@@ -232,9 +233,10 @@ export default function MisEstudiantes() {
   }
 
   const eliminarEstudiante = async (id: string, nombre: string) => {
+    if (!userId) return
     if (!window.confirm(`¿Seguro que quieres eliminar definitivamente a ${nombre}?`)) return
     try {
-      const { error } = await supabase.from('estudiantes').delete().eq('id', id)
+      const { error } = await supabase.from('estudiantes').delete().eq('id', id).eq('user_id', userId)
       if (error) throw error
       if (seccionId && userId) cargarEstudiantes(seccionId, userId)
       if (idEditando === id) limpiarFormulario()
