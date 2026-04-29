@@ -16,7 +16,7 @@ export default function Dashboard() {
     { id: 1, nombre: 'Lengua Española', dbNombre: 'Lengua Española', iconBg: 'bg-blue-50', iconColor: 'text-blue-600', icono: '📚' },
     { id: 2, nombre: 'Matemática', dbNombre: 'Matemática', iconBg: 'bg-red-50', iconColor: 'text-red-600', icono: '📐' },
     { id: 3, nombre: 'Ciencias Sociales', dbNombre: 'Ciencias Sociales', iconBg: 'bg-amber-50', iconColor: 'text-amber-600', icono: '🌍' },
-    { id: 4, nombre: 'C. de la Naturaleza', dbNombre: 'Ciencias de la Naturaleza', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', icono: '🔬' },
+    { id: 4, nombre: 'Ciencias de la Naturaleza', dbNombre: 'Ciencias de la Naturaleza', iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', icono: '🔬' },
     { id: 5, nombre: 'Inglés', dbNombre: 'Lenguas Extranjeras (inglés)', iconBg: 'bg-violet-50', iconColor: 'text-violet-600', icono: '💬' },
     { id: 6, nombre: 'Educación Física', dbNombre: 'Educación Física', iconBg: 'bg-orange-50', iconColor: 'text-orange-600', icono: '⚽' },
     { id: 7, nombre: 'Formación Humana', dbNombre: 'Formación Integral Humana y Religiosa', iconBg: 'bg-teal-50', iconColor: 'text-teal-600', icono: '🤝' },
