@@ -6,30 +6,29 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   
   try {
-    // Crear el cliente de Supabase para el middleware
+    // Inicializamos el cliente del middleware de Supabase
     const supabase = createMiddlewareClient({ req, res });
     
-    // Obtener la sesión actual
+    // Obtenemos la sesión actual del usuario
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
-    // Rutas protegidas (por ejemplo, el panel de maestros)
+    // Rutas protegidas (por ejemplo, el panel del maestro)
     if (req.nextUrl.pathname.startsWith('/dashboard')) {
       if (!session) {
-        // Si no hay sesión, redirige al login
+        // Si no hay sesión, redirigimos a la página de inicio de sesión
         return NextResponse.redirect(new URL('/login', req.url));
       }
     }
   } catch (e) {
-    // En caso de error, permitir que el usuario intente iniciar sesión
-    console.error('Error en el middleware:', e);
+    console.error('Error al ejecutar el middleware de autenticación:', e);
   }
 
   return res;
 }
 
-// Configuración de las rutas donde actuará el middleware
+// Configuración de las rutas que interceptará el middleware
 export const config = {
   matcher: ['/dashboard/:path*', '/teacher/:path*'],
 };
