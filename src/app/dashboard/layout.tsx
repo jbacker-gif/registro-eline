@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Image from 'next/image'
@@ -24,6 +24,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [menuAbierto, setMenuAbierto] = useState(false)
+  const [validandoSesion, setValidandoSesion] = useState(true)
+
+  useEffect(() => {
+    const validarSesion = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.replace('/')
+        return
+      }
+      setValidandoSesion(false)
+    }
+
+    validarSesion()
+  }, [router])
 
   const cerrarSesion = async () => {
     await supabase.auth.signOut()
@@ -48,6 +62,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push(ruta)
     }
     setMenuAbierto(false)
+  }
+
+  if (validandoSesion) {
+    return <div className="p-8 text-center text-slate-500">Verificando sesión...</div>
   }
 
   return (

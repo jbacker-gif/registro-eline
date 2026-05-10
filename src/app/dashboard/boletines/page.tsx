@@ -9,12 +9,17 @@ export default function GeneradorBoletines() {
   const [boletin, setBoletin] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [cargandoBoletin, setCargandoBoletin] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   // 1. Cargar la lista de estudiantes para el selector
   useEffect(() => {
     const cargarEstudiantes = async () => {
       try {
-        const { data, error } = await supabase.from('estudiantes').select('*').order('numero_orden', { ascending: true })
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        setUserId(session.user.id)
+
+        const { data, error } = await supabase.from('estudiantes').select('*').eq('user_id', session.user.id).order('numero_orden', { ascending: true })
         if (error) throw error
         setEstudiantes(data || [])
       } catch (error) {
@@ -33,9 +38,10 @@ export default function GeneradorBoletines() {
       return
     }
     generarBoletin(estudianteSeleccionado)
-  }, [estudianteSeleccionado])
+  }, [estudianteSeleccionado, userId])
 
   const generarBoletin = async (idEstudiante: string) => {
+    if (!userId) return
     setCargandoBoletin(true)
     try {
       // Traemos todas las materias
@@ -47,6 +53,7 @@ export default function GeneradorBoletines() {
         .from('calificaciones')
         .select('*')
         .eq('estudiante_id', idEstudiante)
+        .eq('user_id', userId)
       if (errNotas) throw errNotas
 
       // Armamos la tabla final cruzando materias y notas
