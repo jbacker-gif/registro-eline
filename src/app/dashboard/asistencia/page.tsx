@@ -37,10 +37,14 @@ export default function Asistencia() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       setUserId(session.user.id)
-      const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).single()
+      const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).eq('user_id', session.user.id).single()
+      if (!secData) {
+        setMensaje({ texto: 'No tienes permisos para acceder a esta sección.', tipo: 'error' })
+        return
+      }
       setInfoSeccion(secData)
 
-      const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).order('numero_orden', { ascending: true })
+      const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).eq('user_id', session.user.id).order('numero_orden', { ascending: true })
       setEstudiantes(listaEst || [])
 
       const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
@@ -48,7 +52,7 @@ export default function Asistencia() {
       const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${ultimoDia}`
 
       // 1. Cargar Asistencias
-      const { data: asistBD } = await supabase.from('asistencia').select('*').eq('seccion_id', secId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
+      const { data: asistBD } = await supabase.from('asistencia').select('*').eq('seccion_id', secId).eq('user_id', session.user.id).gte('fecha', fechaInicio).lte('fecha', fechaFin)
       const mapaAsistencia: Record<string, string> = {}
       asistBD?.forEach(reg => { mapaAsistencia[`${reg.estudiante_id}_${reg.fecha}`] = reg.estado })
       setAsistencia(mapaAsistencia)
@@ -139,7 +143,7 @@ export default function Asistencia() {
       const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
       const fechaFin = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-${diasDelMes}`
 
-      await supabase.from('asistencia').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
+      await supabase.from('asistencia').delete().eq('seccion_id', seccionId).eq('user_id', userId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
       await supabase.from('dias_bloqueados').delete().eq('seccion_id', seccionId).gte('fecha', fechaInicio).lte('fecha', fechaFin)
 
       const nuevosRegistros: any[] = []

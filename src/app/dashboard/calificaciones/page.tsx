@@ -39,14 +39,18 @@ export default function MatrizCalificaciones() {
       if (!session) return
       setUserId(session.user.id)
 
-      const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).single()
+      const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).eq('user_id', session.user.id).single()
+      if (!secData) {
+        setMensaje({ texto: 'No tienes permisos para acceder a esta sección.', tipo: 'error' })
+        return
+      }
       setInfoSeccion(secData)
 
       const { data: asigData } = await supabase.from('asignaturas').select('id').eq('nombre', matNombre).single()
       if (!asigData) return
 
-      const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).order('numero_orden', { ascending: true })
-      const { data: notasBD } = await supabase.from('calificaciones').select('*').eq('seccion_id', secId).eq('asignatura_id', asigData.id)
+      const { data: listaEst } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).eq('user_id', session.user.id).order('numero_orden', { ascending: true })
+      const { data: notasBD } = await supabase.from('calificaciones').select('*').eq('seccion_id', secId).eq('asignatura_id', asigData.id).eq('user_id', session.user.id)
 
       const datosCompletos = listaEst?.map(est => {
         const notasEst = notasBD?.filter(n => n.estudiante_id === est.id) || []
