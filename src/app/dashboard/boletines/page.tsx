@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
@@ -387,185 +387,37 @@ export default function GeneradorBoletines() {
         <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
         <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
-          <section className="boletin-page boletin-cover bg-white p-0 shadow-sm print:shadow-none">
-            <div className="boletin-cover-shell grid h-full grid-cols-[1.06fr_1fr] gap-10">
-              <div className="boletin-cover-left flex h-full flex-col">
-                <h2 className="boletin-fixed-title text-center text-[11px] font-black uppercase tracking-wide">Firma del padre, madre o tutor</h2>
-                <div className="mt-4 space-y-4 text-[10px]">
-                  {[
-                    'Ago-Sept-Oct',
-                    'Nov-Dic-Ene',
-                    'Feb-Mar',
-                    'Abr-May-Jun',
-                  ].map(periodo => (
-                    <div key={periodo} className="grid grid-cols-[112px_1fr] items-end gap-2">
-                      <span className="font-semibold">{periodo}</span>
-                      <span className="h-4 border-b border-[#172554]">&nbsp;</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-8">
-                  <p className="max-w-[420px] text-[10px] font-semibold leading-snug text-[#172554]">
-                    Informacion sobre el nivel de avance de los aprendizajes y los apoyos que necesita para la mejora de sus aprendizajes.
-                  </p>
-                  <div className="mt-2 space-y-2.5">
-                    {Array.from({ length: 14 }).map((_, index) => (
-                      <div key={index} className="h-3.5 border-b border-[#64748b]">&nbsp;</div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-auto grid grid-cols-2 gap-16 text-center text-[10px] font-semibold">
-                  <div>
-                    <div className="h-5 border-b border-[#172554]">&nbsp;</div>
-                    <p className="mt-2 text-[#172554]">Maestro(a) Encargado(a) del grado</p>
-                  </div>
-                  <div>
-                    <div className="h-5 border-b border-[#172554]">&nbsp;</div>
-                    <p className="mt-2 text-[#172554]">Director(a) del Centro Educativo</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="boletin-cover-right flex h-full flex-col">
-                <div className="grid grid-cols-[82px_1fr] items-start gap-3">
-                  <img
-                    src="/Image_0.svg"
-                    alt="Ministerio de Educacion"
-                    className="official-ministry-logo"
-                  />
-                  <div className="text-right text-[9.5px] font-bold leading-snug text-[#1e3a8a]">
-                    <p>Republica Dominicana</p>
-                    <p>Ministerio de Educacion</p>
-                    <p className="mt-1 font-semibold text-[#334155]">Viceministerio de Servicios Tecnicos y Pedagogicos</p>
-                    <p className="font-semibold text-[#334155]">Direccion General de Educacion Primaria</p>
-                  </div>
-                </div>
-
-                <div className="boletin-title-block mt-9 text-center">
-                  <h2 className="text-[20px] font-black uppercase tracking-[0.14em] text-[#1e3a8a]">Informe de aprendizaje</h2>
-                  <div className="mx-auto mt-2 h-1 w-44 rounded-full bg-[linear-gradient(90deg,#1d4ed8,#facc15,#16a34a,#dc2626)]" />
-                  <h3 className="mt-10 text-[18px] font-black uppercase tracking-wide text-[#111827]">{gradoTitulo}</h3>
-                  <p className="mt-1 text-[12px] font-black uppercase tracking-wide text-[#1e3a8a]">Nivel Primario</p>
-                </div>
-
-                <div className="mt-7 space-y-2.5 text-[10px]">
-                  <CoverField label="Ano escolar" value={anoEscolar.texto} />
-                  <div className="grid grid-cols-2 gap-5">
-                    <CoverField label="Seccion" value={infoSeccion?.identificador} />
-                    <CoverField label="Numero de orden" value={datosEstudiante.numero_orden} />
-                  </div>
-                  <CoverField label="Nombre (s)" value={datosEstudiante.nombres} />
-                  <CoverField label="Apellido (s)" value={datosEstudiante.apellidos} />
-                  <CoverField label="ID estudiante (Numero de identificacion SIGERD)" value={datosEstudiante.sigerd_id} />
-                  <CoverField label="Docente" value={infoPerfil?.nombre_completo || infoPerfil?.full_name} />
-                  <CoverField label="Centro educativo" value={infoColegio?.nombre} />
-                  <CoverField label="Codigo del centro" value={infoColegio?.codigo_centro} />
-                  <CoverField label="Tanda" value={infoSeccion?.tanda || infoColegio?.tanda} />
-                  <CoverField label="Telefono del centro" value={infoColegio?.telefono_centro} />
-                  <CoverField label="Distrito educativo" value={infoColegio?.distrito_educativo} />
-                  <CoverField label="Regional de educacion" value={infoColegio?.regional_educacion} />
-                  <CoverField label="Provincia" value={infoColegio?.provincia} />
-                  <CoverField label="Municipio" value={infoColegio?.municipio} />
-                </div>
-              </div>
-            </div>
+          <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
+            <TemplateText left={70.3} top={50.2} width={18}>{anoEscolar.inicio}</TemplateText>
+            <TemplateText left={80.7} top={50.2} width={18}>{anoEscolar.fin}</TemplateText>
+            <TemplateText left={59.8} top={54.1} width={17}>{infoSeccion?.identificador}</TemplateText>
+            <TemplateText left={83.5} top={54.1} width={14}>{datosEstudiante.numero_orden}</TemplateText>
+            <TemplateText left={61.6} top={57.45} width={35}>{datosEstudiante.nombres}</TemplateText>
+            <TemplateText left={61.6} top={60.55} width={35}>{datosEstudiante.apellidos}</TemplateText>
+            <TemplateText left={78.6} top={63.6} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
+            <TemplateText left={59.5} top={66.75} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
+            <TemplateText left={65.2} top={69.9} width={31}>{infoColegio?.nombre}</TemplateText>
+            <TemplateText left={65.2} top={73.2} width={31}>{infoColegio?.codigo_centro}</TemplateText>
+            <TemplateText left={58.4} top={76.25} width={38}>{infoSeccion?.tanda || infoColegio?.tanda}</TemplateText>
+            <TemplateText left={66.8} top={79.55} width={29}>{infoColegio?.telefono_centro}</TemplateText>
+            <TemplateText left={67.1} top={82.85} width={29}>{infoColegio?.distrito_educativo}</TemplateText>
+            <TemplateText left={69.4} top={86.05} width={27}>{infoColegio?.regional_educacion}</TemplateText>
+            <TemplateText left={62.2} top={89.3} width={34}>{infoColegio?.provincia}</TemplateText>
+            <TemplateText left={61.5} top={92.55} width={35}>{infoColegio?.municipio}</TemplateText>
           </section>
 
-          <section className="boletin-page bg-white p-6 shadow-sm print:shadow-none">
-            <h2 className="mb-4 text-center text-base font-black uppercase">Desempeno individual del/la estudiante</h2>
-
-            <table className="w-full border-collapse text-[10px]">
-              <thead>
-                <tr>
-                  <th rowSpan={2} className="w-[22%] border border-slate-700 p-1 text-left align-bottom uppercase">Competencias fundamentales</th>
-                  <th colSpan={4} className="border border-slate-700 p-1">Comunicativa</th>
-                  <th colSpan={4} className="border border-slate-700 p-1">Pensamiento Logico, Creativo y Critico; Resolucion de Problemas; Cientifica y Tecnologica</th>
-                  <th colSpan={4} className="border border-slate-700 p-1">Etica y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud</th>
-                  <th colSpan={3} className="border border-slate-700 p-1">Calificacion final por competencia</th>
-                </tr>
-                <tr>
-                  {[...periodos, ...periodos, ...periodos, ...competencias].map((item, index) => (
-                    <th key={`${item}-${index}`} className="border border-slate-700 p-1 text-center">{item}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filasBoletin.map(fila => (
-                  <tr key={fila.id}>
-                    <td className="border border-slate-700 p-1.5 font-semibold">{fila.nombre}</td>
-                    {competencias.map(competencia =>
-                      periodos.map(periodo => (
-                        <td key={`${fila.id}-${competencia}-${periodo}`} className="border border-slate-700 p-1 text-center">
-                          {celda(fila.notas[competencia][periodo])}
-                        </td>
-                      ))
-                    )}
-                    {competencias.map(competencia => (
-                      <td key={`${fila.id}-${competencia}-final`} className="border border-slate-700 p-1 text-center font-bold">
-                        {celda(fila.finales[competencia])}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mt-6 grid grid-cols-[1.1fr_1.5fr] gap-6">
-              <div>
-                <h3 className="mb-2 text-center text-xs font-bold">Resumen de asistencia del/la estudiante</h3>
-                <table className="w-full border-collapse text-[10px]">
-                  <thead>
-                    <tr>
-                      <th className="border border-slate-700 p-1">Periodos</th>
-                      <th className="border border-slate-700 p-1">Asistencia</th>
-                      <th className="border border-slate-700 p-1">Ausencia</th>
-                      <th className="border border-slate-700 p-1">% Anual Asistencia</th>
-                      <th className="border border-slate-700 p-1">% Anual Ausencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {periodos.map((periodo, index) => (
-                      <tr key={periodo}>
-                        <td className="border border-slate-700 p-1 text-center">{periodo}</td>
-                        <td className="border border-slate-700 p-1 text-center">{asistenciaResumen[periodo].asistencia || ''}</td>
-                        <td className="border border-slate-700 p-1 text-center">{asistenciaResumen[periodo].ausencia || ''}</td>
-                        <td className="border border-slate-700 p-1 text-center">{index === 0 && totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</td>
-                        <td className="border border-slate-700 p-1 text-center">{index === 0 && totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section className="boletin-page official-template-page official-grades-page bg-white shadow-sm print:shadow-none">
+            {filasBoletin.map((fila, rowIndex) => (
+              <TemplateGradeRow key={fila.id} fila={fila} rowIndex={rowIndex} />
+            ))}
+            {periodos.map((periodo, index) => (
+              <div key={periodo}>
+                <TemplateGrade left={12.5} top={87.9 + index * 3.15}>{asistenciaResumen[periodo].asistencia || ''}</TemplateGrade>
+                <TemplateGrade left={18.9} top={87.9 + index * 3.15}>{asistenciaResumen[periodo].ausencia || ''}</TemplateGrade>
               </div>
-
-              <div className="grid grid-cols-[0.8fr_1.2fr_2fr] gap-3 text-[10px]">
-                <div>
-                  <h3 className="font-bold">Leyenda</h3>
-                  <p>(P1) Periodo 1</p>
-                  <p>(P2) Periodo 2</p>
-                  <p>(P3) Periodo 3</p>
-                  <p>(P4) Periodo 4</p>
-                  <p className="mt-2">(C1) Competencia 1</p>
-                  <p>(C2) Competencia 2</p>
-                  <p>(C3) Competencia 3</p>
-                </div>
-                <div>
-                  <h3 className="font-bold">Escala numerica</h3>
-                  <p>89-100</p>
-                  <p className="mt-4">77-88</p>
-                  <p className="mt-4">65-76</p>
-                  <p className="mt-4">Menos de 65</p>
-                </div>
-                <div>
-                  <h3 className="font-bold">Descripcion</h3>
-                  <p>Evidencia que el estudiante ha alcanzado un desempeno destacado con relacion a los aspectos evaluados.</p>
-                  <p className="mt-2">Evidencia que el estudiante ha logrado, en general, los aprendizajes esperados.</p>
-                  <p className="mt-2">Evidencia que el estudiante aun se encuentra en proceso, mostrando un logro muy basico.</p>
-                  <p className="mt-2">Evidencia que el estudiante ha alcanzado un desempeno insuficiente.</p>
-                </div>
-              </div>
-            </div>
+            ))}
+            <TemplateGrade left={25.2} top={87.9}>{totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
+            <TemplateGrade left={31.4} top={87.9}>{totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
           </section>
         </div>
       ) : null}
@@ -577,61 +429,53 @@ export default function GeneradorBoletines() {
           -webkit-print-color-adjust: exact;
         }
 
-        .boletin-cover {
+        .official-template-page {
           position: relative;
-          min-height: 720px;
+          aspect-ratio: 2048 / 1581;
+          width: 100%;
           overflow: hidden;
-          border: 1px solid #dbeafe;
-          background:
-            linear-gradient(90deg, #1d4ed8 0 10px, #facc15 10px 18px, #16a34a 18px 26px, #dc2626 26px 34px, transparent 34px),
-            linear-gradient(180deg, rgba(219, 234, 254, 0.65), rgba(255, 255, 255, 0) 30%),
-            #ffffff;
-        }
-
-        .boletin-cover::after {
-          content: "";
-          position: absolute;
-          inset: auto -28px -42px auto;
-          width: 290px;
-          height: 190px;
-          opacity: 0.08;
-          background-image: url("/Image_0.svg");
-          background-repeat: no-repeat;
           background-position: center;
-          background-size: contain;
-          pointer-events: none;
+          background-repeat: no-repeat;
+          background-size: 100% 100%;
         }
 
-        .boletin-cover-shell {
-          position: relative;
+        .official-cover-page {
+          background-image: url("/boletines/informe-1ro-pagina-1.jpg");
+        }
+
+        .official-grades-page {
+          background-image: url("/boletines/informe-1ro-pagina-2.jpg");
+        }
+
+        .template-text,
+        .template-grade {
+          position: absolute;
           z-index: 1;
-          padding: 34px 38px 30px 62px;
+          color: #111827;
+          font-family: Arial, Helvetica, sans-serif;
+          line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
-        .boletin-cover-left {
-          border-right: 2px solid #bfdbfe;
-          padding-right: 34px;
+        .template-text {
+          font-size: clamp(7px, 1.08vw, 16px);
+          transform: translateY(-50%);
         }
 
-        .boletin-cover-right {
-          padding-left: 2px;
-        }
-
-        .boletin-fixed-title {
-          color: #1e3a8a;
-        }
-
-        .official-ministry-logo {
-          display: block;
-          width: 82px;
-          height: 72px;
-          object-fit: contain;
+        .template-grade {
+          min-width: 2.8%;
+          text-align: center;
+          font-size: clamp(7px, 1vw, 15px);
+          font-weight: 700;
+          transform: translate(-50%, -50%);
         }
 
         @media print {
           @page {
             size: letter landscape;
-            margin: 0.35in;
+            margin: 0;
           }
 
           body {
@@ -639,18 +483,15 @@ export default function GeneradorBoletines() {
           }
 
           .boletin-page {
-            min-height: calc(8.5in - 0.7in);
+            width: 11in;
+            height: 8.5in;
+            min-height: 8.5in;
             page-break-after: always;
             box-shadow: none !important;
           }
 
-          .boletin-cover {
-            height: calc(8.5in - 0.7in);
-            border: 0;
-          }
-
-          .boletin-cover-shell {
-            padding: 0.28in 0.32in 0.24in 0.52in;
+          .official-template-page {
+            aspect-ratio: auto;
           }
 
           .boletin-page:last-child {
@@ -662,20 +503,60 @@ export default function GeneradorBoletines() {
   )
 }
 
-function Field({ label, value }: { label: string; value?: unknown }) {
+const gradeRowTops = [19.35, 23.8, 28.25, 32.7, 37.2, 41.65, 46.1]
+const gradeColumnLefts = [26.9, 31.7, 36.5, 41.3, 46.1, 50.9, 55.6, 60.4, 65.2, 70, 74.8, 79.5, 83.6, 87.5, 91.6]
+
+function TemplateText({
+  children,
+  left,
+  top,
+  width,
+}: {
+  children: ReactNode
+  left: number
+  top: number
+  width: number
+}) {
   return (
-    <div className="grid grid-cols-[150px_1fr] items-end gap-2">
-      <span className="font-semibold">{label}:</span>
-      <span className="min-h-5 border-b border-slate-700 px-1">{celda(value)}</span>
-    </div>
+    <span className="template-text" style={{ left: `${left}%`, top: `${top}%`, width: `${width}%` }}>
+      {celda(children)}
+    </span>
   )
 }
 
-function CoverField({ label, value }: { label: string; value?: unknown }) {
+function TemplateGrade({
+  children,
+  left,
+  top,
+}: {
+  children: ReactNode
+  left: number
+  top: number
+}) {
   return (
-    <div className="grid grid-cols-[150px_1fr] items-end gap-1.5">
-      <span className="whitespace-normal font-semibold leading-tight">{label}:</span>
-      <span className="min-h-4 border-b border-slate-800 px-1 leading-tight">{celda(value)}</span>
-    </div>
+    <span className="template-grade" style={{ left: `${left}%`, top: `${top}%` }}>
+      {celda(children)}
+    </span>
+  )
+}
+
+function TemplateGradeRow({ fila, rowIndex }: { fila: FilaBoletin; rowIndex: number }) {
+  const valores = [
+    ...competencias.flatMap(competencia => periodos.map(periodo => fila.notas[competencia][periodo])),
+    ...competencias.map(competencia => fila.finales[competencia]),
+  ]
+
+  return (
+    <>
+      {valores.map((valor, columnIndex) => (
+        <TemplateGrade
+          key={`${fila.id}-${columnIndex}`}
+          left={gradeColumnLefts[columnIndex]}
+          top={gradeRowTops[rowIndex]}
+        >
+          {valor}
+        </TemplateGrade>
+      ))}
+    </>
   )
 }
