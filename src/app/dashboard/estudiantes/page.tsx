@@ -23,6 +23,7 @@ export default function MisEstudiantes() {
   const [nuevoNumero, setNuevoNumero] = useState('')
   const [nombres, setNombres] = useState('')
   const [apellidos, setApellidos] = useState('')
+  const [sigerdId, setSigerdId] = useState('')
   const [sexo, setSexo] = useState('')
   const [nacionalidad, setNacionalidad] = useState('Dominicana')
   const [fechaNacimiento, setFechaNacimiento] = useState('')
@@ -92,6 +93,7 @@ export default function MisEstudiantes() {
         nombre_completo: nombreCompletoGenerado,
         nombres: nombres,
         apellidos: apellidos,
+        sigerd_id: sigerdId || null,
         sexo: sexo,
         nacionalidad: nacionalidad,
         fecha_nacimiento: fechaNacimiento || null,
@@ -127,6 +129,7 @@ export default function MisEstudiantes() {
     setNuevoNumero(est.numero_orden.toString())
     setNombres(est.nombres || '')
     setApellidos(est.apellidos || '')
+    setSigerdId(est.sigerd_id || '')
     setSexo(est.sexo || '')
     setNacionalidad(est.nacionalidad || 'Dominicana')
     setFechaNacimiento(est.fecha_nacimiento || '')
@@ -141,7 +144,7 @@ export default function MisEstudiantes() {
 
   const limpiarFormulario = () => {
     setIdEditando(null)
-    setNombres(''); setApellidos(''); setSexo(''); setNacionalidad('Dominicana'); setFechaNacimiento(''); setTutor(''); setTelefono('');
+    setNombres(''); setApellidos(''); setSigerdId(''); setSexo(''); setNacionalidad('Dominicana'); setFechaNacimiento(''); setTutor(''); setTelefono('');
   }
 
   // ==========================================
@@ -167,6 +170,7 @@ export default function MisEstudiantes() {
           const ape = valores[2]?.trim() || ''
           const sex = valores[3]?.trim()?.toUpperCase() || ''
           const nac = valores[4]?.trim() || 'Dominicana'
+          const sigerd = valores[8]?.trim() || null
           
           const dia = valores[5]?.trim().padStart(2, '0')
           const mes = valores[6]?.trim().padStart(2, '0')
@@ -182,6 +186,7 @@ export default function MisEstudiantes() {
             nombres: nom,
             apellidos: ape,
             nombre_completo: `${ape}, ${nom}`,
+            sigerd_id: sigerd,
             sexo: sex,
             nacionalidad: nac,
             fecha_nacimiento: fechaSQL,
@@ -323,6 +328,11 @@ export default function MisEstudiantes() {
                   <input type="text" required value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700"/>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ID SIGERD</label>
+                  <input type="text" value={sigerdId} onChange={(e) => setSigerdId(e.target.value)} placeholder="Numero de identificacion SIGERD" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700"/>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-truncate">F. Nacimiento</label>
@@ -360,6 +370,7 @@ export default function MisEstudiantes() {
                     <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-400 text-[11px] uppercase tracking-widest">
                       <th className="p-4 font-bold text-center w-12">No.</th>
                       <th className="p-4 font-bold">Apellidos, Nombres</th>
+                      <th className="p-4 font-bold">SIGERD</th>
                       <th className="p-4 font-bold text-center">Sexo</th>
                       <th className="p-4 font-bold">Nacimiento</th>
                       <th className="p-4 font-bold text-center">Estado</th>
@@ -369,7 +380,7 @@ export default function MisEstudiantes() {
                   <tbody className="divide-y divide-slate-100">
                     {estudiantes.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-12 text-center text-slate-400 font-medium">
+                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
                           No hay estudiantes registrados.<br/>
                           <span className="text-sm font-normal">Agrega uno o importa tu archivo CSV.</span>
                         </td>
@@ -381,6 +392,9 @@ export default function MisEstudiantes() {
                           <td className="p-4 font-bold text-slate-800 flex flex-col">
                             {est.nombre_completo}
                             <span className="text-[10px] text-slate-400 font-normal uppercase mt-0.5 truncate max-w-[200px]">Tutor: {est.nombre_tutor || 'No registrado'}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-mono text-xs text-slate-600">{est.sigerd_id || '-'}</span>
                           </td>
                           <td className="p-4 text-center">
                             {est.sexo === 'M' ? (
