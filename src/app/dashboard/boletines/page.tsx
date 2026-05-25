@@ -71,19 +71,47 @@ type FilaBoletin = {
 const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
 const competencias: Competencia[] = ['C1', 'C2', 'C3']
 
-const ordenAsignaturas = [
-  'Lengua Espanola',
-  'Lengua Española',
-  'Matematica',
-  'Matemática',
-  'Ciencias Sociales',
-  'Ciencias de la Naturaleza',
-  'Educacion Fisica',
-  'Educación Física',
-  'Formacion Integral Humana y Religiosa',
-  'Formación Integral Humana y Religiosa',
-  'Educacion Artistica',
-  'Educación Artística',
+const asignaturasPrimerGrado = [
+  {
+    key: 'lengua-espanola',
+    nombre: 'Lengua Espanola',
+    aliases: ['Lengua Espanola', 'Lengua Española'],
+  },
+  {
+    key: 'matematica',
+    nombre: 'Matematica',
+    aliases: ['Matematica', 'Matemática'],
+  },
+  {
+    key: 'ciencias-sociales',
+    nombre: 'Ciencias Sociales',
+    aliases: ['Ciencias Sociales'],
+  },
+  {
+    key: 'ciencias-naturaleza',
+    nombre: 'Ciencias de la Naturaleza',
+    aliases: ['Ciencias de la Naturaleza', 'Ciencias Naturales'],
+  },
+  {
+    key: 'educacion-fisica',
+    nombre: 'Educacion Fisica',
+    aliases: ['Educacion Fisica', 'Educación Física'],
+  },
+  {
+    key: 'formacion-integral',
+    nombre: 'Formacion Integral, Humana y Religiosa',
+    aliases: [
+      'Formacion Integral Humana y Religiosa',
+      'Formación Integral Humana y Religiosa',
+      'Formacion Integral, Humana y Religiosa',
+      'Formación Integral, Humana y Religiosa',
+    ],
+  },
+  {
+    key: 'educacion-artistica',
+    nombre: 'Educacion Artistica',
+    aliases: ['Educacion Artistica', 'Educación Artística'],
+  },
 ]
 
 const mesesPorPeriodo: Record<Periodo, number[]> = {
@@ -231,15 +259,12 @@ export default function GeneradorBoletines() {
         .eq('user_id', userId)
       if (errNotas) throw errNotas
 
-      const materiasOrdenadas = ((asignaturas || []) as Asignatura[])
-        .filter(materia => ordenAsignaturas.some(nombre => normalizar(nombre) === normalizar(materia.nombre)))
-        .sort((a, b) => {
-          const ia = ordenAsignaturas.findIndex(nombre => normalizar(nombre) === normalizar(a.nombre))
-          const ib = ordenAsignaturas.findIndex(nombre => normalizar(nombre) === normalizar(b.nombre))
-          return ia - ib
-        })
+      const materias = (asignaturas || []) as Asignatura[]
 
-      const filas = materiasOrdenadas.map(materia => {
+      const filas = asignaturasPrimerGrado.map(asignaturaOficial => {
+        const materia = materias.find(item =>
+          asignaturaOficial.aliases.some(alias => normalizar(alias) === normalizar(item.nombre))
+        )
         const porCompetencia: Record<Competencia, Record<Periodo, number | null>> = {
           C1: { P1: null, P2: null, P3: null, P4: null },
           C2: { P1: null, P2: null, P3: null, P4: null },
@@ -249,6 +274,7 @@ export default function GeneradorBoletines() {
         competencias.forEach(competencia => {
           periodos.forEach(periodo => {
             const nota = (notas as Calificacion[] | null)?.find(n =>
+              materia &&
               n.asignatura_id === materia.id &&
               n.periodo === periodo &&
               n.competencia === competencia
@@ -269,7 +295,12 @@ export default function GeneradorBoletines() {
           return acc
         }, {} as Record<Competencia, number | null>)
 
-        return { id: materia.id, nombre: materia.nombre, notas: porCompetencia, finales }
+        return {
+          id: materia?.id || asignaturaOficial.key,
+          nombre: asignaturaOficial.nombre,
+          notas: porCompetencia,
+          finales,
+        }
       })
 
       const seccionParaAsistencia = seccion || infoSeccion
@@ -344,6 +375,12 @@ export default function GeneradorBoletines() {
             </button>
           )}
         </div>
+
+        {estudianteSeleccionado && infoSeccion?.grado && infoSeccion.grado !== '1ro' && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            Este formato esta optimizado para 1er grado. Para {infoSeccion.grado} lo usaremos solo como vista preliminar.
+          </div>
+        )}
       </div>
 
       {cargandoBoletin ? (
@@ -429,7 +466,7 @@ export default function GeneradorBoletines() {
             <table className="w-full border-collapse text-[10px]">
               <thead>
                 <tr>
-                  <th rowSpan={3} className="w-[22%] border border-slate-700 p-1 text-left align-bottom uppercase">Competencias fundamentales</th>
+                  <th rowSpan={2} className="w-[22%] border border-slate-700 p-1 text-left align-bottom uppercase">Competencias fundamentales</th>
                   <th colSpan={4} className="border border-slate-700 p-1">Comunicativa</th>
                   <th colSpan={4} className="border border-slate-700 p-1">Pensamiento Logico, Creativo y Critico; Resolucion de Problemas; Cientifica y Tecnologica</th>
                   <th colSpan={4} className="border border-slate-700 p-1">Etica y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud</th>
