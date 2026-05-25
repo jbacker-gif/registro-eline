@@ -387,10 +387,10 @@ export default function GeneradorBoletines() {
         <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
         <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
-          <section className="boletin-page boletin-cover bg-white p-6 shadow-sm print:shadow-none">
-            <div className="grid h-full grid-cols-[1.08fr_1fr] gap-12">
-              <div className="flex h-full flex-col">
-                <h2 className="text-center text-[11px] font-bold uppercase tracking-wide">Firma del padre, madre o tutor</h2>
+          <section className="boletin-page boletin-cover bg-white p-0 shadow-sm print:shadow-none">
+            <div className="boletin-cover-shell grid h-full grid-cols-[1.06fr_1fr] gap-10">
+              <div className="boletin-cover-left flex h-full flex-col">
+                <h2 className="boletin-fixed-title text-center text-[11px] font-black uppercase tracking-wide">Firma del padre, madre o tutor</h2>
                 <div className="mt-4 space-y-4 text-[10px]">
                   {[
                     'Ago-Sept-Oct',
@@ -399,48 +399,58 @@ export default function GeneradorBoletines() {
                     'Abr-May-Jun',
                   ].map(periodo => (
                     <div key={periodo} className="grid grid-cols-[112px_1fr] items-end gap-2">
-                      <span>{periodo}</span>
-                      <span className="h-4 border-b border-slate-800">&nbsp;</span>
+                      <span className="font-semibold">{periodo}</span>
+                      <span className="h-4 border-b border-[#172554]">&nbsp;</span>
                     </div>
                   ))}
                 </div>
 
                 <div className="mt-8">
-                  <p className="max-w-[420px] text-[10px] leading-snug">
+                  <p className="max-w-[420px] text-[10px] font-semibold leading-snug text-[#172554]">
                     Informacion sobre el nivel de avance de los aprendizajes y los apoyos que necesita para la mejora de sus aprendizajes.
                   </p>
                   <div className="mt-2 space-y-2.5">
                     {Array.from({ length: 14 }).map((_, index) => (
-                      <div key={index} className="h-3.5 border-b border-slate-500">&nbsp;</div>
+                      <div key={index} className="h-3.5 border-b border-[#64748b]">&nbsp;</div>
                     ))}
                   </div>
                 </div>
 
                 <div className="mt-auto grid grid-cols-2 gap-16 text-center text-[10px] font-semibold">
                   <div>
-                    <div className="h-5 border-b border-slate-800">&nbsp;</div>
-                    <p className="mt-2">Maestro(a) Encargado(a) del grado</p>
+                    <div className="h-5 border-b border-[#172554]">&nbsp;</div>
+                    <p className="mt-2 text-[#172554]">Maestro(a) Encargado(a) del grado</p>
                   </div>
                   <div>
-                    <div className="h-5 border-b border-slate-800">&nbsp;</div>
-                    <p className="mt-2">Director(a) del Centro Educativo</p>
+                    <div className="h-5 border-b border-[#172554]">&nbsp;</div>
+                    <p className="mt-2 text-[#172554]">Director(a) del Centro Educativo</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex h-full flex-col">
-                <div className="text-right text-[10px] font-semibold leading-snug">
-                  <p>Viceministerio de Servicios Tecnicos y Pedagogicos</p>
-                  <p>Direccion General de Educacion Primaria</p>
+              <div className="boletin-cover-right flex h-full flex-col">
+                <div className="grid grid-cols-[82px_1fr] items-start gap-3">
+                  <img
+                    src="/Image_0.svg"
+                    alt="Ministerio de Educacion"
+                    className="official-ministry-logo"
+                  />
+                  <div className="text-right text-[9.5px] font-bold leading-snug text-[#1e3a8a]">
+                    <p>Republica Dominicana</p>
+                    <p>Ministerio de Educacion</p>
+                    <p className="mt-1 font-semibold text-[#334155]">Viceministerio de Servicios Tecnicos y Pedagogicos</p>
+                    <p className="font-semibold text-[#334155]">Direccion General de Educacion Primaria</p>
+                  </div>
                 </div>
 
-                <div className="mt-10 text-center">
-                  <h2 className="text-[18px] font-black uppercase tracking-[0.18em]">Informe de aprendizaje</h2>
-                  <h3 className="mt-11 text-[17px] font-black uppercase tracking-wide">{gradoTitulo}</h3>
-                  <p className="mt-1 text-[12px] font-bold uppercase tracking-wide">Nivel Primario</p>
+                <div className="boletin-title-block mt-9 text-center">
+                  <h2 className="text-[20px] font-black uppercase tracking-[0.14em] text-[#1e3a8a]">Informe de aprendizaje</h2>
+                  <div className="mx-auto mt-2 h-1 w-44 rounded-full bg-[linear-gradient(90deg,#1d4ed8,#facc15,#16a34a,#dc2626)]" />
+                  <h3 className="mt-10 text-[18px] font-black uppercase tracking-wide text-[#111827]">{gradoTitulo}</h3>
+                  <p className="mt-1 text-[12px] font-black uppercase tracking-wide text-[#1e3a8a]">Nivel Primario</p>
                 </div>
 
-                <div className="mt-8 space-y-2.5 text-[10px]">
+                <div className="mt-7 space-y-2.5 text-[10px]">
                   <CoverField label="Ano escolar" value={anoEscolar.texto} />
                   <div className="grid grid-cols-2 gap-5">
                     <CoverField label="Seccion" value={infoSeccion?.identificador} />
@@ -561,6 +571,63 @@ export default function GeneradorBoletines() {
       ) : null}
 
       <style jsx global>{`
+        .boletin-page,
+        .boletin-page * {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+
+        .boletin-cover {
+          position: relative;
+          min-height: 720px;
+          overflow: hidden;
+          border: 1px solid #dbeafe;
+          background:
+            linear-gradient(90deg, #1d4ed8 0 10px, #facc15 10px 18px, #16a34a 18px 26px, #dc2626 26px 34px, transparent 34px),
+            linear-gradient(180deg, rgba(219, 234, 254, 0.65), rgba(255, 255, 255, 0) 30%),
+            #ffffff;
+        }
+
+        .boletin-cover::after {
+          content: "";
+          position: absolute;
+          inset: auto -28px -42px auto;
+          width: 290px;
+          height: 190px;
+          opacity: 0.08;
+          background-image: url("/Image_0.svg");
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
+          pointer-events: none;
+        }
+
+        .boletin-cover-shell {
+          position: relative;
+          z-index: 1;
+          padding: 34px 38px 30px 62px;
+        }
+
+        .boletin-cover-left {
+          border-right: 2px solid #bfdbfe;
+          padding-right: 34px;
+        }
+
+        .boletin-cover-right {
+          padding-left: 2px;
+        }
+
+        .boletin-fixed-title {
+          color: #1e3a8a;
+        }
+
+        .official-ministry-logo {
+          display: block;
+          width: 82px;
+          height: 72px;
+          object-fit: contain;
+        }
+
         @media print {
           @page {
             size: letter landscape;
@@ -579,6 +646,11 @@ export default function GeneradorBoletines() {
 
           .boletin-cover {
             height: calc(8.5in - 0.7in);
+            border: 0;
+          }
+
+          .boletin-cover-shell {
+            padding: 0.28in 0.32in 0.24in 0.52in;
           }
 
           .boletin-page:last-child {
