@@ -8,7 +8,6 @@ import Image from 'next/image'
 const menuItems = [
   { label: 'Inicio', ruta: '/dashboard', clave: 'dashboard', requiereSeccion: false, icono: 'home' },
   { label: 'Asistencia', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
-  { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: false, icono: 'report' },
   { label: 'Estudiantes', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
   { label: 'Secciones', ruta: '/dashboard/secciones', clave: 'secciones', requiereSeccion: false, icono: 'layers' },
 ]
