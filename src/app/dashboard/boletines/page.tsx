@@ -387,74 +387,77 @@ export default function GeneradorBoletines() {
         <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
         <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
-          <section className="boletin-page bg-white p-8 shadow-sm print:shadow-none">
-            <div className="grid grid-cols-[1fr_1.05fr] gap-8">
-              <div>
-                <h2 className="text-center text-sm font-bold uppercase">Firma del padre, madre o tutor</h2>
-                <div className="mt-5 space-y-5 text-xs">
+          <section className="boletin-page boletin-cover bg-white p-6 shadow-sm print:shadow-none">
+            <div className="grid h-full grid-cols-[1.08fr_1fr] gap-12">
+              <div className="flex h-full flex-col">
+                <h2 className="text-center text-[11px] font-bold uppercase tracking-wide">Firma del padre, madre o tutor</h2>
+                <div className="mt-4 space-y-4 text-[10px]">
                   {[
                     'Ago-Sept-Oct',
                     'Nov-Dic-Ene',
                     'Feb-Mar',
                     'Abr-May-Jun',
                   ].map(periodo => (
-                    <div key={periodo} className="grid grid-cols-[120px_1fr] items-end gap-3">
+                    <div key={periodo} className="grid grid-cols-[112px_1fr] items-end gap-2">
                       <span>{periodo}</span>
-                      <span className="border-b border-slate-700">&nbsp;</span>
+                      <span className="h-4 border-b border-slate-800">&nbsp;</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-10">
-                  <p className="text-xs leading-relaxed">
+                <div className="mt-8">
+                  <p className="max-w-[420px] text-[10px] leading-snug">
                     Informacion sobre el nivel de avance de los aprendizajes y los apoyos que necesita para la mejora de sus aprendizajes.
                   </p>
-                  <div className="mt-3 space-y-4">
-                    {Array.from({ length: 12 }).map((_, index) => (
-                      <div key={index} className="border-b border-slate-500">&nbsp;</div>
+                  <div className="mt-2 space-y-2.5">
+                    {Array.from({ length: 14 }).map((_, index) => (
+                      <div key={index} className="h-3.5 border-b border-slate-500">&nbsp;</div>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-16 grid grid-cols-2 gap-10 text-center text-xs font-semibold">
+                <div className="mt-auto grid grid-cols-2 gap-16 text-center text-[10px] font-semibold">
                   <div>
-                    <div className="border-b border-slate-800">&nbsp;</div>
+                    <div className="h-5 border-b border-slate-800">&nbsp;</div>
                     <p className="mt-2">Maestro(a) Encargado(a) del grado</p>
                   </div>
                   <div>
-                    <div className="border-b border-slate-800">&nbsp;</div>
+                    <div className="h-5 border-b border-slate-800">&nbsp;</div>
                     <p className="mt-2">Director(a) del Centro Educativo</p>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <div className="mb-8 text-center">
-                  <p className="text-xs font-semibold">Viceministerio de Servicios Tecnicos y Pedagogicos</p>
-                  <p className="text-xs font-semibold">Direccion General de Educacion Primaria</p>
-                  <h2 className="mt-8 text-xl font-black uppercase tracking-wide">Informe de aprendizaje</h2>
-                  <h3 className="mt-10 text-lg font-black uppercase">{gradoTitulo}</h3>
-                  <p className="text-sm font-bold uppercase">Nivel Primario</p>
+              <div className="flex h-full flex-col">
+                <div className="text-right text-[10px] font-semibold leading-snug">
+                  <p>Viceministerio de Servicios Tecnicos y Pedagogicos</p>
+                  <p>Direccion General de Educacion Primaria</p>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  <Field label="Ano escolar" value={anoEscolar.texto} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Seccion" value={infoSeccion?.identificador} />
-                    <Field label="Numero de orden" value={datosEstudiante.numero_orden} />
+                <div className="mt-10 text-center">
+                  <h2 className="text-[18px] font-black uppercase tracking-[0.18em]">Informe de aprendizaje</h2>
+                  <h3 className="mt-11 text-[17px] font-black uppercase tracking-wide">{gradoTitulo}</h3>
+                  <p className="mt-1 text-[12px] font-bold uppercase tracking-wide">Nivel Primario</p>
+                </div>
+
+                <div className="mt-8 space-y-2.5 text-[10px]">
+                  <CoverField label="Ano escolar" value={anoEscolar.texto} />
+                  <div className="grid grid-cols-2 gap-5">
+                    <CoverField label="Seccion" value={infoSeccion?.identificador} />
+                    <CoverField label="Numero de orden" value={datosEstudiante.numero_orden} />
                   </div>
-                  <Field label="Nombre(s)" value={datosEstudiante.nombres} />
-                  <Field label="Apellido(s)" value={datosEstudiante.apellidos} />
-                  <Field label="ID estudiante (SIGERD)" value={datosEstudiante.sigerd_id} />
-                  <Field label="Docente" value={infoPerfil?.nombre_completo || infoPerfil?.full_name} />
-                  <Field label="Centro educativo" value={infoColegio?.nombre} />
-                  <Field label="Codigo del centro" value={infoColegio?.codigo_centro} />
-                  <Field label="Tanda" value={infoSeccion?.tanda || infoColegio?.tanda} />
-                  <Field label="Telefono del centro" value={infoColegio?.telefono_centro} />
-                  <Field label="Distrito educativo" value={infoColegio?.distrito_educativo} />
-                  <Field label="Regional de educacion" value={infoColegio?.regional_educacion} />
-                  <Field label="Provincia" value={infoColegio?.provincia} />
-                  <Field label="Municipio" value={infoColegio?.municipio} />
+                  <CoverField label="Nombre (s)" value={datosEstudiante.nombres} />
+                  <CoverField label="Apellido (s)" value={datosEstudiante.apellidos} />
+                  <CoverField label="ID estudiante (Numero de identificacion SIGERD)" value={datosEstudiante.sigerd_id} />
+                  <CoverField label="Docente" value={infoPerfil?.nombre_completo || infoPerfil?.full_name} />
+                  <CoverField label="Centro educativo" value={infoColegio?.nombre} />
+                  <CoverField label="Codigo del centro" value={infoColegio?.codigo_centro} />
+                  <CoverField label="Tanda" value={infoSeccion?.tanda || infoColegio?.tanda} />
+                  <CoverField label="Telefono del centro" value={infoColegio?.telefono_centro} />
+                  <CoverField label="Distrito educativo" value={infoColegio?.distrito_educativo} />
+                  <CoverField label="Regional de educacion" value={infoColegio?.regional_educacion} />
+                  <CoverField label="Provincia" value={infoColegio?.provincia} />
+                  <CoverField label="Municipio" value={infoColegio?.municipio} />
                 </div>
               </div>
             </div>
@@ -574,6 +577,10 @@ export default function GeneradorBoletines() {
             box-shadow: none !important;
           }
 
+          .boletin-cover {
+            height: calc(8.5in - 0.7in);
+          }
+
           .boletin-page:last-child {
             page-break-after: auto;
           }
@@ -588,6 +595,15 @@ function Field({ label, value }: { label: string; value?: unknown }) {
     <div className="grid grid-cols-[150px_1fr] items-end gap-2">
       <span className="font-semibold">{label}:</span>
       <span className="min-h-5 border-b border-slate-700 px-1">{celda(value)}</span>
+    </div>
+  )
+}
+
+function CoverField({ label, value }: { label: string; value?: unknown }) {
+  return (
+    <div className="grid grid-cols-[150px_1fr] items-end gap-1.5">
+      <span className="whitespace-normal font-semibold leading-tight">{label}:</span>
+      <span className="min-h-4 border-b border-slate-800 px-1 leading-tight">{celda(value)}</span>
     </div>
   )
 }
