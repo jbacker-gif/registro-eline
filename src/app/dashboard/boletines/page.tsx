@@ -388,25 +388,28 @@ export default function GeneradorBoletines() {
       ) : estudianteSeleccionado && datosEstudiante ? (
         <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
-            <TemplateText left={70.3} top={50.2} width={18}>{anoEscolar.inicio}</TemplateText>
-            <TemplateText left={80.7} top={50.2} width={18}>{anoEscolar.fin}</TemplateText>
-            <TemplateText left={59.8} top={54.1} width={17}>{infoSeccion?.identificador}</TemplateText>
-            <TemplateText left={83.5} top={54.1} width={14}>{datosEstudiante.numero_orden}</TemplateText>
-            <TemplateText left={61.6} top={57.45} width={35}>{datosEstudiante.nombres}</TemplateText>
-            <TemplateText left={61.6} top={60.55} width={35}>{datosEstudiante.apellidos}</TemplateText>
-            <TemplateText left={78.6} top={63.6} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
-            <TemplateText left={59.5} top={66.75} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
-            <TemplateText left={65.2} top={69.9} width={31}>{infoColegio?.nombre}</TemplateText>
-            <TemplateText left={65.2} top={73.2} width={31}>{infoColegio?.codigo_centro}</TemplateText>
-            <TemplateText left={58.4} top={76.25} width={38}>{infoSeccion?.tanda || infoColegio?.tanda}</TemplateText>
-            <TemplateText left={66.8} top={79.55} width={29}>{infoColegio?.telefono_centro}</TemplateText>
-            <TemplateText left={67.1} top={82.85} width={29}>{infoColegio?.distrito_educativo}</TemplateText>
-            <TemplateText left={69.4} top={86.05} width={27}>{infoColegio?.regional_educacion}</TemplateText>
-            <TemplateText left={62.2} top={89.3} width={34}>{infoColegio?.provincia}</TemplateText>
-            <TemplateText left={61.5} top={92.55} width={35}>{infoColegio?.municipio}</TemplateText>
+            <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
+            <span className="sigerd-helper">(Numero de identificacion SIGERD)</span>
+            <TemplateText left={71.2} top={49.35} width={8}>{anoEscolar.inicio}</TemplateText>
+            <TemplateText left={81.6} top={49.35} width={8}>{anoEscolar.fin}</TemplateText>
+            <TemplateText left={59.8} top={53.35} width={17}>{infoSeccion?.identificador}</TemplateText>
+            <TemplateText left={83.5} top={53.35} width={14}>{datosEstudiante.numero_orden}</TemplateText>
+            <TemplateText left={61.6} top={56.65} width={35}>{datosEstudiante.nombres}</TemplateText>
+            <TemplateText left={61.6} top={59.75} width={35}>{datosEstudiante.apellidos}</TemplateText>
+            <TemplateText left={78.6} top={62.95} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
+            <TemplateText left={59.5} top={66.05} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
+            <TemplateText left={65.2} top={69.15} width={31}>{infoColegio?.nombre}</TemplateText>
+            <TemplateText left={65.2} top={72.35} width={31}>{infoColegio?.codigo_centro}</TemplateText>
+            <TemplateText left={58.4} top={75.45} width={38}>{infoSeccion?.tanda || infoColegio?.tanda}</TemplateText>
+            <TemplateText left={66.8} top={78.7} width={29}>{infoColegio?.telefono_centro}</TemplateText>
+            <TemplateText left={67.1} top={81.9} width={29}>{infoColegio?.distrito_educativo}</TemplateText>
+            <TemplateText left={69.4} top={85.15} width={27}>{infoColegio?.regional_educacion}</TemplateText>
+            <TemplateText left={62.2} top={88.35} width={34}>{infoColegio?.provincia}</TemplateText>
+            <TemplateText left={61.5} top={91.6} width={35}>{infoColegio?.municipio}</TemplateText>
           </section>
 
           <section className="boletin-page official-template-page official-grades-page bg-white shadow-sm print:shadow-none">
+            <TemplateImage src="/boletines/informe-1ro-pagina-2.jpg" alt="Formato oficial boletin 1er grado pagina 2" />
             {filasBoletin.map((fila, rowIndex) => (
               <TemplateGradeRow key={fila.id} fila={fila} rowIndex={rowIndex} />
             ))}
@@ -434,17 +437,19 @@ export default function GeneradorBoletines() {
           aspect-ratio: 2048 / 1581;
           width: 100%;
           overflow: hidden;
-          background-position: center;
-          background-repeat: no-repeat;
-          background-size: 100% 100%;
+          background: #fff;
         }
 
-        .official-cover-page {
-          background-image: url("/boletines/informe-1ro-pagina-1.jpg");
-        }
-
-        .official-grades-page {
-          background-image: url("/boletines/informe-1ro-pagina-2.jpg");
+        .template-bg {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: fill;
+          image-rendering: auto;
+          user-select: none;
         }
 
         .template-text,
@@ -460,8 +465,9 @@ export default function GeneradorBoletines() {
         }
 
         .template-text {
-          font-size: clamp(7px, 1.08vw, 16px);
-          transform: translateY(-50%);
+          font-size: clamp(7px, 1.18vw, 17px);
+          font-weight: 600;
+          transform: translateY(-72%);
         }
 
         .template-grade {
@@ -470,6 +476,20 @@ export default function GeneradorBoletines() {
           font-size: clamp(7px, 1vw, 15px);
           font-weight: 700;
           transform: translate(-50%, -50%);
+        }
+
+        .sigerd-helper {
+          position: absolute;
+          left: 65.3%;
+          top: 62.66%;
+          z-index: 2;
+          color: #111827;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: clamp(5.5px, 0.78vw, 11.5px);
+          font-weight: 700;
+          line-height: 1;
+          white-space: nowrap;
+          transform: translateY(-72%);
         }
 
         @media print {
@@ -505,6 +525,10 @@ export default function GeneradorBoletines() {
 
 const gradeRowTops = [19.35, 23.8, 28.25, 32.7, 37.2, 41.65, 46.1]
 const gradeColumnLefts = [26.9, 31.7, 36.5, 41.3, 46.1, 50.9, 55.6, 60.4, 65.2, 70, 74.8, 79.5, 83.6, 87.5, 91.6]
+
+function TemplateImage({ src, alt }: { src: string; alt: string }) {
+  return <img className="template-bg" src={src} alt={alt} draggable={false} />
+}
 
 function TemplateText({
   children,
