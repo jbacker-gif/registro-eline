@@ -16,6 +16,8 @@ export default function Asistencia() {
   const [anioActual, setAnioActual] = useState(fechaActual.getFullYear())
   const [asistencia, setAsistencia] = useState<Record<string, string>>({})
   const [diasBloqueados, setDiasBloqueados] = useState<string[]>([])
+  const [hayCambiosPendientes, setHayCambiosPendientes] = useState(false)
+  const [ultimoGuardado, setUltimoGuardado] = useState<string | null>(null)
 
   const contenedorPrincipalRef = useRef<HTMLDivElement>(null)
 
@@ -110,11 +112,13 @@ export default function Asistencia() {
       else copia[clave] = nuevoEstado
       return copia
     })
+    setHayCambiosPendientes(true)
   }
 
   const alternarDiaBloqueado = (dia: number) => {
     const fecha = obtenerFechaISO(dia, mesActual, anioActual)
     setDiasBloqueados(prev => prev.includes(fecha) ? prev.filter(d => d !== fecha) : [...prev, fecha])
+    setHayCambiosPendientes(true)
   }
 
   const totalDiasLaborables = arrayDias.length - diasBloqueados.length
@@ -138,6 +142,9 @@ export default function Asistencia() {
 
   const guardarRegistro = async () => {
     if (!seccionId || !userId) return
+    if (!window.confirm(`¿Confirmas guardar la asistencia de ${nombresMeses[mesActual]} ${anioActual}?`)) {
+      return
+    }
     setMensaje({ texto: 'Guardando registro...', tipo: 'info' })
     try {
       const fechaInicio = `${anioActual}-${String(mesActual + 1).padStart(2, '0')}-01`
@@ -163,6 +170,8 @@ export default function Asistencia() {
       if (registrosBloqueados.length > 0) await supabase.from('dias_bloqueados').insert(registrosBloqueados)
 
       setMensaje({ texto: '✅ Asistencia guardada correctamente.', tipo: 'exito' })
+      setHayCambiosPendientes(false)
+      setUltimoGuardado(new Date().toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }))
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) { setMensaje({ texto: '❌ Error al guardar.', tipo: 'error' }) }
   }
@@ -206,13 +215,17 @@ export default function Asistencia() {
           </div>
         </div>
 
-        {/* LEYENDA */}
+        {/* LEYENDA Y ESTADO */}
         <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs font-bold text-slate-500 uppercase tracking-widest">
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded"></div> P</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div> A</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-amber-100 border border-amber-300 rounded"></div> E</span>
-          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div> T</span>
-          <span className="flex items-center gap-1.5 ml-auto text-slate-400"><div className="w-4 h-4 bg-slate-200 rounded"></div> Bloqueado / Fines de Semana</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-emerald-100 border border-emerald-300 rounded"></div> P = Presente</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div> A = Ausente</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-amber-100 border border-amber-300 rounded"></div> E = Excusa</span>
+          <span className="flex items-center gap-1.5"><div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div> T = Tardanza</span>
+          <span className="flex items-center gap-1.5 text-slate-400"><div className="w-4 h-4 bg-slate-200 rounded"></div> Bloqueado / Fines de Semana</span>
+          <span className={`ml-auto ${hayCambiosPendientes ? 'text-amber-600' : 'text-emerald-600'}`}>
+            {hayCambiosPendientes ? '● Cambios pendientes' : '● Sin cambios pendientes'}
+          </span>
+          {ultimoGuardado && <span className="text-slate-500">Último guardado: {ultimoGuardado}</span>}
         </div>
 
         {mensaje.texto && (
