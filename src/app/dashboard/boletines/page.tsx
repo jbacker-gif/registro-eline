@@ -1,17 +1,141 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
+type Competencia = 'C1' | 'C2' | 'C3'
+
+type Estudiante = {
+  id: string
+  colegio_id?: string | null
+  numero_orden?: number | null
+  nombre_completo?: string | null
+  nombres?: string | null
+  apellidos?: string | null
+  sigerd_id?: string | null
+  seccion_id?: string | null
+}
+
+type Perfil = {
+  id: string
+  colegio_id?: string | null
+  nombre_completo?: string | null
+  full_name?: string | null
+}
+
+type Colegio = {
+  id: string
+  nombre?: string | null
+  codigo_centro?: string | null
+  telefono_centro?: string | null
+  distrito_educativo?: string | null
+  regional_educacion?: string | null
+  provincia?: string | null
+  municipio?: string | null
+  tanda?: string | null
+}
+
+type Seccion = {
+  id: string
+  grado?: string | null
+  identificador?: string | null
+  ano_escolar?: string | null
+  tanda?: string | null
+}
+
+type Asignatura = {
+  id: string
+  nombre: string
+}
+
+type Calificacion = {
+  asignatura_id: string
+  periodo: Periodo | string
+  competencia: Competencia | string
+  nota: number | string | null
+}
+
+type RegistroAsistencia = {
+  fecha: string
+  estado: string
+}
+
+type FilaBoletin = {
+  id: string
+  nombre: string
+  notas: Record<Competencia, Record<Periodo, number | null>>
+  finales: Record<Competencia, number | null>
+}
+
+const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
+const competencias: Competencia[] = ['C1', 'C2', 'C3']
+
+const ordenAsignaturas = [
+  'Lengua Espanola',
+  'Lengua Española',
+  'Matematica',
+  'Matemática',
+  'Ciencias Sociales',
+  'Ciencias de la Naturaleza',
+  'Educacion Fisica',
+  'Educación Física',
+  'Formacion Integral Humana y Religiosa',
+  'Formación Integral Humana y Religiosa',
+  'Educacion Artistica',
+  'Educación Artística',
+]
+
+const mesesPorPeriodo: Record<Periodo, number[]> = {
+  P1: [8, 9, 10],
+  P2: [11, 12, 1],
+  P3: [2, 3],
+  P4: [4, 5, 6],
+}
+
+const etiquetaGrado: Record<string, string> = {
+  '1ro': 'PRIMER GRADO',
+  '2do': 'SEGUNDO GRADO',
+  '3ro': 'TERCER GRADO',
+  '4to': 'CUARTO GRADO',
+  '5to': 'QUINTO GRADO',
+  '6to': 'SEXTO GRADO',
+}
+
+const normalizar = (valor = '') =>
+  valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+
+const celda = (valor: unknown) => {
+  if (valor === null || valor === undefined || valor === '') return ''
+  return String(valor)
+}
+
+const rangoAnoEscolar = (anoEscolar?: string | null) => {
+  const match = (anoEscolar || '').match(/(\d{4})\D+(\d{4})/)
+  if (!match) {
+    const actual = new Date().getFullYear()
+    return { inicio: actual, fin: actual + 1, texto: anoEscolar || `${actual}-${actual + 1}` }
+  }
+  return { inicio: Number(match[1]), fin: Number(match[2]), texto: `${match[1]}-${match[2]}` }
+}
+
 export default function GeneradorBoletines() {
-  const [estudiantes, setEstudiantes] = useState<any[]>([])
+  const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [estudianteSeleccionado, setEstudianteSeleccionado] = useState('')
-  const [boletin, setBoletin] = useState<any[]>([])
+  const [filasBoletin, setFilasBoletin] = useState<FilaBoletin[]>([])
+  const [asistenciaResumen, setAsistenciaResumen] = useState<Record<Periodo, { asistencia: number; ausencia: number }>>({
+    P1: { asistencia: 0, ausencia: 0 },
+    P2: { asistencia: 0, ausencia: 0 },
+    P3: { asistencia: 0, ausencia: 0 },
+    P4: { asistencia: 0, ausencia: 0 },
+  })
+  const [infoSeccion, setInfoSeccion] = useState<Seccion | null>(null)
+  const [infoColegio, setInfoColegio] = useState<Colegio | null>(null)
+  const [infoPerfil, setInfoPerfil] = useState<Perfil | null>(null)
   const [cargando, setCargando] = useState(true)
   const [cargandoBoletin, setCargandoBoletin] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
-  // 1. Cargar la lista de estudiantes para el selector
   useEffect(() => {
     const cargarEstudiantes = async () => {
       try {
@@ -19,7 +143,18 @@ export default function GeneradorBoletines() {
         if (!session) return
         setUserId(session.user.id)
 
-        const { data, error } = await supabase.from('estudiantes').select('*').eq('user_id', session.user.id).order('numero_orden', { ascending: true })
+        const params = new URLSearchParams(window.location.search)
+        const seccionId = params.get('seccion_id') || localStorage.getItem('ultimaSeccionActiva')
+
+        let consulta = supabase
+          .from('estudiantes')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('numero_orden', { ascending: true })
+
+        if (seccionId) consulta = consulta.eq('seccion_id', seccionId)
+
+        const { data, error } = await consulta
         if (error) throw error
         setEstudiantes(data || [])
       } catch (error) {
@@ -31,24 +166,64 @@ export default function GeneradorBoletines() {
     cargarEstudiantes()
   }, [])
 
-  // 2. Cuando el profesor elige un estudiante, generamos su boletín
   useEffect(() => {
     if (!estudianteSeleccionado) {
-      setBoletin([])
+      setFilasBoletin([])
+      setInfoSeccion(null)
+      setInfoColegio(null)
+      setInfoPerfil(null)
       return
     }
     generarBoletin(estudianteSeleccionado)
   }, [estudianteSeleccionado, userId])
 
+  const datosEstudiante = estudiantes.find(e => e.id === estudianteSeleccionado)
+
+  const anoEscolar = useMemo(() => rangoAnoEscolar(infoSeccion?.ano_escolar), [infoSeccion?.ano_escolar])
+  const totalesAsistencia = useMemo(() => {
+    const asistencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].asistencia, 0)
+    const ausencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].ausencia, 0)
+    const total = asistencia + ausencia
+
+    return {
+      asistencia,
+      ausencia,
+      porcentajeAsistencia: total > 0 ? Math.round((asistencia / total) * 100) : 0,
+      porcentajeAusencia: total > 0 ? Math.round((ausencia / total) * 100) : 0,
+    }
+  }, [asistenciaResumen])
+
   const generarBoletin = async (idEstudiante: string) => {
     if (!userId) return
     setCargandoBoletin(true)
     try {
-      // Traemos todas las materias
+      const estudiante = estudiantes.find(e => e.id === idEstudiante)
+      const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', userId).maybeSingle()
+
+      let seccion: Seccion | null = null
+      if (estudiante?.seccion_id) {
+        const { data } = await supabase
+          .from('secciones')
+          .select('*')
+          .eq('id', estudiante.seccion_id)
+          .eq('user_id', userId)
+          .maybeSingle()
+        seccion = data
+      }
+
+      let colegio: Colegio | null = null
+      const colegioRelacionado = perfil?.colegio_id || estudiante?.colegio_id
+      if (colegioRelacionado) {
+        const { data } = await supabase.from('colegios').select('*').eq('id', colegioRelacionado).maybeSingle()
+        colegio = data
+      } else {
+        const { data } = await supabase.from('colegios').select('*').limit(1)
+        colegio = data?.[0] || null
+      }
+
       const { data: asignaturas, error: errAsig } = await supabase.from('asignaturas').select('*')
       if (errAsig) throw errAsig
 
-      // Traemos TODAS las notas de este estudiante en específico
       const { data: notas, error: errNotas } = await supabase
         .from('calificaciones')
         .select('*')
@@ -56,39 +231,76 @@ export default function GeneradorBoletines() {
         .eq('user_id', userId)
       if (errNotas) throw errNotas
 
-      // Armamos la tabla final cruzando materias y notas
-      const reporteFinal = asignaturas.map(materia => {
-        // Buscamos las notas de esta materia
-        const c1 = notas.find(n => n.asignatura_id === materia.id && n.competencia === 'C1')?.nota || null
-        const c2 = notas.find(n => n.asignatura_id === materia.id && n.competencia === 'C2')?.nota || null
-        const c3 = notas.find(n => n.asignatura_id === materia.id && n.competencia === 'C3')?.nota || null
+      const materiasOrdenadas = ((asignaturas || []) as Asignatura[])
+        .filter(materia => ordenAsignaturas.some(nombre => normalizar(nombre) === normalizar(materia.nombre)))
+        .sort((a, b) => {
+          const ia = ordenAsignaturas.findIndex(nombre => normalizar(nombre) === normalizar(a.nombre))
+          const ib = ordenAsignaturas.findIndex(nombre => normalizar(nombre) === normalizar(b.nombre))
+          return ia - ib
+        })
 
-        // Calculamos el promedio
-        const notasValidas = [c1, c2, c3].filter(n => n !== null)
-        let promedio = 0
-        let literal = '-'
-
-        if (notasValidas.length > 0) {
-          promedio = Math.round(notasValidas.reduce((a, b) => a + b, 0) / notasValidas.length)
-          // Asignamos el literal (Puedes ajustar esta escala según tu colegio)
-          if (promedio >= 90) literal = 'A'
-          else if (promedio >= 80) literal = 'B'
-          else if (promedio >= 70) literal = 'C'
-          else literal = 'D'
+      const filas = materiasOrdenadas.map(materia => {
+        const porCompetencia: Record<Competencia, Record<Periodo, number | null>> = {
+          C1: { P1: null, P2: null, P3: null, P4: null },
+          C2: { P1: null, P2: null, P3: null, P4: null },
+          C3: { P1: null, P2: null, P3: null, P4: null },
         }
 
-        return {
-          id: materia.id,
-          nombre: materia.nombre,
-          c1: c1 || '--',
-          c2: c2 || '--',
-          c3: c3 || '--',
-          promedio: notasValidas.length > 0 ? promedio : '--',
-          literal: literal
-        }
+        competencias.forEach(competencia => {
+          periodos.forEach(periodo => {
+            const nota = (notas as Calificacion[] | null)?.find(n =>
+              n.asignatura_id === materia.id &&
+              n.periodo === periodo &&
+              n.competencia === competencia
+            )?.nota
+            porCompetencia[competencia][periodo] = nota === undefined || nota === null ? null : Number(nota)
+          })
+        })
+
+        const finales = competencias.reduce((acc, competencia) => {
+          const valores = periodos
+            .map(periodo => porCompetencia[competencia][periodo])
+            .filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
+
+          acc[competencia] = valores.length > 0
+            ? Math.round(valores.reduce((total, nota) => total + nota, 0) / valores.length)
+            : null
+
+          return acc
+        }, {} as Record<Competencia, number | null>)
+
+        return { id: materia.id, nombre: materia.nombre, notas: porCompetencia, finales }
       })
 
-      setBoletin(reporteFinal)
+      const seccionParaAsistencia = seccion || infoSeccion
+      const { inicio, fin } = rangoAnoEscolar(seccionParaAsistencia?.ano_escolar)
+      const { data: asistencia } = await supabase
+        .from('asistencia')
+        .select('fecha, estado')
+        .eq('estudiante_id', idEstudiante)
+        .eq('user_id', userId)
+        .gte('fecha', `${inicio}-08-01`)
+        .lte('fecha', `${fin}-06-30`)
+
+      const resumen = periodos.reduce((acc, periodo) => {
+        acc[periodo] = { asistencia: 0, ausencia: 0 }
+        return acc
+      }, {} as Record<Periodo, { asistencia: number; ausencia: number }>)
+
+      ;(asistencia as RegistroAsistencia[] | null)?.forEach(registro => {
+        const fecha = new Date(`${registro.fecha}T00:00:00`)
+        const mes = fecha.getMonth() + 1
+        const periodo = periodos.find(p => mesesPorPeriodo[p].includes(mes))
+        if (!periodo) return
+        if (registro.estado === 'P') resumen[periodo].asistencia += 1
+        else resumen[periodo].ausencia += 1
+      })
+
+      setInfoPerfil(perfil || null)
+      setInfoSeccion(seccion || null)
+      setInfoColegio(colegio || null)
+      setFilasBoletin(filas)
+      setAsistenciaResumen(resumen)
     } catch (error) {
       console.error(error)
     } finally {
@@ -96,115 +308,249 @@ export default function GeneradorBoletines() {
     }
   }
 
-  const imprimirBoletin = () => {
-    window.print()
-  }
+  const imprimirBoletin = () => window.print()
 
-  if (cargando) return <div className="p-10 text-center">Cargando base de datos... ⏳</div>
+  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium">Cargando base de datos...</div>
 
-  const datosEstudiante = estudiantes.find(e => e.id === estudianteSeleccionado)
+  const gradoTitulo = etiquetaGrado[infoSeccion?.grado || ''] || 'PRIMER GRADO'
 
   return (
-    <div className="p-8">
-      {/* SECCIÓN INTERACTIVA (Se oculta al imprimir) */}
-      <div className="mb-8 print:hidden">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Generador de Boletines</h1>
-        <p className="text-gray-600 mb-6">Selecciona un estudiante para consolidar sus calificaciones del período.</p>
-        
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-4 items-center">
-          <label className="font-semibold text-gray-700">Seleccionar Alumno:</label>
-          <select 
-            className="flex-1 border border-gray-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="min-h-full bg-slate-100 p-6 text-slate-900 print:bg-white print:p-0">
+      <div className="mx-auto mb-6 max-w-5xl print:hidden">
+        <h1 className="text-2xl font-black text-slate-800">Boletines oficiales</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Formato piloto para 1er grado del Nivel Primario. Los campos vacios se imprimen como lineas para completar.
+        </p>
+
+        <div className="mt-5 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center">
+          <label className="text-sm font-bold text-slate-700">Seleccionar estudiante</label>
+          <select
+            className="min-h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
             value={estudianteSeleccionado}
             onChange={(e) => setEstudianteSeleccionado(e.target.value)}
           >
-            <option value="">-- Elige un estudiante de la lista --</option>
+            <option value="">Elige un estudiante de la seccion activa</option>
             {estudiantes.map(est => (
               <option key={est.id} value={est.id}>{est.numero_orden}. {est.nombre_completo}</option>
             ))}
           </select>
 
           {estudianteSeleccionado && (
-            <button 
+            <button
               onClick={imprimirBoletin}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
+              className="rounded-md bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700"
             >
-              🖨️ Imprimir
+              Imprimir
             </button>
           )}
         </div>
       </div>
 
-      {/* BOLETÍN LISTO PARA IMPRIMIR */}
       {cargandoBoletin ? (
-        <div className="text-center py-12 text-gray-500">Generando cálculos... ⚙️</div>
+        <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
-        <div className="bg-white p-10 rounded-xl shadow-lg border border-gray-200 print:shadow-none print:border-none print:p-0">
-          
-          {/* Encabezado del Documento */}
-          <div className="text-center mb-8 border-b-2 border-gray-800 pb-6">
-            <h1 className="text-3xl font-bold uppercase tracking-wider mb-2">Colegio Santa Maria Goretti</h1>
-            <h2 className="text-xl text-gray-700 font-semibold mb-1">Boletín de Calificaciones - Primer Período</h2>
-            <p className="text-sm text-gray-500">Año Escolar 2025-2026 | Nivel Primaria - 4to Grado</p>
-          </div>
+        <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
+          <section className="boletin-page bg-white p-8 shadow-sm print:shadow-none">
+            <div className="grid grid-cols-[1fr_1.05fr] gap-8">
+              <div>
+                <h2 className="text-center text-sm font-bold uppercase">Firma del padre, madre o tutor</h2>
+                <div className="mt-5 space-y-5 text-xs">
+                  {[
+                    'Ago-Sept-Oct',
+                    'Nov-Dic-Ene',
+                    'Feb-Mar',
+                    'Abr-May-Jun',
+                  ].map(periodo => (
+                    <div key={periodo} className="grid grid-cols-[120px_1fr] items-end gap-3">
+                      <span>{periodo}</span>
+                      <span className="border-b border-slate-700">&nbsp;</span>
+                    </div>
+                  ))}
+                </div>
 
-          <div className="flex justify-between items-end mb-6 bg-gray-50 p-4 rounded-lg print:bg-transparent print:p-0">
-            <div>
-              <p className="text-sm text-gray-500 uppercase tracking-wide font-semibold">Datos del Estudiante</p>
-              <p className="text-xl font-bold text-gray-800 mt-1">{datosEstudiante.nombre_completo}</p>
-              <p className="text-sm text-gray-600 mt-1">Número de Orden: <span className="font-semibold">{datosEstudiante.numero_orden}</span></p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Prof. Titular: <span className="font-semibold">Belkis</span></p>
-            </div>
-          </div>
+                <div className="mt-10">
+                  <p className="text-xs leading-relaxed">
+                    Informacion sobre el nivel de avance de los aprendizajes y los apoyos que necesita para la mejora de sus aprendizajes.
+                  </p>
+                  <div className="mt-3 space-y-4">
+                    {Array.from({ length: 12 }).map((_, index) => (
+                      <div key={index} className="border-b border-slate-500">&nbsp;</div>
+                    ))}
+                  </div>
+                </div>
 
-          {/* Tabla de Calificaciones */}
-          <table className="w-full text-left border-collapse mb-8">
-            <thead>
-              <tr className="bg-gray-800 text-white border border-gray-800">
-                <th className="p-3 font-semibold uppercase text-sm">Asignatura</th>
-                <th className="p-3 font-semibold text-center w-20">C1</th>
-                <th className="p-3 font-semibold text-center w-20">C2</th>
-                <th className="p-3 font-semibold text-center w-20">C3</th>
-                <th className="p-3 font-semibold text-center w-24 bg-gray-700">Promedio</th>
-                <th className="p-3 font-semibold text-center w-24">Literal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {boletin.map((fila, index) => (
-                <tr key={fila.id} className={`border border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                  <td className="p-3 font-medium text-gray-800 border-r border-gray-200">{fila.nombre}</td>
-                  <td className="p-3 text-center text-gray-600 border-r border-gray-200">{fila.c1}</td>
-                  <td className="p-3 text-center text-gray-600 border-r border-gray-200">{fila.c2}</td>
-                  <td className="p-3 text-center text-gray-600 border-r border-gray-200">{fila.c3}</td>
-                  <td className="p-3 text-center font-bold text-gray-900 border-r border-gray-200 bg-gray-100">{fila.promedio}</td>
-                  <td className={`p-3 text-center font-bold text-lg 
-                    ${fila.literal === 'A' ? 'text-green-600' : 
-                      fila.literal === 'B' ? 'text-blue-600' : 
-                      fila.literal === 'C' ? 'text-yellow-600' : 
-                      fila.literal === 'D' ? 'text-red-600' : 'text-gray-400'}`}>
-                    {fila.literal}
-                  </td>
+                <div className="mt-16 grid grid-cols-2 gap-10 text-center text-xs font-semibold">
+                  <div>
+                    <div className="border-b border-slate-800">&nbsp;</div>
+                    <p className="mt-2">Maestro(a) Encargado(a) del grado</p>
+                  </div>
+                  <div>
+                    <div className="border-b border-slate-800">&nbsp;</div>
+                    <p className="mt-2">Director(a) del Centro Educativo</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-8 text-center">
+                  <p className="text-xs font-semibold">Viceministerio de Servicios Tecnicos y Pedagogicos</p>
+                  <p className="text-xs font-semibold">Direccion General de Educacion Primaria</p>
+                  <h2 className="mt-8 text-xl font-black uppercase tracking-wide">Informe de aprendizaje</h2>
+                  <h3 className="mt-10 text-lg font-black uppercase">{gradoTitulo}</h3>
+                  <p className="text-sm font-bold uppercase">Nivel Primario</p>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <Field label="Ano escolar" value={anoEscolar.texto} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Seccion" value={infoSeccion?.identificador} />
+                    <Field label="Numero de orden" value={datosEstudiante.numero_orden} />
+                  </div>
+                  <Field label="Nombre(s)" value={datosEstudiante.nombres} />
+                  <Field label="Apellido(s)" value={datosEstudiante.apellidos} />
+                  <Field label="ID estudiante (SIGERD)" value={datosEstudiante.sigerd_id} />
+                  <Field label="Docente" value={infoPerfil?.nombre_completo || infoPerfil?.full_name} />
+                  <Field label="Centro educativo" value={infoColegio?.nombre} />
+                  <Field label="Codigo del centro" value={infoColegio?.codigo_centro} />
+                  <Field label="Tanda" value={infoSeccion?.tanda || infoColegio?.tanda} />
+                  <Field label="Telefono del centro" value={infoColegio?.telefono_centro} />
+                  <Field label="Distrito educativo" value={infoColegio?.distrito_educativo} />
+                  <Field label="Regional de educacion" value={infoColegio?.regional_educacion} />
+                  <Field label="Provincia" value={infoColegio?.provincia} />
+                  <Field label="Municipio" value={infoColegio?.municipio} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="boletin-page bg-white p-6 shadow-sm print:shadow-none">
+            <h2 className="mb-4 text-center text-base font-black uppercase">Desempeno individual del/la estudiante</h2>
+
+            <table className="w-full border-collapse text-[10px]">
+              <thead>
+                <tr>
+                  <th rowSpan={3} className="w-[22%] border border-slate-700 p-1 text-left align-bottom uppercase">Competencias fundamentales</th>
+                  <th colSpan={4} className="border border-slate-700 p-1">Comunicativa</th>
+                  <th colSpan={4} className="border border-slate-700 p-1">Pensamiento Logico, Creativo y Critico; Resolucion de Problemas; Cientifica y Tecnologica</th>
+                  <th colSpan={4} className="border border-slate-700 p-1">Etica y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud</th>
+                  <th colSpan={3} className="border border-slate-700 p-1">Calificacion final por competencia</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                <tr>
+                  {[...periodos, ...periodos, ...periodos, ...competencias].map((item, index) => (
+                    <th key={`${item}-${index}`} className="border border-slate-700 p-1 text-center">{item}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filasBoletin.map(fila => (
+                  <tr key={fila.id}>
+                    <td className="border border-slate-700 p-1.5 font-semibold">{fila.nombre}</td>
+                    {competencias.map(competencia =>
+                      periodos.map(periodo => (
+                        <td key={`${fila.id}-${competencia}-${periodo}`} className="border border-slate-700 p-1 text-center">
+                          {celda(fila.notas[competencia][periodo])}
+                        </td>
+                      ))
+                    )}
+                    {competencias.map(competencia => (
+                      <td key={`${fila.id}-${competencia}-final`} className="border border-slate-700 p-1 text-center font-bold">
+                        {celda(fila.finales[competencia])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* Firmas */}
-          <div className="flex justify-between mt-16 pt-8 px-12">
-            <div className="text-center">
-              <div className="w-48 border-t border-gray-800 mb-2 mx-auto"></div>
-              <p className="font-semibold text-gray-700">Firma del Docente</p>
+            <div className="mt-6 grid grid-cols-[1.1fr_1.5fr] gap-6">
+              <div>
+                <h3 className="mb-2 text-center text-xs font-bold">Resumen de asistencia del/la estudiante</h3>
+                <table className="w-full border-collapse text-[10px]">
+                  <thead>
+                    <tr>
+                      <th className="border border-slate-700 p-1">Periodos</th>
+                      <th className="border border-slate-700 p-1">Asistencia</th>
+                      <th className="border border-slate-700 p-1">Ausencia</th>
+                      <th className="border border-slate-700 p-1">% Anual Asistencia</th>
+                      <th className="border border-slate-700 p-1">% Anual Ausencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodos.map((periodo, index) => (
+                      <tr key={periodo}>
+                        <td className="border border-slate-700 p-1 text-center">{periodo}</td>
+                        <td className="border border-slate-700 p-1 text-center">{asistenciaResumen[periodo].asistencia || ''}</td>
+                        <td className="border border-slate-700 p-1 text-center">{asistenciaResumen[periodo].ausencia || ''}</td>
+                        <td className="border border-slate-700 p-1 text-center">{index === 0 && totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</td>
+                        <td className="border border-slate-700 p-1 text-center">{index === 0 && totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-[0.8fr_1.2fr_2fr] gap-3 text-[10px]">
+                <div>
+                  <h3 className="font-bold">Leyenda</h3>
+                  <p>(P1) Periodo 1</p>
+                  <p>(P2) Periodo 2</p>
+                  <p>(P3) Periodo 3</p>
+                  <p>(P4) Periodo 4</p>
+                  <p className="mt-2">(C1) Competencia 1</p>
+                  <p>(C2) Competencia 2</p>
+                  <p>(C3) Competencia 3</p>
+                </div>
+                <div>
+                  <h3 className="font-bold">Escala numerica</h3>
+                  <p>89-100</p>
+                  <p className="mt-4">77-88</p>
+                  <p className="mt-4">65-76</p>
+                  <p className="mt-4">Menos de 65</p>
+                </div>
+                <div>
+                  <h3 className="font-bold">Descripcion</h3>
+                  <p>Evidencia que el estudiante ha alcanzado un desempeno destacado con relacion a los aspectos evaluados.</p>
+                  <p className="mt-2">Evidencia que el estudiante ha logrado, en general, los aprendizajes esperados.</p>
+                  <p className="mt-2">Evidencia que el estudiante aun se encuentra en proceso, mostrando un logro muy basico.</p>
+                  <p className="mt-2">Evidencia que el estudiante ha alcanzado un desempeno insuficiente.</p>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="w-48 border-t border-gray-800 mb-2 mx-auto"></div>
-              <p className="font-semibold text-gray-700">Firma del Director(a)</p>
-            </div>
-          </div>
-          
+          </section>
         </div>
       ) : null}
+
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: letter landscape;
+            margin: 0.35in;
+          }
+
+          body {
+            background: #fff !important;
+          }
+
+          .boletin-page {
+            min-height: calc(8.5in - 0.7in);
+            page-break-after: always;
+            box-shadow: none !important;
+          }
+
+          .boletin-page:last-child {
+            page-break-after: auto;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+function Field({ label, value }: { label: string; value?: unknown }) {
+  return (
+    <div className="grid grid-cols-[150px_1fr] items-end gap-2">
+      <span className="font-semibold">{label}:</span>
+      <span className="min-h-5 border-b border-slate-700 px-1">{celda(value)}</span>
     </div>
   )
 }
