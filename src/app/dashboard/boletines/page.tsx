@@ -139,7 +139,7 @@ const celda = (valor: unknown) => {
 }
 
 const rangoAnoEscolar = (anoEscolar?: string | null) => {
-  const match = (anoEscolar || '').match(/(\d{2})\D+(\d{2})/)
+  const match = (anoEscolar || '').match(/(\d{4})\D+(\d{4})/)
   if (!match) {
     const actual = new Date().getFullYear()
     return { inicio: actual, fin: actual + 1, texto: anoEscolar || `${actual}-${actual + 1}` }
