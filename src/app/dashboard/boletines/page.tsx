@@ -389,7 +389,7 @@ export default function GeneradorBoletines() {
         <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
-//            <span className="sigerd-helper">(Numero de identificacion SIGERD)</span>
+            <span className="sigerd-helper">(Numero de identificacion SIGERD)</span>
             <TemplateText left={71.2} top={49.35} width={8}>{anoEscolar.inicio}</TemplateText>
             <TemplateText left={81.6} top={49.35} width={8}>{anoEscolar.fin}</TemplateText>
             <TemplateText left={59.8} top={53.35} width={17}>{infoSeccion?.identificador}</TemplateText>
