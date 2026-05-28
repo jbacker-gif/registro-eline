@@ -386,7 +386,7 @@ export default function GeneradorBoletines() {
       {cargandoBoletin ? (
         <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
-        <div className="mx-auto max-w-[1100px] space-y-6 print:max-w-none print:space-y-0">
+        <div className="mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
             <span className="sigerd-helper">(Numero de identificacion SIGERD)</span>
