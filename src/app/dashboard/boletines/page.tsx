@@ -393,8 +393,8 @@ export default function GeneradorBoletines() {
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
             <TemplateText left={72.2} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
             <TemplateText left={81.4} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
-            <TemplateText left={59.8} top={56.65} width={17}>{infoSeccion?.identificador}</TemplateText>
-            <TemplateText left={83.5} top={56.65} width={14}>{datosEstudiante.numero_orden}</TemplateText>
+            <TemplateText left={59.8} top={54.65} width={17}>{infoSeccion?.identificador}</TemplateText>
+            <TemplateText left={84.5} top={54.65} width={14}>{datosEstudiante.numero_orden}</TemplateText>
             <TemplateText left={61.6} top={60.65} width={35}>{datosEstudiante.nombres}</TemplateText>
             <TemplateText left={61.6} top={61.75} width={35}>{datosEstudiante.apellidos}</TemplateText>
             <TemplateText left={78.6} top={62.95} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
