@@ -392,7 +392,7 @@ export default function GeneradorBoletines() {
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
             <TemplateText left={72.2} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
-            <TemplateText left={74.6} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
+            <TemplateText left={73.6} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
             <TemplateText left={59.8} top={53.35} width={17}>{infoSeccion?.identificador}</TemplateText>
             <TemplateText left={83.5} top={53.35} width={14}>{datosEstudiante.numero_orden}</TemplateText>
             <TemplateText left={61.6} top={56.65} width={35}>{datosEstudiante.nombres}</TemplateText>
@@ -466,7 +466,7 @@ export default function GeneradorBoletines() {
         }
 
         .template-text {
-          font-size: clamp(7px, 1.18vw, 17px);
+          font-size: clamp(7px, 1.18vw, 20px);
           font-weight: 600;
           transform: translateY(-72%);
         }
