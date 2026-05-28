@@ -138,6 +138,8 @@ const celda = (valor: unknown) => {
   return String(valor)
 }
 
+const ultimosDosDigitos = (valor: number | string) => String(valor).slice(-2)
+
 const rangoAnoEscolar = (anoEscolar?: string | null) => {
   const match = (anoEscolar || '').match(/(\d{4})\D+(\d{4})/)
   if (!match) {
@@ -389,9 +391,8 @@ export default function GeneradorBoletines() {
         <div className="mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
-            <span className="sigerd-helper">(Numero de identificacion SIGERD)</span>
-            <TemplateText left={71.2} top={49.35} width={8}>{anoEscolar.inicio}</TemplateText>
-            <TemplateText left={81.6} top={49.35} width={8}>{anoEscolar.fin}</TemplateText>
+            <TemplateText left={71.2} top={49.35} width={8}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
+            <TemplateText left={81.6} top={49.35} width={8}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
             <TemplateText left={59.8} top={53.35} width={17}>{infoSeccion?.identificador}</TemplateText>
             <TemplateText left={83.5} top={53.35} width={14}>{datosEstudiante.numero_orden}</TemplateText>
             <TemplateText left={61.6} top={56.65} width={35}>{datosEstudiante.nombres}</TemplateText>
@@ -476,20 +477,6 @@ export default function GeneradorBoletines() {
           font-size: clamp(7px, 1vw, 15px);
           font-weight: 700;
           transform: translate(-50%, -50%);
-        }
-
-        .sigerd-helper {
-          position: absolute;
-          left: 65.3%;
-          top: 62.66%;
-          z-index: 2;
-          color: #111827;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: clamp(5.5px, 0.78vw, 11.5px);
-          font-weight: 700;
-          line-height: 1;
-          white-space: nowrap;
-          transform: translateY(-72%);
         }
 
         @media print {
