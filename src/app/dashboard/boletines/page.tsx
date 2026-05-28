@@ -391,8 +391,8 @@ export default function GeneradorBoletines() {
         <div className="mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
-            <TemplateText left={72.2} top={50.35} width={8}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
-            <TemplateText left={82.6} top={50.35} width={8}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
+            <TemplateText left={72.2} top={50.35} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
+            <TemplateText left={80.6} top={50.35} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
             <TemplateText left={59.8} top={53.35} width={17}>{infoSeccion?.identificador}</TemplateText>
             <TemplateText left={83.5} top={53.35} width={14}>{datosEstudiante.numero_orden}</TemplateText>
             <TemplateText left={61.6} top={56.65} width={35}>{datosEstudiante.nombres}</TemplateText>
