@@ -391,12 +391,12 @@ export default function GeneradorBoletines() {
         <div className="mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
-            <TemplateText left={72.2} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
-            <TemplateText left={81.4} top={50.01} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
+            <TemplateText left={72.2} top={50.00} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
+            <TemplateText left={81.4} top={50.00} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
             <TemplateText left={59.8} top={54.65} width={17}>{infoSeccion?.identificador}</TemplateText>
-            <TemplateText left={83.5} top={54.65} width={14}>{datosEstudiante.numero_orden}</TemplateText>
-            <TemplateText left={61.6} top={59.26} width={35}>{datosEstudiante.nombres}</TemplateText>
-            <TemplateText left={61.6} top={63.87} width={35}>{datosEstudiante.apellidos}</TemplateText>
+            <TemplateText left={84.5} top={54.65} width={14}>{datosEstudiante.numero_orden}</TemplateText>
+            <TemplateText left={61.6} top={58.26} width={35}>{datosEstudiante.nombres}</TemplateText>
+            <TemplateText left={61.6} top={62.87} width={35}>{datosEstudiante.apellidos}</TemplateText>
             <TemplateText left={78.6} top={62.95} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
             <TemplateText left={59.5} top={66.05} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
             <TemplateText left={65.2} top={69.15} width={31}>{infoColegio?.nombre}</TemplateText>
