@@ -66,6 +66,7 @@ type FilaBoletin = {
   nombre: string
   notas: Record<Competencia, Record<Periodo, number | null>>
   finales: Record<Competencia, number | null>
+  finalArea: number | null
 }
 
 const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
@@ -119,6 +120,20 @@ const mesesPorPeriodo: Record<Periodo, number[]> = {
   P2: [11, 12, 1],
   P3: [2, 3],
   P4: [4, 5, 6],
+}
+
+const obtenerPeriodoAsistencia = (fechaISO: string): Periodo | null => {
+  const fecha = new Date(`${fechaISO}T00:00:00`)
+  const mes = fecha.getMonth() + 1
+  return periodos.find(periodo => mesesPorPeriodo[periodo].includes(mes)) || null
+}
+
+const contarEstadoAsistencia = (
+  estado: string,
+  resumenPeriodo: { asistencia: number; ausencia: number }
+) => {
+  if (estado === 'P') resumenPeriodo.asistencia += 1
+  if (estado === 'A') resumenPeriodo.ausencia += 1
 }
 
 const etiquetaGrado: Record<string, string> = {
@@ -297,11 +312,18 @@ export default function GeneradorBoletines() {
           return acc
         }, {} as Record<Competencia, number | null>)
 
+        const valoresFinales = competencias
+          .map(competencia => finales[competencia])
+          .filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
+
         return {
           id: materia?.id || asignaturaOficial.key,
           nombre: asignaturaOficial.nombre,
           notas: porCompetencia,
           finales,
+          finalArea: valoresFinales.length > 0
+            ? Math.round(valoresFinales.reduce((total, nota) => total + nota, 0) / valoresFinales.length)
+            : null,
         }
       })
 
@@ -321,12 +343,9 @@ export default function GeneradorBoletines() {
       }, {} as Record<Periodo, { asistencia: number; ausencia: number }>)
 
       ;(asistencia as RegistroAsistencia[] | null)?.forEach(registro => {
-        const fecha = new Date(`${registro.fecha}T00:00:00`)
-        const mes = fecha.getMonth() + 1
-        const periodo = periodos.find(p => mesesPorPeriodo[p].includes(mes))
+        const periodo = obtenerPeriodoAsistencia(registro.fecha)
         if (!periodo) return
-        if (registro.estado === 'P') resumen[periodo].asistencia += 1
-        else resumen[periodo].ausencia += 1
+        contarEstadoAsistencia(registro.estado, resumen[periodo])
       })
 
       setInfoPerfil(perfil || null)
@@ -388,25 +407,25 @@ export default function GeneradorBoletines() {
       {cargandoBoletin ? (
         <div className="py-12 text-center text-slate-500">Generando informe...</div>
       ) : estudianteSeleccionado && datosEstudiante ? (
-        <div className="mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
+        <div className="boletin-print-root mx-auto max-w-[1500px] space-y-6 print:max-w-none print:space-y-0">
           <section className="boletin-page official-template-page official-cover-page bg-white shadow-sm print:shadow-none">
             <TemplateImage src="/boletines/informe-1ro-pagina-1.jpg" alt="Formato oficial boletin 1er grado pagina 1" />
-            <TemplateText left={72.2} top={50.00} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
-            <TemplateText left={81.4} top={50.00} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
+            <TemplateText left={72.2} top={50.25} width={12}>{ultimosDosDigitos(anoEscolar.inicio)}</TemplateText>
+            <TemplateText left={81.4} top={50.25} width={12}>{ultimosDosDigitos(anoEscolar.fin)}</TemplateText>
             <TemplateText left={59.8} top={54.65} width={17}>{infoSeccion?.identificador}</TemplateText>
             <TemplateText left={84.5} top={54.65} width={14}>{datosEstudiante.numero_orden}</TemplateText>
-            <TemplateText left={61.6} top={58.26} width={35}>{datosEstudiante.nombres}</TemplateText>
-            <TemplateText left={61.6} top={62.87} width={35}>{datosEstudiante.apellidos}</TemplateText>
-            <TemplateText left={78.6} top={62.95} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
-            <TemplateText left={59.5} top={66.05} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
-            <TemplateText left={65.2} top={69.15} width={31}>{infoColegio?.nombre}</TemplateText>
-            <TemplateText left={65.2} top={72.35} width={31}>{infoColegio?.codigo_centro}</TemplateText>
-            <TemplateText left={58.4} top={75.45} width={38}>{infoSeccion?.tanda || infoColegio?.tanda}</TemplateText>
-            <TemplateText left={66.8} top={78.7} width={29}>{infoColegio?.telefono_centro}</TemplateText>
-            <TemplateText left={67.1} top={81.9} width={29}>{infoColegio?.distrito_educativo}</TemplateText>
-            <TemplateText left={69.4} top={85.15} width={27}>{infoColegio?.regional_educacion}</TemplateText>
-            <TemplateText left={62.2} top={88.35} width={34}>{infoColegio?.provincia}</TemplateText>
-            <TemplateText left={61.5} top={91.6} width={35}>{infoColegio?.municipio}</TemplateText>
+            <TemplateText left={61.6} top={57.60} width={35}>{datosEstudiante.nombres}</TemplateText>
+            <TemplateText left={61.6} top={61.30} width={35}>{datosEstudiante.apellidos}</TemplateText>
+            <TemplateText left={78.6} top={64.95} width={18}>{datosEstudiante.sigerd_id}</TemplateText>
+            <TemplateText left={59.5} top={68.05} width={37}>{infoPerfil?.nombre_completo || infoPerfil?.full_name}</TemplateText>
+            <TemplateText left={65.2} top={71.80} width={31}>{infoColegio?.nombre}</TemplateText>
+            <TemplateText left={65.2} top={75.15} width={31}>{infoColegio?.codigo_centro}</TemplateText>
+            <TemplateText left={58.4} top={78.45} width={38}>{infoSeccion?.tanda || infoColegio?.tanda}</TemplateText>
+            <TemplateText left={66.8} top={82.00} width={29}>{infoColegio?.telefono_centro}</TemplateText>
+            <TemplateText left={67.1} top={85.40} width={29}>{infoColegio?.distrito_educativo}</TemplateText>
+            <TemplateText left={69.4} top={89.15} width={27}>{infoColegio?.regional_educacion}</TemplateText>
+            <TemplateText left={61.0} top={92.35} width={34}>{infoColegio?.provincia}</TemplateText>
+            <TemplateText left={61.5} top={95.76} width={35}>{infoColegio?.municipio}</TemplateText>
           </section>
 
           <section className="boletin-page official-template-page official-grades-page bg-white shadow-sm print:shadow-none">
@@ -416,12 +435,12 @@ export default function GeneradorBoletines() {
             ))}
             {periodos.map((periodo, index) => (
               <div key={periodo}>
-                <TemplateGrade left={12.5} top={87.9 + index * 3.15}>{asistenciaResumen[periodo].asistencia || ''}</TemplateGrade>
-                <TemplateGrade left={18.9} top={87.9 + index * 3.15}>{asistenciaResumen[periodo].ausencia || ''}</TemplateGrade>
+                <TemplateGrade left={attendanceColumnLefts.asistencia} top={attendanceRowTops[index]}>{asistenciaResumen[periodo].asistencia || ''}</TemplateGrade>
+                <TemplateGrade left={attendanceColumnLefts.ausencia} top={attendanceRowTops[index]}>{asistenciaResumen[periodo].ausencia || ''}</TemplateGrade>
               </div>
             ))}
-            <TemplateGrade left={25.2} top={87.9}>{totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
-            <TemplateGrade left={31.4} top={87.9}>{totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
+            <TemplateGrade left={attendanceColumnLefts.porcentajeAsistencia} top={attendanceTotalTop}>{totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
+            <TemplateGrade left={attendanceColumnLefts.porcentajeAusencia} top={attendanceTotalTop}>{totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
           </section>
         </div>
       ) : null}
@@ -485,14 +504,58 @@ export default function GeneradorBoletines() {
             margin: 0;
           }
 
+          html,
           body {
             background: #fff !important;
+            height: auto !important;
+            margin: 0 !important;
+            overflow: visible !important;
+          }
+
+          body * {
+            visibility: hidden !important;
+          }
+
+          .boletin-print-root,
+          .boletin-print-root * {
+            visibility: visible !important;
+          }
+
+          .h-screen {
+            height: auto !important;
+          }
+
+          .overflow-hidden,
+          .overflow-x-hidden,
+          .overflow-y-auto {
+            overflow: visible !important;
+          }
+
+          aside,
+          nav,
+          button,
+          .fixed,
+          .print\\:hidden {
+            display: none !important;
+          }
+
+          main,
+          .boletin-print-root {
+            display: block !important;
+            width: 11in !important;
+            max-width: none !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           .boletin-page {
             width: 11in;
             height: 8.5in;
             min-height: 8.5in;
+            margin: 0;
+            overflow: hidden !important;
+            break-after: page;
             page-break-after: always;
             box-shadow: none !important;
           }
@@ -510,8 +573,21 @@ export default function GeneradorBoletines() {
   )
 }
 
-const gradeRowTops = [19.35, 23.8, 28.25, 32.7, 37.2, 41.65, 46.1]
-const gradeColumnLefts = [26.9, 31.7, 36.5, 41.3, 46.1, 50.9, 55.6, 60.4, 65.2, 70, 74.8, 79.5, 83.6, 87.5, 91.6]
+const gradeRowTops = [18.37, 22.93, 27.62, 32.37, 36.97, 41.62, 46.32]
+const gradeColumnLefts = [
+  23.54, 28.35, 33.16, 37.97,
+  42.78, 47.6, 52.4, 57.22,
+  62.03, 66.84, 71.65, 76.46,
+  80.85, 84.81, 88.76, 92.71,
+]
+const attendanceRowTops = [82.27, 86.1, 90, 93.97]
+const attendanceTotalTop = 88.17
+const attendanceColumnLefts = {
+  asistencia: 10.77,
+  ausencia: 17.16,
+  porcentajeAsistencia: 23.62,
+  porcentajeAusencia: 30.08,
+}
 
 function TemplateImage({ src, alt }: { src: string; alt: string }) {
   return <img className="template-bg" src={src} alt={alt} draggable={false} />
@@ -555,6 +631,7 @@ function TemplateGradeRow({ fila, rowIndex }: { fila: FilaBoletin; rowIndex: num
   const valores = [
     ...competencias.flatMap(competencia => periodos.map(periodo => fila.notas[competencia][periodo])),
     ...competencias.map(competencia => fila.finales[competencia]),
+    fila.finalArea,
   ]
 
   return (

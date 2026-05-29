@@ -83,6 +83,7 @@ export default function Asistencia() {
   const arrayDias = Array.from({ length: diasDelMes }, (_, i) => i + 1)
   const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
   const inicialesDias = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+  const anosDisponibles = Array.from({ length: 7 }, (_, i) => fechaActual.getFullYear() - 3 + i)
 
   const cambiarMes = (direccion: number) => {
     let nuevoMes = mesActual + direccion
@@ -92,6 +93,16 @@ export default function Asistencia() {
     setMesActual(nuevoMes)
     setAnioActual(nuevoAnio)
     setCargando(true)
+  }
+
+  const cambiarPeriodo = (nuevoMes: number, nuevoAnio: number) => {
+    setMesActual(nuevoMes)
+    setAnioActual(nuevoAnio)
+    setCargando(true)
+  }
+
+  const irAlMesActual = () => {
+    cambiarPeriodo(fechaActual.getMonth(), fechaActual.getFullYear())
   }
 
   const alternarAsistencia = (estudianteId: string, dia: number) => {
@@ -203,13 +214,31 @@ export default function Asistencia() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl shadow-sm p-1">
-              <button onClick={() => cambiarMes(-1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">◀</button>
-              <div className="w-36 text-center font-bold text-slate-700 text-sm">
-                {nombresMeses[mesActual]} {anioActual}
-              </div>
-              <button onClick={() => cambiarMes(1)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">▶</button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl shadow-sm p-2">
+              <button onClick={() => cambiarMes(-1)} className="h-10 w-10 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors">◀</button>
+              <select
+                value={mesActual}
+                onChange={(e) => cambiarPeriodo(Number(e.target.value), anioActual)}
+                className="h-10 min-w-36 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                {nombresMeses.map((mes, index) => (
+                  <option key={mes} value={index}>{mes}</option>
+                ))}
+              </select>
+              <select
+                value={anioActual}
+                onChange={(e) => cambiarPeriodo(mesActual, Number(e.target.value))}
+                className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                {anosDisponibles.map((anio) => (
+                  <option key={anio} value={anio}>{anio}</option>
+                ))}
+              </select>
+              <button onClick={() => cambiarMes(1)} className="h-10 w-10 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors">▶</button>
+              <button onClick={irAlMesActual} className="h-10 rounded-lg border border-slate-200 px-3 text-xs font-black uppercase tracking-wide text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                Hoy
+              </button>
             </div>
             <button onClick={guardarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all">💾 Guardar Mes</button>
           </div>
