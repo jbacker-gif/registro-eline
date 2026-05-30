@@ -11,6 +11,8 @@ export default function MisSecciones() {
   const [grado, setGrado] = useState('')
   const [identificador, setIdentificador] = useState('')
   const [tanda, setTanda] = useState('Matutina') // NUEVO ESTADO PARA LA TANDA
+  const [anoEscolar, setAnoEscolar] = useState('')
+  const [seccionEditando, setSeccionEditando] = useState<any | null>(null)
   
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -46,6 +48,23 @@ export default function MisSecciones() {
     }
   }
 
+  const limpiarFormulario = () => {
+    setGrado('')
+    setIdentificador('')
+    setTanda('Matutina')
+    setAnoEscolar('')
+    setSeccionEditando(null)
+  }
+
+  const editarSeccion = (seccion: any) => {
+    setSeccionEditando(seccion)
+    setGrado(seccion.grado || '')
+    setIdentificador(seccion.identificador || '')
+    setTanda(seccion.tanda || 'Matutina')
+    setAnoEscolar(seccion.ano_escolar || '')
+    setMensaje({ texto: '', tipo: '' })
+  }
+
   const agregarSeccion = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
@@ -54,27 +73,31 @@ export default function MisSecciones() {
     
     try {
       // Verificamos si ya existe una sección exactamente igual (Grado + Letra + Tanda)
-      const existe = secciones.find(s => s.grado === grado && s.identificador === identificador && s.tanda === tanda)
+      const existe = secciones.find(s =>
+        s.id !== seccionEditando?.id &&
+        s.grado === grado &&
+        s.identificador === identificador &&
+        (s.tanda || 'Matutina') === tanda
+      )
       if (existe) {
         setMensaje({ texto: '⚠️ Ya tienes registrada esta sección en esta misma tanda.', tipo: 'error' })
         return
       }
 
-      const { error } = await supabase.from('secciones').insert([
-        { grado, identificador, tanda, user_id: userId }
-      ])
+      const payload = { grado, identificador, tanda, ano_escolar: anoEscolar || null }
+      const { error } = seccionEditando
+        ? await supabase.from('secciones').update(payload).eq('id', seccionEditando.id).eq('user_id', userId)
+        : await supabase.from('secciones').insert([{ ...payload, user_id: userId }])
 
       if (error) throw error
 
-      setMensaje({ texto: '✅ ¡Sección creada con éxito!', tipo: 'exito' })
-      setGrado('')
-      setIdentificador('')
-      setTanda('Matutina')
+      setMensaje({ texto: seccionEditando ? 'Seccion actualizada con exito.' : 'Seccion creada con exito.', tipo: 'exito' })
+      limpiarFormulario()
       cargarSecciones(userId)
       
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
-      setMensaje({ texto: '❌ Error al crear la sección.', tipo: 'error' })
+      setMensaje({ texto: 'Error al guardar la seccion.', tipo: 'error' })
     }
   }
 
@@ -116,7 +139,7 @@ export default function MisSecciones() {
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200 sticky top-6">
             <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <span className="bg-blue-50 text-blue-600 p-2 rounded-lg text-xl leading-none">📚</span>
-              Nueva Sección
+              {seccionEditando ? 'Editar Seccion' : 'Nueva Seccion'}
             </h2>
             
             <form onSubmit={agregarSeccion} className="space-y-5">
@@ -149,15 +172,27 @@ export default function MisSecciones() {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Ano escolar</label>
+                <input type="text" value={anoEscolar} onChange={(e) => setAnoEscolar(e.target.value)} placeholder="Ej: 2025-2026" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium"/>
+              </div>
+
               {mensaje.texto && (
                 <div className={`p-3 rounded-xl text-sm font-semibold border ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-600 border-red-200' : mensaje.tipo === 'exito' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
                   {mensaje.texto}
                 </div>
               )}
 
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg mt-2 flex justify-center items-center gap-2">
-                + Crear Sección
-              </button>
+              <div className="flex flex-col gap-2">
+                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg mt-2 flex justify-center items-center gap-2">
+                  {seccionEditando ? 'Guardar Cambios' : '+ Crear Seccion'}
+                </button>
+                {seccionEditando && (
+                  <button type="button" onClick={limpiarFormulario} className="w-full border border-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-all hover:bg-slate-50">
+                    Cancelar edicion
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -174,13 +209,14 @@ export default function MisSecciones() {
                     <th className="p-5 font-bold">Grado</th>
                     <th className="p-5 font-bold text-center">Sección</th>
                     <th className="p-5 font-bold">Tanda</th>
+                    <th className="p-5 font-bold">Ano escolar</th>
                     <th className="p-5 font-bold text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {secciones.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-10 text-center text-slate-400 font-medium">
+                      <td colSpan={5} className="p-10 text-center text-slate-400 font-medium">
                         No has creado ninguna sección todavía.<br/>
                         <span className="text-sm font-normal">Usa el formulario para empezar.</span>
                       </td>
@@ -204,7 +240,15 @@ export default function MisSecciones() {
                             {sec.tanda || 'Matutina'}
                           </span>
                         </td>
+                        <td className="p-5 text-sm font-semibold text-slate-600">{sec.ano_escolar || 'Sin definir'}</td>
                         <td className="p-5 text-center">
+                          <button
+                            onClick={() => editarSeccion(sec)}
+                            className="mr-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition-all hover:bg-blue-100"
+                            title="Editar seccion"
+                          >
+                            Editar
+                          </button>
                           <button 
                             onClick={() => eliminarSeccion(sec.id, `${sec.grado} ${sec.identificador} (${sec.tanda || 'Matutina'})`)} 
                             className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
