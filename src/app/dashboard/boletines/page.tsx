@@ -632,7 +632,7 @@ export default function GeneradorBoletines() {
         }
 
         .template-text {
-          font-size: clamp(7px, 1.18vw, 22px);
+          font-size: clamp(7px, 1.18vw, 19px);
           font-weight: 600;
           transform: translateY(-72%);
         }
