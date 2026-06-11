@@ -22,8 +22,11 @@ const campoBase = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.
 export default function PerfilMaestro() {
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  const [guardandoPassword, setGuardandoPassword] = useState(false)
   const [mensaje, setMensaje] = useState<Mensaje>({ texto: '', tipo: '' })
+  const [mensajePassword, setMensajePassword] = useState<Mensaje>({ texto: '', tipo: '' })
   const [userId, setUserId] = useState<string | null>(null)
+  const [emailUsuario, setEmailUsuario] = useState('')
   const [colegios, setColegios] = useState<Colegio[]>([])
   const [colegioId, setColegioId] = useState('')
   const [nombreDocente, setNombreDocente] = useState('')
@@ -36,6 +39,12 @@ export default function PerfilMaestro() {
   const [provincia, setProvincia] = useState('')
   const [municipio, setMunicipio] = useState('')
   const [tanda, setTanda] = useState('')
+  const [passwordActual, setPasswordActual] = useState('')
+  const [passwordNueva, setPasswordNueva] = useState('')
+  const [passwordConfirmacion, setPasswordConfirmacion] = useState('')
+  const [mostrarPasswordActual, setMostrarPasswordActual] = useState(false)
+  const [mostrarPasswordNueva, setMostrarPasswordNueva] = useState(false)
+  const [mostrarPasswordConfirmacion, setMostrarPasswordConfirmacion] = useState(false)
 
   useEffect(() => {
     cargarPerfil()
@@ -47,6 +56,7 @@ export default function PerfilMaestro() {
       if (!session) return
 
       setUserId(session.user.id)
+      setEmailUsuario(session.user.email || '')
 
       const [{ data: perfil }, { data: centros }] = await Promise.all([
         supabase.from('perfiles').select('*').eq('id', session.user.id).maybeSingle(),
@@ -140,6 +150,69 @@ export default function PerfilMaestro() {
     }
   }
 
+  const cambiarPassword = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setMensajePassword({ texto: '', tipo: '' })
+
+    const actual = passwordActual.trim()
+    const nueva = passwordNueva.trim()
+    const confirmacion = passwordConfirmacion.trim()
+
+    if (!emailUsuario) {
+      setMensajePassword({ texto: 'No se pudo confirmar el correo de la sesión activa.', tipo: 'error' })
+      return
+    }
+
+    if (!actual || !nueva || !confirmacion) {
+      setMensajePassword({ texto: 'Completa los tres campos de contraseña.', tipo: 'error' })
+      return
+    }
+
+    if (nueva.length < 8) {
+      setMensajePassword({ texto: 'La nueva contraseña debe tener al menos 8 caracteres.', tipo: 'error' })
+      return
+    }
+
+    if (nueva !== confirmacion) {
+      setMensajePassword({ texto: 'La confirmación no coincide con la nueva contraseña.', tipo: 'error' })
+      return
+    }
+
+    if (actual === nueva) {
+      setMensajePassword({ texto: 'La nueva contraseña debe ser diferente a la actual.', tipo: 'error' })
+      return
+    }
+
+    setGuardandoPassword(true)
+    setMensajePassword({ texto: 'Validando contraseña actual...', tipo: 'info' })
+
+    try {
+      const { error: validacionError } = await supabase.auth.signInWithPassword({
+        email: emailUsuario,
+        password: actual,
+      })
+
+      if (validacionError) {
+        setMensajePassword({ texto: 'La contraseña actual no es correcta.', tipo: 'error' })
+        return
+      }
+
+      const { error: cambioError } = await supabase.auth.updateUser({ password: nueva })
+      if (cambioError) throw cambioError
+
+      setPasswordActual('')
+      setPasswordNueva('')
+      setPasswordConfirmacion('')
+      setMensajePassword({ texto: 'Contraseña actualizada correctamente.', tipo: 'exito' })
+      setTimeout(() => setMensajePassword({ texto: '', tipo: '' }), 3500)
+    } catch (error) {
+      console.error(error)
+      setMensajePassword({ texto: 'No se pudo actualizar la contraseña. Intenta nuevamente.', tipo: 'error' })
+    } finally {
+      setGuardandoPassword(false)
+    }
+  }
+
   if (cargando) return <div className="p-10 text-center text-slate-500 font-medium">Cargando perfil...</div>
 
   return (
@@ -224,6 +297,62 @@ export default function PerfilMaestro() {
             </button>
           </div>
         </form>
+
+        <form onSubmit={cambiarPassword} className="mt-6 space-y-6">
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">Seguridad</h2>
+              <p className="mt-1 text-sm text-slate-500">Actualiza tu contraseña de acceso al portal ELINE.</p>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-3">
+              <CampoPassword
+                label="Contraseña actual"
+                value={passwordActual}
+                onChange={setPasswordActual}
+                visible={mostrarPasswordActual}
+                onToggle={() => setMostrarPasswordActual(prev => !prev)}
+                autoComplete="current-password"
+              />
+              <CampoPassword
+                label="Nueva contraseña"
+                value={passwordNueva}
+                onChange={setPasswordNueva}
+                visible={mostrarPasswordNueva}
+                onToggle={() => setMostrarPasswordNueva(prev => !prev)}
+                autoComplete="new-password"
+              />
+              <CampoPassword
+                label="Confirmar nueva contraseña"
+                value={passwordConfirmacion}
+                onChange={setPasswordConfirmacion}
+                visible={mostrarPasswordConfirmacion}
+                onToggle={() => setMostrarPasswordConfirmacion(prev => !prev)}
+                autoComplete="new-password"
+              />
+            </div>
+
+            {mensajePassword.texto && (
+              <div className={`mt-5 rounded-lg border p-4 text-sm font-semibold ${
+                mensajePassword.tipo === 'error' ? 'border-red-200 bg-red-50 text-red-700' :
+                mensajePassword.tipo === 'exito' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+                'border-blue-200 bg-blue-50 text-blue-700'
+              }`}>
+                {mensajePassword.texto}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="submit"
+                disabled={guardandoPassword}
+                className="rounded-lg bg-blue-600 px-7 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {guardandoPassword ? 'Actualizando...' : 'Actualizar contraseña'}
+              </button>
+            </div>
+          </section>
+        </form>
       </div>
     </div>
   )
@@ -244,6 +373,44 @@ function Campo({
     <div>
       <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</label>
       <input className={campoBase} value={value} onChange={(e) => onChange(e.target.value)} required={required} />
+    </div>
+  )
+}
+
+function CampoPassword({
+  label,
+  value,
+  onChange,
+  visible,
+  onToggle,
+  autoComplete,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  visible: boolean
+  onToggle: () => void
+  autoComplete: string
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</label>
+      <div className="relative">
+        <input
+          type={visible ? 'text' : 'password'}
+          className={`${campoBase} pr-20`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        >
+          {visible ? 'Ocultar' : 'Mostrar'}
+        </button>
+      </div>
     </div>
   )
 }
