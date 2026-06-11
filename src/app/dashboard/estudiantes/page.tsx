@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { getCsvValue, readCsvFile } from '../../../lib/csv'
 
 export default function MisEstudiantes() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
@@ -117,7 +118,7 @@ export default function MisEstudiantes() {
       cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
-      setMensaje({ texto: '❌ Error al guardar datos.', tipo: 'error' })
+      setMensaje({ texto: 'Error al guardar datos.', tipo: 'error' })
     }
   }
 
@@ -155,65 +156,80 @@ export default function MisEstudiantes() {
     if (!file || !seccionId || !userId) return
 
     setMensaje({ texto: 'Procesando archivo CSV...', tipo: 'info' })
-    const reader = new FileReader()
+    try {
+      const filas = await readCsvFile(file)
 
-    reader.onload = async (event) => {
-      try {
-        const text = event.target?.result as string
-        const lineas = text.split('\n').map(line => line.replace('\r', '').trim()).filter(line => line !== '')
+      const datosCsv = filas.map(row => {
+        const numero = Number(getCsvValue(row, ['numero_orden', 'no_lista', 'numero', 'orden'])) || 0
+        const nom = getCsvValue(row, ['nombres', 'nombre']).trim()
+        const ape = getCsvValue(row, ['apellidos', 'apellido']).trim()
+        const sex = getCsvValue(row, ['sexo']).trim().toUpperCase()
+        const nac = getCsvValue(row, ['nacionalidad']).trim() || 'Dominicana'
+        const sigerd = getCsvValue(row, ['sigerd_id', 'id_sigerd', 'sigerd']).trim() || null
+        const tutorCsv = getCsvValue(row, ['nombre_tutor', 'tutor', 'padre_madre_tutor']).trim()
+        const telefonoCsv = getCsvValue(row, ['telefono_contacto', 'telefono', 'celular']).trim()
+        const estadoCsv = getCsvValue(row, ['estado']).trim() || 'Activo'
+        const fechaDirecta = getCsvValue(row, ['fecha_nacimiento', 'nacimiento']).trim()
+        const dia = getCsvValue(row, ['dia_nacimiento', 'dia']).trim().padStart(2, '0')
+        const mes = getCsvValue(row, ['mes_nacimiento', 'mes']).trim().padStart(2, '0')
+        const ano = getCsvValue(row, ['ano_nacimiento', 'anio_nacimiento', 'ano', 'anio']).trim()
+        const fechaSQL = fechaDirecta || (dia && mes && ano ? `${ano}-${mes}-${dia}` : null)
 
-        const datosAInsertar = lineas.slice(1).map(linea => {
-          const valores = linea.split(/,|;/)
-          
-          const numero = Number(valores[0]) || 0
-          const nom = valores[1]?.trim() || ''
-          const ape = valores[2]?.trim() || ''
-          const sex = valores[3]?.trim()?.toUpperCase() || ''
-          const nac = valores[4]?.trim() || 'Dominicana'
-          const sigerd = valores[8]?.trim() || null
-          
-          const dia = valores[5]?.trim().padStart(2, '0')
-          const mes = valores[6]?.trim().padStart(2, '0')
-          const ano = valores[7]?.trim()
-          
-          let fechaSQL = null
-          if (dia && mes && ano) {
-            fechaSQL = `${ano}-${mes}-${dia}`
-          }
-
-          return {
-            numero_orden: numero,
-            nombres: nom,
-            apellidos: ape,
-            nombre_completo: `${ape}, ${nom}`,
-            sigerd_id: sigerd,
-            sexo: sex,
-            nacionalidad: nac,
-            fecha_nacimiento: fechaSQL,
-            seccion_id: seccionId,
-            user_id: userId,
-            estado: 'Activo' // Por defecto activos al importar
-          }
-        }).filter(est => est.nombres !== '') 
-
-        if (datosAInsertar.length === 0) {
-          setMensaje({ texto: '⚠️ El archivo está vacío o tiene un formato incorrecto.', tipo: 'error' })
-          return
+        return {
+          numero_orden: numero,
+          nombres: nom,
+          apellidos: ape,
+          nombre_completo: `${ape}, ${nom}`,
+          sigerd_id: sigerd,
+          sexo: sex,
+          nacionalidad: nac,
+          fecha_nacimiento: fechaSQL,
+          nombre_tutor: tutorCsv,
+          telefono_contacto: telefonoCsv,
+          seccion_id: seccionId,
+          user_id: userId,
+          estado: estadoCsv,
         }
+      }).filter(est => est.numero_orden > 0 && est.nombres !== '' && est.apellidos !== '')
 
-        const { error } = await supabase.from('estudiantes').insert(datosAInsertar)
-        if (error) throw error
-
-        setMensaje({ texto: `✅ ¡${datosAInsertar.length} estudiantes importados!`, tipo: 'exito' })
-        cargarEstudiantes(seccionId, userId)
-        if (archivoInputRef.current) archivoInputRef.current.value = ''
-        setTimeout(() => setMensaje({ texto: '', tipo: '' }), 4000)
-
-      } catch (error) {
-        setMensaje({ texto: '❌ Error al leer el CSV. Revisa el orden de las columnas.', tipo: 'error' })
+      if (datosCsv.length === 0) {
+        setMensaje({ texto: 'El archivo está vacío o tiene un formato incorrecto.', tipo: 'error' })
+        return
       }
+
+      const { data: existentes, error: errorExistentes } = await supabase
+        .from('estudiantes')
+        .select('id, numero_orden, sigerd_id')
+        .eq('seccion_id', seccionId)
+        .eq('user_id', userId)
+      if (errorExistentes) throw errorExistentes
+
+      const porSigerd = new Map((existentes || []).filter(est => est.sigerd_id).map(est => [String(est.sigerd_id).trim(), est]))
+      const porNumero = new Map((existentes || []).map(est => [Number(est.numero_orden), est]))
+      let creados = 0
+      let actualizados = 0
+
+      for (const datos of datosCsv) {
+        const existente = datos.sigerd_id ? porSigerd.get(datos.sigerd_id) : porNumero.get(datos.numero_orden)
+
+        if (existente) {
+          const { error } = await supabase.from('estudiantes').update(datos).eq('id', existente.id).eq('user_id', userId)
+          if (error) throw error
+          actualizados++
+        } else {
+          const { error } = await supabase.from('estudiantes').insert([datos])
+          if (error) throw error
+          creados++
+        }
+      }
+
+      setMensaje({ texto: `Importación lista: ${creados} creados y ${actualizados} actualizados.`, tipo: 'exito' })
+      cargarEstudiantes(seccionId, userId)
+      if (archivoInputRef.current) archivoInputRef.current.value = ''
+      setTimeout(() => setMensaje({ texto: '', tipo: '' }), 5000)
+    } catch (error) {
+      setMensaje({ texto: 'Error al leer el CSV. Revisa las columnas de la plantilla.', tipo: 'error' })
     }
-    reader.readAsText(file, 'UTF-8')
   }
 
   // ==========================================
@@ -233,7 +249,7 @@ export default function MisEstudiantes() {
       if (seccionId && userId) cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
-      setMensaje({ texto: '❌ Error al cambiar el estado.', tipo: 'error' })
+      setMensaje({ texto: 'Error al cambiar el estado.', tipo: 'error' })
     }
   }
 
@@ -250,7 +266,7 @@ export default function MisEstudiantes() {
     }
   }
 
-  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando base de datos... ⏳</div>
+  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando base de datos... </div>
   if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una sección en el Panel de Control.</div>
 
   return (
@@ -293,7 +309,7 @@ export default function MisEstudiantes() {
               
               <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  {idEditando ? <><span className="text-amber-500">✏️</span> Editando Alumno</> : <><span className="text-blue-500">👤</span> Nuevo Alumno</>}
+                  {idEditando ? 'Editando Alumno' : 'Nuevo Alumno'}
                 </h2>
                 {idEditando && (
                   <button onClick={limpiarFormulario} className="text-xs font-bold text-slate-400 hover:text-slate-700 px-2 py-1 bg-slate-50 rounded-lg transition-colors">
@@ -353,7 +369,7 @@ export default function MisEstudiantes() {
                 </div>
 
                 <button type="submit" className={`w-full text-white font-bold py-4 rounded-xl transition-all shadow-md mt-4 flex justify-center items-center gap-2 ${idEditando ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                  {idEditando ? '💾 Actualizar Alumno' : '+ Guardar Alumno'}
+                  {idEditando ? 'Actualizar Alumno' : '+ Guardar Alumno'}
                 </button>
               </form>
             </div>

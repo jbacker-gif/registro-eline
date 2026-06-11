@@ -1,0 +1,3 @@
+numero_orden;nombres;apellidos;sexo;nacionalidad;fecha_nacimiento;dia_nacimiento;mes_nacimiento;ano_nacimiento;sigerd_id;nombre_tutor;telefono_contacto;estado
+1;Juan Carlos;Perez Garcia;M;Dominicana;2018-09-15;;;;SIG-001;Maria Garcia;809-555-0001;Activo
+2;Ana Maria;Rodriguez Lopez;F;Dominicana;;20;10;2018;SIG-002;Carlos Rodriguez;809-555-0002;Activo

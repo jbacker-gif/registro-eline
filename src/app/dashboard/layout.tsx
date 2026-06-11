@@ -10,6 +10,7 @@ const menuItems = [
   { label: 'Asistencia', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
   { label: 'Estudiantes', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
   { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'report' },
+  { label: 'Plantillas', ruta: '/dashboard/plantillas', clave: 'plantillas', requiereSeccion: false, icono: 'download' },
   { label: 'Secciones', ruta: '/dashboard/secciones', clave: 'secciones', requiereSeccion: false, icono: 'layers' },
   { label: 'Perfil', ruta: '/dashboard/perfil', clave: 'perfil', requiereSeccion: false, icono: 'user' },
 ]
@@ -19,6 +20,7 @@ function Icono({ tipo }: { tipo: string }) {
   if (tipo === 'home') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10.5 12 3l9 7.5M5.25 9.75V21h13.5V9.75" />
   if (tipo === 'calendar') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 3v3m8-3v3M4 10h16M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1Z" />
   if (tipo === 'report') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm7 1v5h5M9 13h6M9 17h6M9 9h2" />
+  if (tipo === 'download') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" />
   if (tipo === 'users') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 19a4 4 0 0 0-8 0m13 0a4 4 0 0 0-6-3.46M15 7a3 3 0 1 1 0 6m-6-1a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
   if (tipo === 'user') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0" />
   return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />

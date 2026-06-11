@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { getCsvValue, readCsvFile } from '../../../lib/csv'
+
+const normalizarTexto = (valor = '') =>
+  valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
 
 export default function MatrizCalificaciones() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
@@ -16,6 +24,7 @@ export default function MatrizCalificaciones() {
 
   const [vista, setVista] = useState('P1') 
   const contenedorPrincipalRef = useRef<HTMLDivElement>(null)
+  const archivoCsvRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -58,6 +67,7 @@ export default function MatrizCalificaciones() {
 
         return { 
           id: est.id, 
+          sigerd_id: est.sigerd_id,
           numero: est.numero_orden, 
           nombre: est.nombre_completo, 
           estado: est.estado || 'Activo',
@@ -213,11 +223,98 @@ export default function MatrizCalificaciones() {
       setMensaje({ texto: '✅ ¡Notas guardadas con éxito!', tipo: 'exito' })
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
-      setMensaje({ texto: '❌ Error al guardar las calificaciones.', tipo: 'error' })
+      setMensaje({ texto: 'Error al guardar las calificaciones.', tipo: 'error' })
     }
   }
 
-  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando matriz de evaluación... ⏳</div>
+  const importarCalificacionesCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const filas = await readCsvFile(file)
+      const estudiantesPorSigerd = new Map(
+        estudiantes
+          .filter(est => est.sigerd_id)
+          .map(est => [String(est.sigerd_id).trim(), est])
+      )
+      const estudiantesPorNumero = new Map(
+        estudiantes.map(est => [Number(est.numero), est])
+      )
+      const materiaActualNormalizada = normalizarTexto(materiaNombre)
+      const tituloActualNormalizado = normalizarTexto(tituloVisible)
+      const actualizacionesPorEstudiante = new Map<string, any[]>()
+      let aplicadas = 0
+      let sinEstudiante = 0
+      let sinAsignatura = 0
+      let sinPeriodo = 0
+
+      filas.forEach(row => {
+        const numero = Number(getCsvValue(row, ['numero_orden', 'numero_de_orden', 'no_orden', 'no_lista', 'numero_lista', 'numero', 'orden']))
+        const sigerd = getCsvValue(row, ['sigerd_id', 'id_sigerd', 'sigerd']).trim()
+        const asignaturaCsv = getCsvValue(row, ['asignatura', 'materia']).trim()
+        const periodo = getCsvValue(row, ['periodo']).trim().toUpperCase()
+        const asignaturaNormalizada = normalizarTexto(asignaturaCsv)
+        const estudianteCsv = sigerd && estudiantesPorSigerd.has(sigerd)
+          ? estudiantesPorSigerd.get(sigerd)
+          : estudiantesPorNumero.get(numero)
+        const coincideAsignatura = !asignaturaNormalizada ||
+          asignaturaNormalizada === materiaActualNormalizada ||
+          asignaturaNormalizada === tituloActualNormalizado
+
+        if (!estudianteCsv) {
+          sinEstudiante++
+          return
+        }
+
+        if (!coincideAsignatura) {
+          sinAsignatura++
+          return
+        }
+
+        if (!['P1', 'P2', 'P3', 'P4'].includes(periodo)) {
+          sinPeriodo++
+          return
+        }
+
+        const filasActuales = actualizacionesPorEstudiante.get(estudianteCsv.id) || []
+        filasActuales.push(row)
+        actualizacionesPorEstudiante.set(estudianteCsv.id, filasActuales)
+        aplicadas++
+      })
+
+      setEstudiantes(prev => prev.map(est => {
+        const filasEstudiante = actualizacionesPorEstudiante.get(est.id)
+        if (!filasEstudiante) return est
+
+        const notasActualizadas = { ...est.notas }
+        filasEstudiante.forEach(row => {
+          const periodo = getCsvValue(row, ['periodo']).trim().toUpperCase()
+          notasActualizadas[periodo] = {
+            ...notasActualizadas[periodo],
+            C1: getCsvValue(row, ['c1']) || notasActualizadas[periodo].C1,
+            C1_RP: getCsvValue(row, ['c1_rp', 'rp_c1']) || notasActualizadas[periodo].C1_RP,
+            C2: getCsvValue(row, ['c2']) || notasActualizadas[periodo].C2,
+            C2_RP: getCsvValue(row, ['c2_rp', 'rp_c2']) || notasActualizadas[periodo].C2_RP,
+            C3: getCsvValue(row, ['c3']) || notasActualizadas[periodo].C3,
+            C3_RP: getCsvValue(row, ['c3_rp', 'rp_c3']) || notasActualizadas[periodo].C3_RP,
+          }
+        })
+
+        return { ...est, notas: notasActualizadas }
+      }))
+
+      setMensaje({
+        texto: `CSV cargado: ${aplicadas} filas aplicadas. Sin estudiante: ${sinEstudiante}. Otra asignatura: ${sinAsignatura}. Período inválido: ${sinPeriodo}. Revisa y presiona Guardar Notas.`,
+        tipo: aplicadas > 0 ? 'exito' : 'error',
+      })
+      if (archivoCsvRef.current) archivoCsvRef.current.value = ''
+      setTimeout(() => setMensaje({ texto: '', tipo: '' }), 8000)
+    } catch (error) {
+      setMensaje({ texto: 'Error al importar calificaciones. Revisa la plantilla CSV.', tipo: 'error' })
+    }
+  }
+  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando matriz de evaluación... </div>
   if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una sección en el Panel de Control.</div>
 
   return (
@@ -231,9 +328,15 @@ export default function MatrizCalificaciones() {
             <p className="text-sm text-slate-500 font-medium mt-1">Registro: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
           </div>
           <div className="flex items-center gap-4 w-full md:w-auto">
+            <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarCalificacionesCSV} className="hidden" />
+            {vista !== 'RESUMEN' && (
+              <button onClick={() => archivoCsvRef.current?.click()} className="w-full md:w-auto rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-blue-300 hover:text-blue-700">
+                Importar CSV
+              </button>
+            )}
             {vista !== 'RESUMEN' && (
               <button onClick={guardarNotas} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2">
-                💾 Guardar Notas
+                Guardar Notas
               </button>
             )}
           </div>
@@ -254,7 +357,7 @@ export default function MatrizCalificaciones() {
           ))}
           <div className="flex-1 min-w-[20px] border-b border-blue-600"></div>
           <button onClick={() => setVista('RESUMEN')} className={`px-5 py-2 rounded-t-lg font-bold transition-all flex items-center gap-2 text-sm whitespace-nowrap border-t border-l border-r ${vista === 'RESUMEN' ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-200 text-slate-600 border-slate-300 hover:bg-slate-300'}`}>
-            📊 Resumen Final
+            Resumen Final
           </button>
         </div>
 
@@ -301,8 +404,8 @@ export default function MatrizCalificaciones() {
               <tbody className="bg-white">
                 {estudiantes.map((est, index) => {
                   const esRetirado = est.estado === 'Retirado';
-                  const rowClass = esRetirado 
-                    ? 'bg-slate-200 grayscale opacity-60 pointer-events-none' 
+                  const rowClass = esRetirado
+                    ? 'bg-slate-200 grayscale opacity-60 pointer-events-none'
                     : index % 2 === 0 ? 'bg-white hover:bg-yellow-50' : 'bg-slate-50 hover:bg-yellow-50';
 
                   if (vista === 'RESUMEN') {
