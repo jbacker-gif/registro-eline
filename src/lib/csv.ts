@@ -41,6 +41,15 @@ const splitCsvLine = (line: string, delimiter: string) => {
   return values
 }
 
+const detectDelimiter = (headerLine: string) => {
+  const delimiters = [',', ';', '\t']
+  return delimiters.reduce((best, delimiter) => {
+    const pattern = delimiter === '\t' ? /\t/g : new RegExp(delimiter, 'g')
+    const count = (headerLine.match(pattern) || []).length
+    return count > best.count ? { delimiter, count } : best
+  }, { delimiter: ',', count: 0 }).delimiter
+}
+
 export const parseCsv = (text: string): CsvRow[] => {
   const cleanText = text.replace(/^\uFEFF/, '')
   const lines = cleanText
@@ -50,7 +59,7 @@ export const parseCsv = (text: string): CsvRow[] => {
 
   if (lines.length < 2) return []
 
-  const delimiter = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length ? ';' : ','
+  const delimiter = detectDelimiter(lines[0])
   const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader)
 
   return lines.slice(1).map(line => {

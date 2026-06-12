@@ -148,6 +148,46 @@ export default function MisEstudiantes() {
     setNombres(''); setApellidos(''); setSigerdId(''); setSexo(''); setNacionalidad('Dominicana'); setFechaNacimiento(''); setTutor(''); setTelefono('');
   }
 
+  const normalizarFechaNacimientoCSV = (fechaDirecta: string, diaCsv: string, mesCsv: string, anoCsv: string) => {
+    const confirmarFechaValida = (valor: string) => {
+      const fecha = new Date(`${valor}T00:00:00`)
+      if (Number.isNaN(fecha.getTime())) return null
+
+      const [ano, mes, dia] = valor.split('-').map(Number)
+      if (fecha.getFullYear() !== ano || fecha.getMonth() + 1 !== mes || fecha.getDate() !== dia) return null
+      return valor
+    }
+
+    const fecha = fechaDirecta.trim()
+    if (fecha) {
+      const iso = fecha.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      if (iso) {
+        const [, ano, mes, dia] = iso
+        return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+      }
+
+      const local = fecha.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)
+      if (local) {
+        const [, primero, segundo, ano] = local
+        const primerNumero = Number(primero)
+        const segundoNumero = Number(segundo)
+        const dia = primerNumero > 12 ? primero : segundoNumero > 12 ? segundo : primero
+        const mes = primerNumero > 12 ? segundo : segundoNumero > 12 ? primero : segundo
+        return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+      }
+
+      return null
+    }
+
+    const dia = diaCsv.trim()
+    const mes = mesCsv.trim()
+    const ano = anoCsv.trim()
+    if (!dia && !mes && !ano) return null
+    if (!dia || !mes || !ano) return null
+
+    return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+  }
+
   // ==========================================
   // LECTOR DE CSV (Fechas incluidas)
   // ==========================================
@@ -158,7 +198,22 @@ export default function MisEstudiantes() {
     setMensaje({ texto: 'Procesando archivo CSV...', tipo: 'info' })
     try {
       const filas = await readCsvFile(file)
+      const requeridos = [
+        ['numero_orden', 'no_lista', 'numero', 'orden'],
+        ['nombres', 'nombre'],
+        ['apellidos', 'apellido'],
+      ]
+      const tieneColumnasBase = filas.length > 0 && requeridos.every(opciones =>
+        opciones.some(opcion => Object.prototype.hasOwnProperty.call(filas[0], opcion))
+      )
 
+      if (!tieneColumnasBase) {
+        setMensaje({ texto: 'La plantilla debe incluir numero_orden, nombres y apellidos.', tipo: 'error' })
+        return
+      }
+
+      let filasIgnoradas = 0
+      let fechasInvalidas = 0
       const datosCsv = filas.map(row => {
         const numero = Number(getCsvValue(row, ['numero_orden', 'no_lista', 'numero', 'orden'])) || 0
         const nom = getCsvValue(row, ['nombres', 'nombre']).trim()
@@ -170,10 +225,14 @@ export default function MisEstudiantes() {
         const telefonoCsv = getCsvValue(row, ['telefono_contacto', 'telefono', 'celular']).trim()
         const estadoCsv = getCsvValue(row, ['estado']).trim() || 'Activo'
         const fechaDirecta = getCsvValue(row, ['fecha_nacimiento', 'nacimiento']).trim()
-        const dia = getCsvValue(row, ['dia_nacimiento', 'dia']).trim().padStart(2, '0')
-        const mes = getCsvValue(row, ['mes_nacimiento', 'mes']).trim().padStart(2, '0')
+        const dia = getCsvValue(row, ['dia_nacimiento', 'dia']).trim()
+        const mes = getCsvValue(row, ['mes_nacimiento', 'mes']).trim()
         const ano = getCsvValue(row, ['ano_nacimiento', 'anio_nacimiento', 'ano', 'anio']).trim()
-        const fechaSQL = fechaDirecta || (dia && mes && ano ? `${ano}-${mes}-${dia}` : null)
+        const fechaSQL = normalizarFechaNacimientoCSV(fechaDirecta, dia, mes, ano)
+
+        if ((fechaDirecta || dia || mes || ano) && !fechaSQL) {
+          fechasInvalidas++
+        }
 
         return {
           numero_orden: numero,
@@ -190,7 +249,11 @@ export default function MisEstudiantes() {
           user_id: userId,
           estado: estadoCsv,
         }
-      }).filter(est => est.numero_orden > 0 && est.nombres !== '' && est.apellidos !== '')
+      }).filter(est => {
+        const valido = est.numero_orden > 0 && est.nombres !== '' && est.apellidos !== ''
+        if (!valido) filasIgnoradas++
+        return valido
+      })
 
       if (datosCsv.length === 0) {
         setMensaje({ texto: 'El archivo está vacío o tiene un formato incorrecto.', tipo: 'error' })
@@ -223,12 +286,14 @@ export default function MisEstudiantes() {
         }
       }
 
-      setMensaje({ texto: `Importación lista: ${creados} creados y ${actualizados} actualizados.`, tipo: 'exito' })
       cargarEstudiantes(seccionId, userId)
+      setMensaje({ texto: `Importación lista: ${creados} creados y ${actualizados} actualizados. Filas ignoradas: ${filasIgnoradas}. Fechas incompletas o inválidas: ${fechasInvalidas}.`, tipo: 'exito' })
       if (archivoInputRef.current) archivoInputRef.current.value = ''
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 5000)
     } catch (error) {
-      setMensaje({ texto: 'Error al leer el CSV. Revisa las columnas de la plantilla.', tipo: 'error' })
+      console.error(error)
+      const detalle = error instanceof Error ? error.message : 'revisa la plantilla CSV.'
+      setMensaje({ texto: `No se pudo importar estudiantes: ${detalle}`, tipo: 'error' })
     }
   }
 
