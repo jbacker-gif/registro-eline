@@ -38,6 +38,7 @@ export default function MisSecciones() {
         .eq('user_id', id)
         .order('grado', { ascending: true })
         .order('identificador', { ascending: true })
+        .order('ano_escolar', { ascending: false })
         
       if (error) throw error
       setSecciones(data || [])
@@ -65,26 +66,85 @@ export default function MisSecciones() {
     setMensaje({ texto: '', tipo: '' })
   }
 
+  const normalizarAnoEscolar = (valor: string) => {
+    const limpio = valor.trim().replace(/\s+/g, '').replace(/[\/_.]/g, '-')
+    if (!limpio) return { valor: '', error: 'El año escolar es obligatorio.' }
+
+    const completoConGuion = limpio.match(/^(20\d{2})-(20\d{2})$/)
+    if (completoConGuion) {
+      const inicio = Number(completoConGuion[1])
+      const fin = Number(completoConGuion[2])
+      if (fin !== inicio + 1) return { valor: '', error: 'El año escolar debe ser consecutivo. Ej: 2025-2026.' }
+      return { valor: `${inicio}-${fin}`, error: '' }
+    }
+
+    const completoSinGuion = limpio.match(/^(20\d{2})(20\d{2})$/)
+    if (completoSinGuion) {
+      const inicio = Number(completoSinGuion[1])
+      const fin = Number(completoSinGuion[2])
+      if (fin !== inicio + 1) return { valor: '', error: 'El año escolar debe ser consecutivo. Ej: 2025-2026.' }
+      return { valor: `${inicio}-${fin}`, error: '' }
+    }
+
+    const cortoConGuion = limpio.match(/^(\d{2})-(\d{2})$/)
+    if (cortoConGuion) {
+      const inicio = 2000 + Number(cortoConGuion[1])
+      const fin = 2000 + Number(cortoConGuion[2])
+      if (fin !== inicio + 1) return { valor: '', error: 'El año escolar debe ser consecutivo. Ej: 2025-2026.' }
+      return { valor: `${inicio}-${fin}`, error: '' }
+    }
+
+    const cortoSinGuion = limpio.match(/^(\d{2})(\d{2})$/)
+    if (cortoSinGuion) {
+      const inicio = 2000 + Number(cortoSinGuion[1])
+      const fin = 2000 + Number(cortoSinGuion[2])
+      if (fin !== inicio + 1) return { valor: '', error: 'El año escolar debe ser consecutivo. Ej: 2025-2026.' }
+      return { valor: `${inicio}-${fin}`, error: '' }
+    }
+
+    return { valor: '', error: 'Usa el formato 20xx-20xx. Ej: 2025-2026.' }
+  }
+
+  const normalizarAnoEnFormulario = () => {
+    const resultado = normalizarAnoEscolar(anoEscolar)
+    if (resultado.valor) setAnoEscolar(resultado.valor)
+  }
+
   const agregarSeccion = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
-    
+
     setMensaje({ texto: 'Guardando...', tipo: 'info' })
-    
+
     try {
-      // Verificamos si ya existe una sección exactamente igual (Grado + Letra + Tanda)
-      const existe = secciones.find(s =>
-        s.id !== seccionEditando?.id &&
-        s.grado === grado &&
-        s.identificador === identificador &&
-        (s.tanda || 'Matutina') === tanda
-      )
-      if (existe) {
-        setMensaje({ texto: '⚠️ Ya tienes registrada esta sección en esta misma tanda.', tipo: 'error' })
+      const anoNormalizado = normalizarAnoEscolar(anoEscolar)
+      if (anoNormalizado.error) {
+        setMensaje({ texto: anoNormalizado.error, tipo: 'error' })
         return
       }
 
-      const payload = { grado, identificador, tanda, ano_escolar: anoEscolar || null }
+      const gradoNormalizado = grado.trim()
+      const identificadorNormalizado = identificador.trim().toUpperCase()
+      const tandaNormalizada = tanda || 'Matutina'
+
+      const existe = secciones.find(s =>
+        s.id !== seccionEditando?.id &&
+        s.grado === gradoNormalizado &&
+        String(s.identificador || '').trim().toUpperCase() === identificadorNormalizado &&
+        (s.tanda || 'Matutina') === tandaNormalizada &&
+        (s.ano_escolar || '') === anoNormalizado.valor
+      )
+      if (existe) {
+        setMensaje({ texto: 'Ya tienes registrada esta misma sección, tanda y año escolar.', tipo: 'error' })
+        return
+      }
+
+      const payload = {
+        grado: gradoNormalizado,
+        identificador: identificadorNormalizado,
+        tanda: tandaNormalizada,
+        ano_escolar: anoNormalizado.valor,
+      }
       const { error } = seccionEditando
         ? await supabase.from('secciones').update(payload).eq('id', seccionEditando.id).eq('user_id', userId)
         : await supabase.from('secciones').insert([{ ...payload, user_id: userId }])
@@ -94,13 +154,12 @@ export default function MisSecciones() {
       setMensaje({ texto: seccionEditando ? 'Seccion actualizada con exito.' : 'Seccion creada con exito.', tipo: 'exito' })
       limpiarFormulario()
       cargarSecciones(userId)
-      
+
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
       setMensaje({ texto: 'Error al guardar la seccion.', tipo: 'error' })
     }
   }
-
   const eliminarSeccion = async (id: string, nombreCompleto: string) => {
     if (!userId) return
     if (!window.confirm(`¿Estás seguro de que quieres eliminar la sección ${nombreCompleto}? Se borrarán todos sus estudiantes y notas.`)) return
@@ -173,8 +232,9 @@ export default function MisSecciones() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Ano escolar</label>
-                <input type="text" value={anoEscolar} onChange={(e) => setAnoEscolar(e.target.value)} placeholder="Ej: 2025-2026" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium"/>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Año escolar</label>
+                <input type="text" required value={anoEscolar} onChange={(e) => setAnoEscolar(e.target.value)} onBlur={normalizarAnoEnFormulario} placeholder="Ej: 2025-2026" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium"/>
+                <p className="mt-2 text-xs font-medium text-slate-400">Acepta 20252026, 25-26 o 2526 y lo ajusta a 2025-2026.</p>
               </div>
 
               {mensaje.texto && (
@@ -209,7 +269,7 @@ export default function MisSecciones() {
                     <th className="p-5 font-bold">Grado</th>
                     <th className="p-5 font-bold text-center">Sección</th>
                     <th className="p-5 font-bold">Tanda</th>
-                    <th className="p-5 font-bold">Ano escolar</th>
+                    <th className="p-5 font-bold">Año escolar</th>
                     <th className="p-5 font-bold text-center">Acciones</th>
                   </tr>
                 </thead>
@@ -268,7 +328,7 @@ export default function MisSecciones() {
           <div className="mt-6 bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-4">
             <span className="text-xl">💡</span>
             <p className="text-sm text-blue-800 font-medium">
-              <strong className="font-black">Nota para docentes:</strong> Ahora puedes tener múltiples secciones con la misma letra (ej. "5to A") siempre y cuando pertenezcan a tandas diferentes. Al crearla, asegúrate de seleccionarla en el Panel de Control para añadirle estudiantes.
+              <strong className="font-black">Nota para docentes:</strong> Puedes repetir grado, sección y tanda cuando correspondan a años escolares diferentes. El año escolar se guardará siempre con formato 20xx-20xx.
             </p>
           </div>
         </div>

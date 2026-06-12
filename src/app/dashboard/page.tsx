@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [secciones, setSecciones] = useState<any[]>([])
   const [seccionActiva, setSeccionActiva] = useState('')
   const [cargando, setCargando] = useState(true)
+  const seccionSeleccionada = secciones.find(sec => sec.id === seccionActiva)
 
   // 1. NUEVA PALETA MINIMALISTA: Solo color en los íconos, tarjetas blancas limpias.
   const asignaturas = [
@@ -32,7 +33,13 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      const { data, error } = await supabase.from('secciones').select('*').eq('user_id', session.user.id).order('grado', { ascending: true })
+      const { data, error } = await supabase
+        .from('secciones')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('grado', { ascending: true })
+        .order('identificador', { ascending: true })
+        .order('ano_escolar', { ascending: false })
       if (error) throw error
       
       setSecciones(data || [])
@@ -77,7 +84,7 @@ export default function Dashboard() {
       <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center z-10 gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h1>
-          <p className="text-sm text-slate-500 font-medium">Ciclo Escolar 2025-2026</p>
+          <p className="text-sm text-slate-500 font-medium">Ciclo Escolar {seccionSeleccionada?.ano_escolar || 'sin definir'}</p>
         </div>
         
         {cargando ? (
@@ -92,7 +99,7 @@ export default function Dashboard() {
             >
               {secciones.map(sec => (
                 <option key={sec.id} value={sec.id}>
-                  {sec.grado} "{sec.identificador}" {sec.tanda ? `(${sec.tanda})` : ''}
+                  {sec.grado} "{sec.identificador}" {sec.tanda ? `(${sec.tanda})` : ''} {sec.ano_escolar ? `- ${sec.ano_escolar}` : ''}
                 </option>
               ))}
             </select>
