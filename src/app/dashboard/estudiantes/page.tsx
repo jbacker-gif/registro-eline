@@ -154,14 +154,26 @@ export default function MisEstudiantes() {
       }
 
       let estudianteIdFinal = idEditando
+      let fichaExtendidaPendiente = false
       if (idEditando) {
         const { error } = await supabase.from('estudiantes').update(datosEstudiante).eq('id', idEditando).eq('user_id', userId)
-        if (error) throw error
+        if (error) {
+          if (!esErrorEsquemaPendiente(error)) throw error
+          fichaExtendidaPendiente = true
+          const { error: errorBase } = await supabase.from('estudiantes').update(quitarCamposFichaExtendida(datosEstudiante)).eq('id', idEditando).eq('user_id', userId)
+          if (errorBase) throw errorBase
+        }
         setMensaje({ texto: '✅ ¡Estudiante actualizado!', tipo: 'exito' })
       } else {
         const { data, error } = await supabase.from('estudiantes').insert([datosEstudiante]).select('id').single()
-        if (error) throw error
-        estudianteIdFinal = data.id
+        if (error) {
+          if (!esErrorEsquemaPendiente(error)) throw error
+          fichaExtendidaPendiente = true
+          const { data: dataBase, error: errorBase } = await supabase.from('estudiantes').insert([quitarCamposFichaExtendida(datosEstudiante)]).select('id').single()
+          if (errorBase) throw errorBase
+          estudianteIdFinal = dataBase.id
+        }
+        if (data) estudianteIdFinal = data.id
         setMensaje({ texto: '✅ ¡Estudiante registrado!', tipo: 'exito' })
       }
 
@@ -187,18 +199,24 @@ export default function MisEstudiantes() {
             .eq('user_id', userId)
             .eq('es_principal', true)
             .maybeSingle()
-          if (responsableBuscarError) throw responsableBuscarError
-
-          const { error: responsableError } = responsableExistente
-            ? await supabase
-                .from('responsables_estudiante')
-                .update(datosResponsable)
-                .eq('id', responsableExistente.id)
-                .eq('user_id', userId)
-            : await supabase
-            .from('responsables_estudiante')
-                .insert([datosResponsable])
-          if (responsableError) throw responsableError
+          if (responsableBuscarError) {
+            if (!esErrorEsquemaPendiente(responsableBuscarError)) throw responsableBuscarError
+            fichaExtendidaPendiente = true
+          } else {
+            const { error: responsableError } = responsableExistente
+              ? await supabase
+                  .from('responsables_estudiante')
+                  .update(datosResponsable)
+                  .eq('id', responsableExistente.id)
+                  .eq('user_id', userId)
+              : await supabase
+                  .from('responsables_estudiante')
+                  .insert([datosResponsable])
+            if (responsableError) {
+              if (!esErrorEsquemaPendiente(responsableError)) throw responsableError
+              fichaExtendidaPendiente = true
+            }
+          }
         } else if (idEditando) {
           const { error: responsableDeleteError } = await supabase
             .from('responsables_estudiante')
@@ -206,15 +224,27 @@ export default function MisEstudiantes() {
             .eq('estudiante_id', estudianteIdFinal)
             .eq('user_id', userId)
             .eq('es_principal', true)
-          if (responsableDeleteError) throw responsableDeleteError
+          if (responsableDeleteError) {
+            if (!esErrorEsquemaPendiente(responsableDeleteError)) throw responsableDeleteError
+            fichaExtendidaPendiente = true
+          }
         }
+      }
+
+      if (fichaExtendidaPendiente) {
+        setMensaje({
+          texto: 'Estudiante guardado. La ficha extendida queda pendiente hasta aplicar la migracion en Supabase.',
+          tipo: 'info',
+        })
       }
 
       limpiarFormulario()
       cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
-      setMensaje({ texto: 'Error al guardar datos.', tipo: 'error' })
+      console.error('Error al guardar estudiante:', error)
+      const detalle = error instanceof Error ? error.message : 'Revisa la consola para mas detalles.'
+      setMensaje({ texto: `Error al guardar datos. ${detalle}`, tipo: 'error' })
     }
   }
 
@@ -306,6 +336,36 @@ export default function MisEstudiantes() {
     if (!dia || !mes || !ano) return null
 
     return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+  }
+
+  const esErrorEsquemaPendiente = (error: any) => {
+    const texto = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase()
+    return texto.includes('pgrst204')
+      || texto.includes('42p01')
+      || texto.includes('42703')
+      || texto.includes('could not find')
+      || texto.includes('schema cache')
+      || texto.includes('does not exist')
+      || texto.includes('column')
+  }
+
+  const quitarCamposFichaExtendida = (datos: Record<string, any>) => {
+    const datosBase = { ...datos }
+    ;[
+      'libro',
+      'folio',
+      'parentesco_con_quien_vive',
+      'direccion_residencia',
+      'fecha_nuevo_inscrito',
+      'fecha_retiro',
+      'condicion_inicial',
+      'neae',
+      'enfermedades_alergias',
+      'medicamentos_usa',
+      'emergencia_nombre',
+      'emergencia_telefono',
+    ].forEach(campo => delete datosBase[campo])
+    return datosBase
   }
 
   // ==========================================
