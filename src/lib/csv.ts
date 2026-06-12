@@ -79,10 +79,15 @@ export const getCsvValue = (row: CsvRow, keys: string[]) => {
   return ''
 }
 
-export const readCsvFile = (file: File) =>
-  new Promise<CsvRow[]>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = event => resolve(parseCsv(String(event.target?.result || '')))
-    reader.onerror = () => reject(reader.error)
-    reader.readAsText(file, 'UTF-8')
-  })
+const decodeCsvText = (buffer: ArrayBuffer) => {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buffer)
+  } catch {
+    return new TextDecoder('windows-1252').decode(buffer)
+  }
+}
+
+export const readCsvFile = async (file: File) => {
+  const buffer = await file.arrayBuffer()
+  return parseCsv(decodeCsvText(buffer))
+}
