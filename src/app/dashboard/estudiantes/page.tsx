@@ -273,15 +273,19 @@ export default function MisEstudiantes() {
       let actualizados = 0
 
       for (const datos of datosCsv) {
-        const existente = datos.sigerd_id ? porSigerd.get(datos.sigerd_id) : porNumero.get(datos.numero_orden)
+        const existente = (datos.sigerd_id ? porSigerd.get(datos.sigerd_id) : undefined) || porNumero.get(datos.numero_orden)
 
         if (existente) {
           const { error } = await supabase.from('estudiantes').update(datos).eq('id', existente.id).eq('user_id', userId)
           if (error) throw error
+          if (datos.sigerd_id) porSigerd.set(datos.sigerd_id, existente)
+          porNumero.set(datos.numero_orden, existente)
           actualizados++
         } else {
-          const { error } = await supabase.from('estudiantes').insert([datos])
+          const { data: creado, error } = await supabase.from('estudiantes').insert([datos]).select('id, numero_orden, sigerd_id').single()
           if (error) throw error
+          if (creado?.sigerd_id) porSigerd.set(String(creado.sigerd_id).trim(), creado)
+          if (creado) porNumero.set(Number(creado.numero_orden), creado)
           creados++
         }
       }
