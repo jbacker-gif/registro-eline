@@ -30,6 +30,24 @@ export default function MisEstudiantes() {
   const [fechaNacimiento, setFechaNacimiento] = useState('')
   const [tutor, setTutor] = useState('')
   const [telefono, setTelefono] = useState('')
+  const [libro, setLibro] = useState('')
+  const [folio, setFolio] = useState('')
+  const [parentescoVive, setParentescoVive] = useState('')
+  const [direccionResidencia, setDireccionResidencia] = useState('')
+  const [fechaNuevoInscrito, setFechaNuevoInscrito] = useState('')
+  const [fechaRetiro, setFechaRetiro] = useState('')
+  const [condicionInicial, setCondicionInicial] = useState('')
+  const [neae, setNeae] = useState('')
+  const [enfermedadesAlergias, setEnfermedadesAlergias] = useState('')
+  const [medicamentosUsa, setMedicamentosUsa] = useState('')
+  const [emergenciaNombre, setEmergenciaNombre] = useState('')
+  const [emergenciaTelefono, setEmergenciaTelefono] = useState('')
+  const [responsableNombre, setResponsableNombre] = useState('')
+  const [responsableParentesco, setResponsableParentesco] = useState('')
+  const [responsableCedula, setResponsableCedula] = useState('')
+  const [responsableTelefono, setResponsableTelefono] = useState('')
+  const [responsableProfesion, setResponsableProfesion] = useState('')
+  const [responsableNivelEducativo, setResponsableNivelEducativo] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -61,7 +79,26 @@ export default function MisEstudiantes() {
     try {
       const { data, error } = await supabase.from('estudiantes').select('*').eq('seccion_id', secId).eq('user_id', maestroId).order('numero_orden', { ascending: true })
       if (error) throw error
-      setEstudiantes(data || [])
+      const idsEstudiantes = (data || []).map(est => est.id)
+      let responsablesPorEstudiante = new Map<string, any>()
+
+      if (idsEstudiantes.length > 0) {
+        const { data: responsables, error: responsablesError } = await supabase
+          .from('responsables_estudiante')
+          .select('*')
+          .in('estudiante_id', idsEstudiantes)
+          .eq('user_id', maestroId)
+          .eq('es_principal', true)
+
+        if (!responsablesError) {
+          responsablesPorEstudiante = new Map((responsables || []).map(resp => [resp.estudiante_id, resp]))
+        }
+      }
+
+      setEstudiantes((data || []).map(est => ({
+        ...est,
+        responsable_principal: responsablesPorEstudiante.get(est.id) || null,
+      })))
       
       if (!idEditando) {
         if (data && data.length > 0) {
@@ -100,18 +137,77 @@ export default function MisEstudiantes() {
         fecha_nacimiento: fechaNacimiento || null,
         nombre_tutor: tutor,
         telefono_contacto: telefono,
+        libro: libro.trim() || null,
+        folio: folio.trim() || null,
+        parentesco_con_quien_vive: parentescoVive.trim() || null,
+        direccion_residencia: direccionResidencia.trim() || null,
+        fecha_nuevo_inscrito: fechaNuevoInscrito || null,
+        fecha_retiro: fechaRetiro || null,
+        condicion_inicial: condicionInicial || null,
+        neae: neae.trim() || null,
+        enfermedades_alergias: enfermedadesAlergias.trim() || null,
+        medicamentos_usa: medicamentosUsa.trim() || null,
+        emergencia_nombre: emergenciaNombre.trim() || null,
+        emergencia_telefono: emergenciaTelefono.trim() || null,
         seccion_id: seccionId,
         user_id: userId 
       }
 
+      let estudianteIdFinal = idEditando
       if (idEditando) {
         const { error } = await supabase.from('estudiantes').update(datosEstudiante).eq('id', idEditando).eq('user_id', userId)
         if (error) throw error
         setMensaje({ texto: '✅ ¡Estudiante actualizado!', tipo: 'exito' })
       } else {
-        const { error } = await supabase.from('estudiantes').insert([datosEstudiante])
+        const { data, error } = await supabase.from('estudiantes').insert([datosEstudiante]).select('id').single()
         if (error) throw error
+        estudianteIdFinal = data.id
         setMensaje({ texto: '✅ ¡Estudiante registrado!', tipo: 'exito' })
+      }
+
+      if (estudianteIdFinal) {
+        if (responsableNombre.trim()) {
+          const datosResponsable = {
+            estudiante_id: estudianteIdFinal,
+            user_id: userId,
+            nombre_completo: responsableNombre.trim(),
+            parentesco: responsableParentesco.trim() || null,
+            cedula: responsableCedula.trim() || null,
+            telefono: responsableTelefono.trim() || null,
+            profesion_oficio: responsableProfesion.trim() || null,
+            nivel_educativo: responsableNivelEducativo || null,
+            es_principal: true,
+            updated_at: new Date().toISOString(),
+          }
+
+          const { data: responsableExistente, error: responsableBuscarError } = await supabase
+            .from('responsables_estudiante')
+            .select('id')
+            .eq('estudiante_id', estudianteIdFinal)
+            .eq('user_id', userId)
+            .eq('es_principal', true)
+            .maybeSingle()
+          if (responsableBuscarError) throw responsableBuscarError
+
+          const { error: responsableError } = responsableExistente
+            ? await supabase
+                .from('responsables_estudiante')
+                .update(datosResponsable)
+                .eq('id', responsableExistente.id)
+                .eq('user_id', userId)
+            : await supabase
+            .from('responsables_estudiante')
+                .insert([datosResponsable])
+          if (responsableError) throw responsableError
+        } else if (idEditando) {
+          const { error: responsableDeleteError } = await supabase
+            .from('responsables_estudiante')
+            .delete()
+            .eq('estudiante_id', estudianteIdFinal)
+            .eq('user_id', userId)
+            .eq('es_principal', true)
+          if (responsableDeleteError) throw responsableDeleteError
+        }
       }
 
       limpiarFormulario()
@@ -126,6 +222,9 @@ export default function MisEstudiantes() {
   // PREPARAR PARA EDITAR
   // ==========================================
   const cargarParaEditar = (est: any) => {
+    const nombreResponsable = est.responsable_principal?.nombre_completo || est.nombre_tutor || ''
+    const telefonoResponsable = est.responsable_principal?.telefono || est.telefono_contacto || ''
+
     setIdEditando(est.id)
     setNuevoNumero(est.numero_orden.toString())
     setNombres(est.nombres || '')
@@ -134,8 +233,26 @@ export default function MisEstudiantes() {
     setSexo(est.sexo || '')
     setNacionalidad(est.nacionalidad || 'Dominicana')
     setFechaNacimiento(est.fecha_nacimiento || '')
-    setTutor(est.nombre_tutor || '')
-    setTelefono(est.telefono_contacto || '')
+    setTutor(nombreResponsable)
+    setTelefono(telefonoResponsable)
+    setLibro(est.libro || '')
+    setFolio(est.folio || '')
+    setParentescoVive(est.parentesco_con_quien_vive || '')
+    setDireccionResidencia(est.direccion_residencia || '')
+    setFechaNuevoInscrito(est.fecha_nuevo_inscrito || '')
+    setFechaRetiro(est.fecha_retiro || '')
+    setCondicionInicial(est.condicion_inicial || '')
+    setNeae(est.neae || '')
+    setEnfermedadesAlergias(est.enfermedades_alergias || '')
+    setMedicamentosUsa(est.medicamentos_usa || '')
+    setEmergenciaNombre(est.emergencia_nombre || '')
+    setEmergenciaTelefono(est.emergencia_telefono || '')
+    setResponsableNombre(nombreResponsable)
+    setResponsableParentesco(est.responsable_principal?.parentesco || '')
+    setResponsableCedula(est.responsable_principal?.cedula || '')
+    setResponsableTelefono(telefonoResponsable)
+    setResponsableProfesion(est.responsable_principal?.profesion_oficio || '')
+    setResponsableNivelEducativo(est.responsable_principal?.nivel_educativo || '')
     
     // Hacemos scroll suave hacia arriba en el contenedor interno
     if (contenedorPrincipalRef.current) {
@@ -146,6 +263,9 @@ export default function MisEstudiantes() {
   const limpiarFormulario = () => {
     setIdEditando(null)
     setNombres(''); setApellidos(''); setSigerdId(''); setSexo(''); setNacionalidad('Dominicana'); setFechaNacimiento(''); setTutor(''); setTelefono('');
+    setLibro(''); setFolio(''); setParentescoVive(''); setDireccionResidencia(''); setFechaNuevoInscrito(''); setFechaRetiro(''); setCondicionInicial('');
+    setNeae(''); setEnfermedadesAlergias(''); setMedicamentosUsa(''); setEmergenciaNombre(''); setEmergenciaTelefono('');
+    setResponsableNombre(''); setResponsableParentesco(''); setResponsableCedula(''); setResponsableTelefono(''); setResponsableProfesion(''); setResponsableNivelEducativo('');
   }
 
   const normalizarFechaNacimientoCSV = (fechaDirecta: string, diaCsv: string, mesCsv: string, anoCsv: string) => {
@@ -430,10 +550,60 @@ export default function MisEstudiantes() {
                 </div>
 
                 <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Tutor y Contacto</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Escolaridad oficial</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" value={libro} onChange={(e) => setLibro(e.target.value)} placeholder="Libro" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="Folio" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={parentescoVive} onChange={(e) => setParentescoVive(e.target.value)} placeholder="Vive con / parentesco" className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={direccionResidencia} onChange={(e) => setDireccionResidencia(e.target.value)} placeholder="Direccion donde reside" className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <select value={condicionInicial} onChange={(e) => setCondicionInicial(e.target.value)} className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700">
+                      <option value="">Condicion inicial</option>
+                      <option value="Aplazado/a">Aplazado/a</option>
+                      <option value="Promovido/a">Promovido/a</option>
+                      <option value="Repitente">Repitente</option>
+                      <option value="Reentrante">Reentrante</option>
+                    </select>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Nuevo inscrito</label>
+                      <input type="date" value={fechaNuevoInscrito} onChange={(e) => setFechaNuevoInscrito(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Fecha retiro</label>
+                      <input type="date" value={fechaRetiro} onChange={(e) => setFechaRetiro(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Salud y apoyo educativo</p>
                   <div className="space-y-3">
-                    <input type="text" value={tutor} onChange={(e) => setTutor(e.target.value)} placeholder="Nombre del Padre/Tutor" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (Ej: 809-555-0000)" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <textarea value={neae} onChange={(e) => setNeae(e.target.value)} placeholder="Necesidades especificas de apoyo educativo (NEAE)" rows={2} className="w-full resize-none border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <textarea value={enfermedadesAlergias} onChange={(e) => setEnfermedadesAlergias(e.target.value)} placeholder="Enfermedades, alergias u observaciones de salud" rows={2} className="w-full resize-none border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={medicamentosUsa} onChange={(e) => setMedicamentosUsa(e.target.value)} placeholder="Medicamentos que usa" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={emergenciaNombre} onChange={(e) => setEmergenciaNombre(e.target.value)} placeholder="En emergencia llamar a" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="tel" value={emergenciaTelefono} onChange={(e) => setEmergenciaTelefono(e.target.value)} placeholder="Telefono de emergencia" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Responsable principal</p>
+                  <div className="space-y-3">
+                    <input type="text" value={responsableNombre} onChange={(e) => { setResponsableNombre(e.target.value); setTutor(e.target.value) }} placeholder="Nombre completo del responsable" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" value={responsableParentesco} onChange={(e) => setResponsableParentesco(e.target.value)} placeholder="Parentesco" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                      <input type="text" value={responsableCedula} onChange={(e) => setResponsableCedula(e.target.value)} placeholder="Cedula" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    </div>
+                    <input type="tel" value={responsableTelefono} onChange={(e) => { setResponsableTelefono(e.target.value); setTelefono(e.target.value) }} placeholder="Telefono (Ej: 809-555-0000)" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <input type="text" value={responsableProfesion} onChange={(e) => setResponsableProfesion(e.target.value)} placeholder="Profesion u oficio" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                    <select value={responsableNivelEducativo} onChange={(e) => setResponsableNivelEducativo(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700">
+                      <option value="">Nivel educativo</option>
+                      <option value="Primario">Primario</option>
+                      <option value="Secundario">Secundario</option>
+                      <option value="Tecnico">Tecnico</option>
+                      <option value="Universitario">Universitario</option>
+                      <option value="Postgrado">Postgrado</option>
+                      <option value="No especificado">No especificado</option>
+                    </select>
                   </div>
                 </div>
 
@@ -476,7 +646,7 @@ export default function MisEstudiantes() {
                           <td className="p-4 text-center font-bold text-slate-400">{est.numero_orden}</td>
                           <td className="p-4 font-bold text-slate-800 flex flex-col">
                             {est.nombre_completo}
-                            <span className="text-[10px] text-slate-400 font-normal uppercase mt-0.5 truncate max-w-[200px]">Tutor: {est.nombre_tutor || 'No registrado'}</span>
+                            <span className="text-[10px] text-slate-400 font-normal uppercase mt-0.5 truncate max-w-[200px]">Tutor: {est.responsable_principal?.nombre_completo || est.nombre_tutor || 'No registrado'}</span>
                           </td>
                           <td className="p-4">
                             <span className="font-mono text-xs text-slate-600">{est.sigerd_id || '-'}</span>
