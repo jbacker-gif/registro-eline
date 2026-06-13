@@ -632,7 +632,7 @@ export default function GeneradorBoletines() {
         }
 
         .template-text {
-          font-size: clamp(7px, 1.18vw, 19px);
+          font-size: clamp(7px, 1.8vw, 28px);
           font-weight: 600;
           transform: translateY(-72%);
         }
@@ -640,7 +640,7 @@ export default function GeneradorBoletines() {
         .template-grade {
           min-width: 2.8%;
           text-align: center;
-          font-size: clamp(7px, 1vw, 15px);
+          font-size: clamp(7px, 1.5vw, 50px);
           font-weight: 700;
           transform: translate(-50%, -50%);
         }
