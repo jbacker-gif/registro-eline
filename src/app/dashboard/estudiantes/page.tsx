@@ -8,6 +8,8 @@ export default function MisEstudiantes() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
+  const [formularioAbierto, setFormularioAbierto] = useState(false)
+  const [pestanaFormulario, setPestanaFormulario] = useState<'personales' | 'escolaridad' | 'salud' | 'responsable'>('personales')
 
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
@@ -48,6 +50,18 @@ export default function MisEstudiantes() {
   const [responsableTelefono, setResponsableTelefono] = useState('')
   const [responsableProfesion, setResponsableProfesion] = useState('')
   const [responsableNivelEducativo, setResponsableNivelEducativo] = useState('')
+
+  const abrirNuevoEstudiante = () => {
+    limpiarFormulario()
+    setPestanaFormulario('personales')
+    setFormularioAbierto(true)
+  }
+
+  const cerrarFormulario = () => {
+    limpiarFormulario()
+    setFormularioAbierto(false)
+    setPestanaFormulario('personales')
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -124,6 +138,12 @@ export default function MisEstudiantes() {
     setMensaje({ texto: 'Guardando...', tipo: 'info' })
     
     try {
+      if (!nuevoNumero || !nombres.trim() || !apellidos.trim() || !sexo || !nacionalidad.trim()) {
+        setPestanaFormulario('personales')
+        setMensaje({ texto: 'Completa los datos obligatorios del estudiante.', tipo: 'error' })
+        return
+      }
+
       const nombreCompletoGenerado = `${apellidos}, ${nombres}`
 
       const datosEstudiante = {
@@ -178,6 +198,8 @@ export default function MisEstudiantes() {
       }
 
       limpiarFormulario()
+      setFormularioAbierto(false)
+      setPestanaFormulario('personales')
       cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
@@ -222,6 +244,8 @@ export default function MisEstudiantes() {
     setResponsableTelefono(telefonoResponsable)
     setResponsableProfesion(est.responsable_principal?.profesion_oficio || '')
     setResponsableNivelEducativo(est.responsable_principal?.nivel_educativo || '')
+    setPestanaFormulario('personales')
+    setFormularioAbierto(true)
     
     // Hacemos scroll suave hacia arriba en el contenedor interno
     if (contenedorPrincipalRef.current) {
@@ -511,7 +535,7 @@ export default function MisEstudiantes() {
       const { error } = await supabase.from('estudiantes').delete().eq('id', id).eq('user_id', userId)
       if (error) throw error
       if (seccionId && userId) cargarEstudiantes(seccionId, userId)
-      if (idEditando === id) limpiarFormulario()
+      if (idEditando === id) cerrarFormulario()
     } catch (error) {
       alert('Error al eliminar.')
     }
@@ -533,14 +557,27 @@ export default function MisEstudiantes() {
             </p>
           </div>
           
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <input type="file" accept=".csv" ref={archivoInputRef} onChange={manejarImportacionCSV} className="hidden" />
+            <button
+              onClick={abrirNuevoEstudiante}
+              className="w-full rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-blue-700 sm:w-auto"
+            >
+              + Nuevo estudiante
+            </button>
             <button 
               onClick={() => archivoInputRef.current?.click()} 
               className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 hover:text-emerald-600 hover:border-emerald-300 px-5 py-2.5 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-sm text-sm"
             >
               <span className="text-emerald-500 text-lg">📄</span> Importar CSV
             </button>
+            <a
+              href="/plantillas/plantilla_estudiantes.csv"
+              download
+              className="w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-center text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-blue-300 hover:text-blue-600 sm:w-auto"
+            >
+              Plantilla
+            </a>
           </div>
         </div>
 
@@ -555,21 +592,45 @@ export default function MisEstudiantes() {
           {/* ========================================================
               FORMULARIO (min-w-0 evita que empuje la cuadrícula)
               ======================================================== */}
-          <div className="xl:col-span-4 min-w-0">
-            <div className="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-slate-200 xl:sticky xl:top-6">
+          <div
+            className={`${formularioAbierto ? 'fixed inset-0 z-40 flex justify-end bg-slate-950/35 backdrop-blur-[1px]' : 'hidden'}`}
+            onClick={cerrarFormulario}
+          >
+            <div
+              className="h-full w-full max-w-2xl overflow-y-auto border-l border-slate-200 bg-white p-5 shadow-2xl md:p-8"
+              onClick={(e) => e.stopPropagation()}
+            >
               
               <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   {idEditando ? 'Editando Alumno' : 'Nuevo Alumno'}
                 </h2>
-                {idEditando && (
-                  <button onClick={limpiarFormulario} className="text-xs font-bold text-slate-400 hover:text-slate-700 px-2 py-1 bg-slate-50 rounded-lg transition-colors">
-                    Cancelar
+                <button onClick={cerrarFormulario} type="button" className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800">
+                  Cerrar
+                </button>
+              </div>
+
+              <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 text-xs font-bold text-slate-500 md:grid-cols-4">
+                {[
+                  ['personales', 'Datos'],
+                  ['escolaridad', 'Escolaridad'],
+                  ['salud', 'Salud'],
+                  ['responsable', 'Responsable'],
+                ].map(([clave, etiqueta]) => (
+                  <button
+                    key={clave}
+                    type="button"
+                    onClick={() => setPestanaFormulario(clave as typeof pestanaFormulario)}
+                    className={`rounded-lg px-3 py-2 transition-colors ${pestanaFormulario === clave ? 'bg-white text-blue-700 shadow-sm' : 'hover:text-slate-800'}`}
+                  >
+                    {etiqueta}
                   </button>
-                )}
+                ))}
               </div>
               
               <form onSubmit={guardarEstudiante} className="space-y-4">
+                {pestanaFormulario === 'personales' && (
+                  <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">No. Lista</label>
@@ -610,7 +671,10 @@ export default function MisEstudiantes() {
                     <input type="text" required value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm font-medium text-slate-700"/>
                   </div>
                 </div>
+                  </>
+                )}
 
+                {pestanaFormulario === 'escolaridad' && (
                 <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Escolaridad oficial</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -635,7 +699,9 @@ export default function MisEstudiantes() {
                     </div>
                   </div>
                 </div>
+                )}
 
+                {pestanaFormulario === 'salud' && (
                 <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Salud y apoyo educativo</p>
                   <div className="space-y-3">
@@ -646,7 +712,9 @@ export default function MisEstudiantes() {
                     <input type="tel" value={emergenciaTelefono} onChange={(e) => setEmergenciaTelefono(e.target.value)} placeholder="Telefono de emergencia" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
                   </div>
                 </div>
+                )}
 
+                {pestanaFormulario === 'responsable' && (
                 <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Responsable principal</p>
                   <div className="space-y-3">
@@ -668,6 +736,7 @@ export default function MisEstudiantes() {
                     </select>
                   </div>
                 </div>
+                )}
 
                 <button type="submit" className={`w-full text-white font-bold py-4 rounded-xl transition-all shadow-md mt-4 flex justify-center items-center gap-2 ${idEditando ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                   {idEditando ? 'Actualizar Alumno' : '+ Guardar Alumno'}
@@ -679,7 +748,7 @@ export default function MisEstudiantes() {
           {/* ========================================================
               TABLA (min-w-0 permite overflow-x-auto)
               ======================================================== */}
-          <div className="xl:col-span-8 min-w-0">
+          <div className="xl:col-span-12 min-w-0">
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden w-full">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[900px]">
