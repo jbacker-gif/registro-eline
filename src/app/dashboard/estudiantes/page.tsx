@@ -154,87 +154,26 @@ export default function MisEstudiantes() {
       }
 
       let estudianteIdFinal = idEditando
-      let fichaExtendidaPendiente = false
       if (idEditando) {
         const { error } = await supabase.from('estudiantes').update(datosEstudiante).eq('id', idEditando).eq('user_id', userId)
-        if (error) {
-          if (!esErrorEsquemaPendiente(error)) throw error
-          fichaExtendidaPendiente = true
-          const { error: errorBase } = await supabase.from('estudiantes').update(quitarCamposFichaExtendida(datosEstudiante)).eq('id', idEditando).eq('user_id', userId)
-          if (errorBase) throw errorBase
-        }
+        if (error) throw error
         setMensaje({ texto: '✅ ¡Estudiante actualizado!', tipo: 'exito' })
       } else {
         const { data, error } = await supabase.from('estudiantes').insert([datosEstudiante]).select('id').single()
-        if (error) {
-          if (!esErrorEsquemaPendiente(error)) throw error
-          fichaExtendidaPendiente = true
-          const { data: dataBase, error: errorBase } = await supabase.from('estudiantes').insert([quitarCamposFichaExtendida(datosEstudiante)]).select('id').single()
-          if (errorBase) throw errorBase
-          estudianteIdFinal = dataBase.id
-        }
-        if (data) estudianteIdFinal = data.id
+        if (error) throw error
+        estudianteIdFinal = data.id
         setMensaje({ texto: '✅ ¡Estudiante registrado!', tipo: 'exito' })
       }
 
       if (estudianteIdFinal) {
-        if (responsableNombre.trim()) {
-          const datosResponsable = {
-            estudiante_id: estudianteIdFinal,
-            user_id: userId,
-            nombre_completo: responsableNombre.trim(),
-            parentesco: responsableParentesco.trim() || null,
-            cedula: responsableCedula.trim() || null,
-            telefono: responsableTelefono.trim() || null,
-            profesion_oficio: responsableProfesion.trim() || null,
-            nivel_educativo: responsableNivelEducativo || null,
-            es_principal: true,
-            updated_at: new Date().toISOString(),
-          }
-
-          const { data: responsableExistente, error: responsableBuscarError } = await supabase
-            .from('responsables_estudiante')
-            .select('id')
-            .eq('estudiante_id', estudianteIdFinal)
-            .eq('user_id', userId)
-            .eq('es_principal', true)
-            .maybeSingle()
-          if (responsableBuscarError) {
-            if (!esErrorEsquemaPendiente(responsableBuscarError)) throw responsableBuscarError
-            fichaExtendidaPendiente = true
-          } else {
-            const { error: responsableError } = responsableExistente
-              ? await supabase
-                  .from('responsables_estudiante')
-                  .update(datosResponsable)
-                  .eq('id', responsableExistente.id)
-                  .eq('user_id', userId)
-              : await supabase
-                  .from('responsables_estudiante')
-                  .insert([datosResponsable])
-            if (responsableError) {
-              if (!esErrorEsquemaPendiente(responsableError)) throw responsableError
-              fichaExtendidaPendiente = true
-            }
-          }
-        } else if (idEditando) {
-          const { error: responsableDeleteError } = await supabase
-            .from('responsables_estudiante')
-            .delete()
-            .eq('estudiante_id', estudianteIdFinal)
-            .eq('user_id', userId)
-            .eq('es_principal', true)
-          if (responsableDeleteError) {
-            if (!esErrorEsquemaPendiente(responsableDeleteError)) throw responsableDeleteError
-            fichaExtendidaPendiente = true
-          }
-        }
-      }
-
-      if (fichaExtendidaPendiente) {
-        setMensaje({
-          texto: 'Estudiante guardado. La ficha extendida queda pendiente hasta aplicar la migracion en Supabase.',
-          tipo: 'info',
+        await guardarResponsablePrincipal(estudianteIdFinal, {
+          nombre_completo: responsableNombre,
+          parentesco: responsableParentesco,
+          cedula: responsableCedula,
+          telefono: responsableTelefono,
+          profesion_oficio: responsableProfesion,
+          nivel_educativo: responsableNivelEducativo,
+          borrarSiVacio: Boolean(idEditando),
         })
       }
 
@@ -338,34 +277,66 @@ export default function MisEstudiantes() {
     return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
   }
 
-  const esErrorEsquemaPendiente = (error: any) => {
-    const texto = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`.toLowerCase()
-    return texto.includes('pgrst204')
-      || texto.includes('42p01')
-      || texto.includes('42703')
-      || texto.includes('could not find')
-      || texto.includes('schema cache')
-      || texto.includes('does not exist')
-      || texto.includes('column')
-  }
+  const guardarResponsablePrincipal = async (
+    estudianteId: string,
+    responsable: {
+      nombre_completo?: string | null
+      parentesco?: string | null
+      cedula?: string | null
+      telefono?: string | null
+      profesion_oficio?: string | null
+      nivel_educativo?: string | null
+      borrarSiVacio?: boolean
+    }
+  ) => {
+    if (!userId) return
 
-  const quitarCamposFichaExtendida = (datos: Record<string, any>) => {
-    const datosBase = { ...datos }
-    ;[
-      'libro',
-      'folio',
-      'parentesco_con_quien_vive',
-      'direccion_residencia',
-      'fecha_nuevo_inscrito',
-      'fecha_retiro',
-      'condicion_inicial',
-      'neae',
-      'enfermedades_alergias',
-      'medicamentos_usa',
-      'emergencia_nombre',
-      'emergencia_telefono',
-    ].forEach(campo => delete datosBase[campo])
-    return datosBase
+    const nombre = responsable.nombre_completo?.trim() || ''
+    if (!nombre) {
+      if (!responsable.borrarSiVacio) return
+
+      const { error } = await supabase
+        .from('responsables_estudiante')
+        .delete()
+        .eq('estudiante_id', estudianteId)
+        .eq('user_id', userId)
+        .eq('es_principal', true)
+      if (error) throw error
+      return
+    }
+
+    const datosResponsable = {
+      estudiante_id: estudianteId,
+      user_id: userId,
+      nombre_completo: nombre,
+      parentesco: responsable.parentesco?.trim() || null,
+      cedula: responsable.cedula?.trim() || null,
+      telefono: responsable.telefono?.trim() || null,
+      profesion_oficio: responsable.profesion_oficio?.trim() || null,
+      nivel_educativo: responsable.nivel_educativo?.trim() || null,
+      es_principal: true,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data: responsableExistente, error: responsableBuscarError } = await supabase
+      .from('responsables_estudiante')
+      .select('id')
+      .eq('estudiante_id', estudianteId)
+      .eq('user_id', userId)
+      .eq('es_principal', true)
+      .maybeSingle()
+    if (responsableBuscarError) throw responsableBuscarError
+
+    const { error } = responsableExistente
+      ? await supabase
+          .from('responsables_estudiante')
+          .update(datosResponsable)
+          .eq('id', responsableExistente.id)
+          .eq('user_id', userId)
+      : await supabase
+          .from('responsables_estudiante')
+          .insert([datosResponsable])
+    if (error) throw error
   }
 
   // ==========================================
@@ -409,10 +380,18 @@ export default function MisEstudiantes() {
         const mes = getCsvValue(row, ['mes_nacimiento', 'mes']).trim()
         const ano = getCsvValue(row, ['ano_nacimiento', 'anio_nacimiento', 'ano', 'anio']).trim()
         const fechaSQL = normalizarFechaNacimientoCSV(fechaDirecta, dia, mes, ano)
+        const fechaNuevoInscritoCsv = getCsvValue(row, ['fecha_nuevo_inscrito', 'nuevo_inscrito']).trim()
+        const fechaRetiroCsv = getCsvValue(row, ['fecha_retiro', 'retiro']).trim()
+        const fechaNuevoInscritoSQL = fechaNuevoInscritoCsv ? normalizarFechaNacimientoCSV(fechaNuevoInscritoCsv, '', '', '') : null
+        const fechaRetiroSQL = fechaRetiroCsv ? normalizarFechaNacimientoCSV(fechaRetiroCsv, '', '', '') : null
+        const responsableNombreCsv = getCsvValue(row, ['responsable_nombre', 'nombre_responsable']).trim() || tutorCsv
+        const responsableTelefonoCsv = getCsvValue(row, ['responsable_telefono', 'telefono_responsable']).trim() || telefonoCsv
 
         if ((fechaDirecta || dia || mes || ano) && !fechaSQL) {
           fechasInvalidas++
         }
+        if (fechaNuevoInscritoCsv && !fechaNuevoInscritoSQL) fechasInvalidas++
+        if (fechaRetiroCsv && !fechaRetiroSQL) fechasInvalidas++
 
         return {
           numero_orden: numero,
@@ -425,9 +404,29 @@ export default function MisEstudiantes() {
           fecha_nacimiento: fechaSQL,
           nombre_tutor: tutorCsv,
           telefono_contacto: telefonoCsv,
+          libro: getCsvValue(row, ['libro']).trim() || null,
+          folio: getCsvValue(row, ['folio']).trim() || null,
+          parentesco_con_quien_vive: getCsvValue(row, ['parentesco_con_quien_vive', 'vive_con', 'parentesco_vive']).trim() || null,
+          direccion_residencia: getCsvValue(row, ['direccion_residencia', 'direccion']).trim() || null,
+          fecha_nuevo_inscrito: fechaNuevoInscritoSQL,
+          fecha_retiro: fechaRetiroSQL,
+          condicion_inicial: getCsvValue(row, ['condicion_inicial']).trim() || null,
+          neae: getCsvValue(row, ['neae', 'apoyo_educativo']).trim() || null,
+          enfermedades_alergias: getCsvValue(row, ['enfermedades_alergias', 'salud']).trim() || null,
+          medicamentos_usa: getCsvValue(row, ['medicamentos_usa', 'medicamentos']).trim() || null,
+          emergencia_nombre: getCsvValue(row, ['emergencia_nombre', 'contacto_emergencia']).trim() || null,
+          emergencia_telefono: getCsvValue(row, ['emergencia_telefono', 'telefono_emergencia']).trim() || null,
           seccion_id: seccionId,
           user_id: userId,
           estado: estadoCsv,
+          responsable_principal_csv: {
+            nombre_completo: responsableNombreCsv,
+            parentesco: getCsvValue(row, ['responsable_parentesco', 'parentesco_responsable']).trim(),
+            cedula: getCsvValue(row, ['responsable_cedula', 'cedula_responsable']).trim(),
+            telefono: responsableTelefonoCsv,
+            profesion_oficio: getCsvValue(row, ['responsable_profesion', 'responsable_oficio', 'profesion_oficio']).trim(),
+            nivel_educativo: getCsvValue(row, ['responsable_nivel_educativo', 'nivel_educativo_responsable']).trim(),
+          },
         }
       }).filter(est => {
         const valido = est.numero_orden > 0 && est.nombres !== '' && est.apellidos !== ''
@@ -453,17 +452,20 @@ export default function MisEstudiantes() {
       let actualizados = 0
 
       for (const datos of datosCsv) {
-        const existente = (datos.sigerd_id ? porSigerd.get(datos.sigerd_id) : undefined) || porNumero.get(datos.numero_orden)
+        const { responsable_principal_csv: responsableCsv, ...datosEstudianteCsv } = datos
+        const existente = (datosEstudianteCsv.sigerd_id ? porSigerd.get(datosEstudianteCsv.sigerd_id) : undefined) || porNumero.get(datosEstudianteCsv.numero_orden)
 
         if (existente) {
-          const { error } = await supabase.from('estudiantes').update(datos).eq('id', existente.id).eq('user_id', userId)
+          const { error } = await supabase.from('estudiantes').update(datosEstudianteCsv).eq('id', existente.id).eq('user_id', userId)
           if (error) throw error
-          if (datos.sigerd_id) porSigerd.set(datos.sigerd_id, existente)
-          porNumero.set(datos.numero_orden, existente)
+          await guardarResponsablePrincipal(existente.id, responsableCsv)
+          if (datosEstudianteCsv.sigerd_id) porSigerd.set(datosEstudianteCsv.sigerd_id, existente)
+          porNumero.set(datosEstudianteCsv.numero_orden, existente)
           actualizados++
         } else {
-          const { data: creado, error } = await supabase.from('estudiantes').insert([datos]).select('id, numero_orden, sigerd_id').single()
+          const { data: creado, error } = await supabase.from('estudiantes').insert([datosEstudianteCsv]).select('id, numero_orden, sigerd_id').single()
           if (error) throw error
+          if (creado?.id) await guardarResponsablePrincipal(creado.id, responsableCsv)
           if (creado?.sigerd_id) porSigerd.set(String(creado.sigerd_id).trim(), creado)
           if (creado) porNumero.set(Number(creado.numero_orden), creado)
           creados++

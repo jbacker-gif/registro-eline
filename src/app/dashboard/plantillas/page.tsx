@@ -1,9 +1,9 @@
 const plantillas = [
   {
     nombre: 'Estudiantes',
-    descripcion: 'Alta y actualizacion de estudiantes por seccion. Usa SIGERD o numero de lista para actualizar sin duplicar.',
+    descripcion: 'Alta y actualizacion de estudiantes por seccion, ficha extendida y responsable principal. Usa SIGERD o numero de lista para actualizar sin duplicar.',
     archivo: '/plantillas/plantilla_estudiantes.csv',
-    columnas: 'numero_orden, nombres, apellidos, sexo, nacionalidad, fecha_nacimiento, sigerd_id, tutor, telefono y estado.',
+    columnas: 'numero_orden, nombres, apellidos, sexo, nacionalidad, fecha_nacimiento, sigerd_id, tutor, estado, libro, folio, direccion, salud, emergencia y responsable.',
   },
   {
     nombre: 'Calificaciones',
