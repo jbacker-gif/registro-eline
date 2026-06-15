@@ -56,7 +56,7 @@ const obtenerRangoAnoEscolar = (anoEscolar?: string | null) => {
     fin,
     texto: `${inicio}-${fin}`,
     fechaInicio: `${inicio}-08-01`,
-    fechaFin: `${fin}-07-31`,
+    fechaFin: `${fin}-06-30`,
     corteMatricula: `${inicio}-10-15`,
   }
 }
