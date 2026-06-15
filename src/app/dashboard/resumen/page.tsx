@@ -39,6 +39,7 @@ type ResumenEstudiante = {
   a: number
   e: number
   t: number
+  diasTrabajados: number
   total: number
   porcentajePresencia: number
 }
@@ -78,25 +79,13 @@ const esFinDeSemana = (fechaISO: string) => {
   return dia === 0 || dia === 6
 }
 
-const sumarDia = (fechaISO: string) => {
-  const fecha = new Date(`${fechaISO}T00:00:00`)
-  fecha.setDate(fecha.getDate() + 1)
-  return fecha.toISOString().slice(0, 10)
-}
-
-const contarDiasTrabajadosPorMes = (inicio: string, fin: string, bloqueados: Set<string>) => {
-  const resumen = new Map<string, number>()
-  let cursor = inicio
-
-  while (cursor <= fin) {
-    if (!esFinDeSemana(cursor) && !bloqueados.has(cursor)) {
-      const clave = cursor.slice(0, 7)
-      resumen.set(clave, (resumen.get(clave) || 0) + 1)
-    }
-    cursor = sumarDia(cursor)
-  }
-
-  return resumen
+const normalizarEtiqueta = (valor?: string | null) => {
+  const limpio = (valor || '').trim()
+  if (!limpio) return 'No especificada'
+  return limpio
+    .toLocaleLowerCase('es-DO')
+    .replace(/\s+/g, ' ')
+    .replace(/(^|\s|-)([a-záéíóúñü])/g, texto => texto.toLocaleUpperCase('es-DO'))
 }
 
 export default function ResumenAnual() {
@@ -189,8 +178,10 @@ export default function ResumenAnual() {
     const condiciones = new Map<string, number>()
 
     estudiantes.forEach(est => {
-      nacionalidades.set(est.nacionalidad || 'No especificada', (nacionalidades.get(est.nacionalidad || 'No especificada') || 0) + 1)
-      condiciones.set(est.condicion_inicial || 'No especificada', (condiciones.get(est.condicion_inicial || 'No especificada') || 0) + 1)
+      const nacionalidad = normalizarEtiqueta(est.nacionalidad)
+      const condicion = normalizarEtiqueta(est.condicion_inicial)
+      nacionalidades.set(nacionalidad, (nacionalidades.get(nacionalidad) || 0) + 1)
+      condiciones.set(condicion, (condiciones.get(condicion) || 0) + 1)
     })
 
     return {
@@ -208,35 +199,51 @@ export default function ResumenAnual() {
 
   const resumenAsistencia = useMemo(() => {
     const bloqueados = new Set(diasBloqueados)
-    const diasPorMes = contarDiasTrabajadosPorMes(rango.fechaInicio, rango.fechaFin, bloqueados)
-    const totalDiasTrabajados = Array.from(diasPorMes.values()).reduce((total, valor) => total + valor, 0)
+    const registrosValidos = registrosAsistencia.filter(registro =>
+      registro.fecha >= rango.fechaInicio
+      && registro.fecha <= rango.fechaFin
+      && !bloqueados.has(registro.fecha)
+      && !esFinDeSemana(registro.fecha)
+      && ['P', 'A', 'E', 'T'].includes(registro.estado)
+    )
+    const fechasTrabajadas = Array.from(new Set(registrosValidos.map(registro => registro.fecha))).sort()
+    const totalDiasTrabajados = fechasTrabajadas.length
+    const asistenciaPorEstudianteFecha = new Map<string, EstadoAsistencia>()
     const porEstudiante = new Map<string, ResumenEstudiante>()
     const porMes = new Map<string, { p: number; a: number; e: number; t: number; diasTrabajados: number }>()
 
     estudiantes.forEach(estudiante => {
-      porEstudiante.set(estudiante.id, { estudiante, p: 0, a: 0, e: 0, t: 0, total: 0, porcentajePresencia: 0 })
+      porEstudiante.set(estudiante.id, { estudiante, p: 0, a: 0, e: 0, t: 0, diasTrabajados: 0, total: 0, porcentajePresencia: 0 })
     })
 
-    diasPorMes.forEach((diasTrabajados, clave) => {
-      porMes.set(clave, { p: 0, a: 0, e: 0, t: 0, diasTrabajados })
+    registrosValidos.forEach(registro => {
+      asistenciaPorEstudianteFecha.set(`${registro.estudiante_id}_${registro.fecha}`, registro.estado as EstadoAsistencia)
     })
 
-    registrosAsistencia.forEach(registro => {
-      const resumenEstudiante = porEstudiante.get(registro.estudiante_id)
-      const estado = registro.estado as EstadoAsistencia
-      if (!resumenEstudiante || !['P', 'A', 'E', 'T'].includes(estado)) return
+    fechasTrabajadas.forEach(fecha => {
+      const claveMes = fecha.slice(0, 7)
+      const resumenMes = porMes.get(claveMes) || { p: 0, a: 0, e: 0, t: 0, diasTrabajados: 0 }
+      resumenMes.diasTrabajados += 1
 
-      resumenEstudiante[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
-      resumenEstudiante.total += 1
+      estudiantes.forEach(estudiante => {
+        if (!estaActivoEnFecha(estudiante, fecha)) return
 
-      const claveMes = registro.fecha.slice(0, 7)
-      const resumenMes = porMes.get(claveMes)
-      if (resumenMes) resumenMes[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
+        const resumenEstudiante = porEstudiante.get(estudiante.id)
+        if (!resumenEstudiante) return
+
+        const estado = asistenciaPorEstudianteFecha.get(`${estudiante.id}_${fecha}`) || 'A'
+        resumenEstudiante[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
+        resumenEstudiante.diasTrabajados += 1
+        resumenEstudiante.total += 1
+        resumenMes[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
+      })
+
+      porMes.set(claveMes, resumenMes)
     })
 
     const estudiantesResumen = Array.from(porEstudiante.values()).map(resumen => ({
       ...resumen,
-      porcentajePresencia: resumen.total > 0 ? Math.round((resumen.p / resumen.total) * 100) : 0,
+      porcentajePresencia: resumen.diasTrabajados > 0 ? Math.round((resumen.p / resumen.diasTrabajados) * 100) : 0,
     }))
 
     const totales = estudiantesResumen.reduce(
@@ -246,9 +253,10 @@ export default function ResumenAnual() {
         acc.e += resumen.e
         acc.t += resumen.t
         acc.total += resumen.total
+        acc.diasTrabajados += resumen.diasTrabajados
         return acc
       },
-      { p: 0, a: 0, e: 0, t: 0, total: 0 }
+      { p: 0, a: 0, e: 0, t: 0, total: 0, diasTrabajados: 0 }
     )
 
     return {
@@ -257,7 +265,7 @@ export default function ResumenAnual() {
       meses: Array.from(porMes.entries()).sort(([a], [b]) => a.localeCompare(b)),
       totales: {
         ...totales,
-        porcentajePresencia: totales.total > 0 ? Math.round((totales.p / totales.total) * 100) : 0,
+        porcentajePresencia: totales.diasTrabajados > 0 ? Math.round((totales.p / totales.diasTrabajados) * 100) : 0,
       },
     }
   }, [diasBloqueados, estudiantes, registrosAsistencia, rango.fechaFin, rango.fechaInicio])
@@ -377,6 +385,7 @@ export default function ResumenAnual() {
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-5">
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Detalle anual por estudiante</h2>
+            <p className="mt-1 text-xs font-medium text-slate-400">El porcentaje se calcula con los dias trabajados que tienen asistencia guardada; los dias sin marca para estudiantes activos se consideran ausencia.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
@@ -390,11 +399,12 @@ export default function ResumenAnual() {
                   <th className="p-3 text-center">A</th>
                   <th className="p-3 text-center">E</th>
                   <th className="p-3 text-center">T</th>
+                  <th className="p-3 text-center">Dias</th>
                   <th className="p-3 text-center">% presencia</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {resumenAsistencia.estudiantesResumen.map(({ estudiante, p, a, e, t, porcentajePresencia }) => (
+                {resumenAsistencia.estudiantesResumen.map(({ estudiante, p, a, e, t, diasTrabajados, porcentajePresencia }) => (
                   <tr key={estudiante.id} className="hover:bg-slate-50">
                     <td className="p-3 text-center font-bold text-slate-400">{estudiante.numero_orden}</td>
                     <td className="p-3 font-bold text-slate-800">{estudiante.nombre_completo || `${estudiante.apellidos || ''}, ${estudiante.nombres || ''}`}</td>
@@ -404,6 +414,7 @@ export default function ResumenAnual() {
                     <td className="p-3 text-center text-red-700">{a}</td>
                     <td className="p-3 text-center text-amber-700">{e}</td>
                     <td className="p-3 text-center text-orange-700">{t}</td>
+                    <td className="p-3 text-center font-bold text-slate-500">{diasTrabajados}</td>
                     <td className="p-3 text-center font-black text-slate-700">{porcentajePresencia}%</td>
                   </tr>
                 ))}
