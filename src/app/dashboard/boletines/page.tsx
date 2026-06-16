@@ -807,8 +807,8 @@ function BoletinDocumento({ boletin }: { boletin: BoletinGenerado }) {
         ))}
         {periodos.map((periodo, index) => (
           <div key={periodo}>
-            <TemplateGrade left={layoutAsistencia.columnLefts.asistencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].asistencia || ''}</TemplateGrade>
-            <TemplateGrade left={layoutAsistencia.columnLefts.ausencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].ausencia || ''}</TemplateGrade>
+            <TemplateGrade left={layoutAsistencia.columnLefts.asistencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].asistencia}</TemplateGrade>
+            <TemplateGrade left={layoutAsistencia.columnLefts.ausencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].ausencia}</TemplateGrade>
           </div>
         ))}
         <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAsistencia} top={layoutAsistencia.totalTop}>{boletin.totalDiasTrabajados ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
