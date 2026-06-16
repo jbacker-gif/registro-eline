@@ -16,6 +16,7 @@ type Estudiante = {
   apellidos?: string | null
   sigerd_id?: string | null
   seccion_id?: string | null
+  estado?: string | null
 }
 
 type Perfil = {
@@ -220,6 +221,9 @@ const obtenerImagenBoletin = (grado: GradoBoletin, pagina: 1 | 2) =>
 const normalizar = (valor = '') =>
   valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 
+const esEstudianteRetirado = (estudiante?: Estudiante | null) =>
+  normalizar(estudiante?.estado || '') === 'retirado'
+
 const celda = (valor: unknown) => {
   if (valor === null || valor === undefined || valor === '') return ''
   return String(valor)
@@ -312,11 +316,13 @@ export default function GeneradorBoletines() {
   }, [estudianteSeleccionado, userId])
 
   const datosEstudiante = estudiantes.find(e => e.id === estudianteSeleccionado)
+  const estudiantesActivos = estudiantes.filter(estudiante => !esEstudianteRetirado(estudiante))
 
   const construirBoletin = async (idEstudiante: string, contexto?: ContextoBoletin): Promise<BoletinGenerado | null> => {
     if (!userId) return null
       const estudiante = estudiantes.find(e => e.id === idEstudiante)
       if (!estudiante) return null
+      if (esEstudianteRetirado(estudiante)) return null
       let perfil = contexto?.perfil
       if (!contexto) {
         const { data } = await supabase.from('perfiles').select('*').eq('id', userId).maybeSingle()
@@ -493,7 +499,7 @@ export default function GeneradorBoletines() {
   const imprimirBoletin = () => window.print()
 
   const prepararSeccionCompleta = async () => {
-    if (!userId || estudiantes.length === 0) return
+    if (!userId || estudiantesActivos.length === 0) return
     setCargandoBoletin(true)
     setModoSeccionCompleta(true)
     setEstudianteSeleccionado('')
@@ -505,7 +511,7 @@ export default function GeneradorBoletines() {
     try {
       const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', userId).maybeSingle()
       let seccion: Seccion | null = null
-      const seccionId = estudiantes[0]?.seccion_id
+      const seccionId = estudiantesActivos[0]?.seccion_id
       if (seccionId) {
         const { data } = await supabase
           .from('secciones')
@@ -517,7 +523,7 @@ export default function GeneradorBoletines() {
       }
 
       let colegio: Colegio | null = null
-      const colegioRelacionado = perfil?.colegio_id || estudiantes[0]?.colegio_id
+      const colegioRelacionado = perfil?.colegio_id || estudiantesActivos[0]?.colegio_id
       if (colegioRelacionado) {
         const { data } = await supabase.from('colegios').select('*').eq('id', colegioRelacionado).maybeSingle()
         colegio = data || null
@@ -536,15 +542,15 @@ export default function GeneradorBoletines() {
       }
 
       const generados: BoletinGenerado[] = []
-      for (const [index, estudiante] of estudiantes.entries()) {
-        setProgresoSeccion(`Preparando ${index + 1}/${estudiantes.length}: ${estudiante.nombre_completo || estudiante.nombres || 'Estudiante'}`)
+      for (const [index, estudiante] of estudiantesActivos.entries()) {
+        setProgresoSeccion(`Preparando ${index + 1}/${estudiantesActivos.length}: ${estudiante.nombre_completo || estudiante.nombres || 'Estudiante'}`)
         const boletin = await construirBoletin(estudiante.id, contexto)
         if (boletin) {
           generados.push(boletin)
           setBoletinesSeccion([...generados])
         }
       }
-      setProgresoSeccion(`Listos ${generados.length} boletines de ${estudiantes.length}`)
+      setProgresoSeccion(`Listos ${generados.length} boletines de ${estudiantesActivos.length}`)
     } catch (error) {
       console.error(error)
       setProgresoSeccion('No se pudo preparar la seccion completa.')
@@ -574,7 +580,7 @@ export default function GeneradorBoletines() {
             onChange={(e) => setEstudianteSeleccionado(e.target.value)}
           >
             <option value="">Elige un estudiante de la seccion activa</option>
-            {estudiantes.map(est => (
+            {estudiantesActivos.map(est => (
               <option key={est.id} value={est.id}>{est.numero_orden}. {est.nombre_completo}</option>
             ))}
           </select>
@@ -587,7 +593,7 @@ export default function GeneradorBoletines() {
               Imprimir
             </button>
           )}
-          {estudiantes.length > 0 && (
+          {estudiantesActivos.length > 0 && (
             <button
               onClick={prepararSeccionCompleta}
               disabled={cargandoBoletin}
@@ -605,6 +611,11 @@ export default function GeneradorBoletines() {
             </button>
           )}
         </div>
+        {estudiantes.length > 0 && estudiantesActivos.length === 0 && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            No hay estudiantes activos disponibles para generar boletines.
+          </div>
+        )}
         {progresoSeccion && (
           <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm font-semibold text-blue-800">
             {progresoSeccion}
