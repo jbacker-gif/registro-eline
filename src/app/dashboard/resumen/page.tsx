@@ -110,6 +110,19 @@ const normalizarFechaISO = (fecha?: string | null) => {
   return fecha.slice(0, 10)
 }
 
+const normalizarTexto = (valor?: string | null) =>
+  (valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+
+const esEstudianteRetirado = (estudiante: Estudiante) =>
+  normalizarTexto(estudiante.estado) === 'retirado'
+
+const normalizarSexo = (sexo?: string | null) => {
+  const valor = normalizarTexto(sexo)
+  if (valor === 'm' || valor === 'masculino') return 'M'
+  if (valor === 'f' || valor === 'femenino') return 'F'
+  return ''
+}
+
 const normalizarEstadoAsistencia = (estado?: string | null): EstadoAsistencia | null => {
   const valor = (estado || '').trim().toUpperCase()
   return ['P', 'A', 'E', 'T'].includes(valor) ? valor as EstadoAsistencia : null
@@ -204,12 +217,12 @@ export default function ResumenAnual() {
   }
 
   const estadisticasMatricula = useMemo(() => {
-    const activos = estudiantes.filter(est => est.estado !== 'Retirado')
-    const retirados = estudiantes.filter(est => est.estado === 'Retirado')
-    const nuevos = estudiantes.filter(est => est.fecha_nuevo_inscrito && est.fecha_nuevo_inscrito > rango.corteMatricula)
+    const activos = estudiantes.filter(est => !esEstudianteRetirado(est))
+    const retirados = estudiantes.filter(esEstudianteRetirado)
+    const nuevos = estudiantes.filter(est => normalizarFechaISO(est.fecha_nuevo_inscrito) > rango.corteMatricula)
     const matriculaInicial = estudiantes.filter(est => estaActivoEnFecha(est, rango.corteMatricula))
-    const masculino = estudiantes.filter(est => est.sexo === 'M')
-    const femenino = estudiantes.filter(est => est.sexo === 'F')
+    const masculino = estudiantes.filter(est => normalizarSexo(est.sexo) === 'M')
+    const femenino = estudiantes.filter(est => normalizarSexo(est.sexo) === 'F')
     const nacionalidades = new Map<string, number>()
     const condiciones = new Map<string, number>()
 
@@ -228,6 +241,7 @@ export default function ResumenAnual() {
       matriculaInicial: matriculaInicial.length,
       masculino: masculino.length,
       femenino: femenino.length,
+      noEspecificadoSexo: estudiantes.length - masculino.length - femenino.length,
       nacionalidades: Array.from(nacionalidades.entries()),
       condiciones: Array.from(condiciones.entries()),
     }
@@ -380,6 +394,11 @@ export default function ResumenAnual() {
                 <p className="text-2xl font-black text-emerald-900">{estadisticasMatricula.nuevos}</p>
               </div>
             </div>
+            {estadisticasMatricula.noEspecificadoSexo > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+                {estadisticasMatricula.noEspecificadoSexo} estudiante(s) sin sexo especificado.
+              </div>
+            )}
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <ResumenLista titulo="Nacionalidad" datos={estadisticasMatricula.nacionalidades} />
@@ -415,11 +434,16 @@ export default function ResumenAnual() {
                     <th className="py-2 text-center">A</th>
                     <th className="py-2 text-center">E</th>
                     <th className="py-2 text-center">T</th>
+                    <th className="py-2 text-center">% P</th>
+                    <th className="py-2 text-center">% A</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {resumenAsistencia.meses.map(([clave, resumen]) => {
                     const [, mes] = clave.split('-').map(Number)
+                    const totalMes = resumen.p + resumen.a + resumen.e + resumen.t
+                    const porcentajeP = totalMes > 0 ? Math.round((resumen.p / totalMes) * 100) : 0
+                    const porcentajeA = totalMes > 0 ? Math.round((resumen.a / totalMes) * 100) : 0
                     return (
                       <tr key={clave}>
                         <td className="py-2 font-semibold text-slate-700">{nombresMeses[mes - 1]}</td>
@@ -428,6 +452,8 @@ export default function ResumenAnual() {
                         <td className="py-2 text-center">{resumen.a}</td>
                         <td className="py-2 text-center">{resumen.e}</td>
                         <td className="py-2 text-center">{resumen.t}</td>
+                        <td className="py-2 text-center font-bold text-slate-600">{porcentajeP}%</td>
+                        <td className="py-2 text-center font-bold text-slate-600">{porcentajeA}%</td>
                       </tr>
                     )
                   })}
@@ -484,6 +510,39 @@ export default function ResumenAnual() {
           </div>
         </section>
       </div>
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: letter landscape;
+            margin: 0.35in;
+          }
+
+          body {
+            background: #fff !important;
+          }
+
+          .dashboard-sidebar,
+          nav,
+          aside,
+          button {
+            display: none !important;
+          }
+
+          section {
+            break-inside: avoid;
+            box-shadow: none !important;
+          }
+
+          table {
+            page-break-inside: auto;
+          }
+
+          tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+        }
+      `}</style>
     </div>
   )
 }
