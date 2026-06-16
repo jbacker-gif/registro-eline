@@ -253,7 +253,7 @@ export default function ResumenAnual() {
     const totalDiasTrabajados = diasLaborables.length
     const asistenciaPorEstudianteFecha = new Map<string, EstadoAsistencia>()
     const porEstudiante = new Map<string, ResumenEstudiante>()
-    const porMes = new Map<string, { p: number; a: number; e: number; t: number; diasTrabajados: number }>()
+    const porMes = new Map<string, { p: number; a: number; e: number; t: number; diasTrabajados: number; diasEstudiante: number }>()
 
     estudiantes.forEach(estudiante => {
       porEstudiante.set(estudiante.id, {
@@ -272,7 +272,7 @@ export default function ResumenAnual() {
     })
 
     diasPorMes.forEach((diasTrabajados, claveMes) => {
-      porMes.set(claveMes, { p: 0, a: 0, e: 0, t: 0, diasTrabajados })
+      porMes.set(claveMes, { p: 0, a: 0, e: 0, t: 0, diasTrabajados, diasEstudiante: 0 })
     })
 
     registrosAsistencia.forEach(registro => {
@@ -295,9 +295,12 @@ export default function ResumenAnual() {
         const resumenEstudiante = porEstudiante.get(estudiante.id)
         if (!resumenEstudiante) return
 
-        const estado = asistenciaPorEstudianteFecha.get(`${estudiante.id}_${fecha}`) || 'A'
-        resumenEstudiante[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
         resumenEstudiante.diasTrabajados += 1
+        resumenMes.diasEstudiante += 1
+        const estado = asistenciaPorEstudianteFecha.get(`${estudiante.id}_${fecha}`)
+        if (!estado) return
+
+        resumenEstudiante[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
         resumenEstudiante.total += 1
         resumenMes[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
       })
@@ -441,9 +444,8 @@ export default function ResumenAnual() {
                 <tbody className="divide-y divide-slate-100">
                   {resumenAsistencia.meses.map(([clave, resumen]) => {
                     const [, mes] = clave.split('-').map(Number)
-                    const totalMes = resumen.p + resumen.a + resumen.e + resumen.t
-                    const porcentajeP = totalMes > 0 ? Math.round((resumen.p / totalMes) * 100) : 0
-                    const porcentajeA = totalMes > 0 ? Math.round((resumen.a / totalMes) * 100) : 0
+                    const porcentajeP = resumen.diasEstudiante > 0 ? Math.round((resumen.p / resumen.diasEstudiante) * 100) : 0
+                    const porcentajeA = resumen.diasEstudiante > 0 ? Math.round((resumen.a / resumen.diasEstudiante) * 100) : 0
                     return (
                       <tr key={clave}>
                         <td className="py-2 font-semibold text-slate-700">{nombresMeses[mes - 1]}</td>

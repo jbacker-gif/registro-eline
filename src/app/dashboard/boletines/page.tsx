@@ -455,12 +455,20 @@ export default function GeneradorBoletines() {
       const diasBloqueados = new Set((diasNoLaborables || []).map((dia: { fecha: string }) => normalizarFechaISO(dia.fecha)))
       const totalDiasTrabajados = contarDiasTrabajados(fechaInicioAsistencia, fechaFinAsistencia, diasBloqueados)
 
+      const asistenciaPorFecha = new Map<string, 'P' | 'A'>()
+
       ;(asistencia as RegistroAsistencia[] | null)?.forEach(registro => {
         const fecha = normalizarFechaISO(registro.fecha)
         if (!fecha || diasBloqueados.has(fecha) || esFinDeSemana(fecha)) return
+        const estado = normalizarEstadoAsistencia(registro.estado)
+        if (!estado) return
+        asistenciaPorFecha.set(fecha, estado)
+      })
+
+      asistenciaPorFecha.forEach((estado, fecha) => {
         const periodo = obtenerPeriodoAsistencia(fecha)
         if (!periodo) return
-        contarEstadoAsistencia(registro.estado, resumen[periodo])
+        contarEstadoAsistencia(estado, resumen[periodo])
       })
 
       return {
