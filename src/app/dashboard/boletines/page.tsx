@@ -16,6 +16,7 @@ type Estudiante = {
   apellidos?: string | null
   sigerd_id?: string | null
   seccion_id?: string | null
+  estado?: string | null
 }
 
 type Perfil = {
@@ -77,6 +78,7 @@ type BoletinGenerado = {
   estudiante: Estudiante
   filasBoletin: FilaBoletin[]
   asistenciaResumen: ResumenAsistencia
+  totalDiasTrabajados: number
   infoSeccion: Seccion | null
   infoColegio: Colegio | null
   infoPerfil: Perfil | null
@@ -148,12 +150,45 @@ const obtenerPeriodoAsistencia = (fechaISO: string): Periodo | null => {
   return periodos.find(periodo => mesesPorPeriodo[periodo].includes(mes)) || null
 }
 
+const esFinDeSemana = (fechaISO: string) => {
+  const fecha = new Date(`${fechaISO}T00:00:00`)
+  const dia = fecha.getDay()
+  return dia === 0 || dia === 6
+}
+
+const sumarDia = (fechaISO: string) => {
+  const fecha = new Date(`${fechaISO}T00:00:00`)
+  fecha.setDate(fecha.getDate() + 1)
+  return fecha.toISOString().slice(0, 10)
+}
+
+const contarDiasTrabajados = (inicio: string, fin: string, bloqueados: Set<string>) => {
+  let total = 0
+  let cursor = inicio
+
+  while (cursor <= fin) {
+    if (!esFinDeSemana(cursor) && !bloqueados.has(cursor)) total++
+    cursor = sumarDia(cursor)
+  }
+
+  return total
+}
+
+const normalizarFechaISO = (fecha?: string | null) => fecha ? fecha.slice(0, 10) : ''
+
+const normalizarEstadoAsistencia = (estado?: string | null): 'P' | 'A' | null => {
+  const valor = (estado || '').trim().toUpperCase()
+  if (valor === 'P' || valor === 'A') return valor
+  return null
+}
+
 const contarEstadoAsistencia = (
   estado: string,
   resumenPeriodo: { asistencia: number; ausencia: number }
 ) => {
-  if (estado === 'P') resumenPeriodo.asistencia += 1
-  if (estado === 'A') resumenPeriodo.ausencia += 1
+  const estadoNormalizado = normalizarEstadoAsistencia(estado)
+  if (estadoNormalizado === 'P') resumenPeriodo.asistencia += 1
+  if (estadoNormalizado === 'A') resumenPeriodo.ausencia += 1
 }
 
 const etiquetaGrado: Record<string, string> = {
@@ -186,6 +221,9 @@ const obtenerImagenBoletin = (grado: GradoBoletin, pagina: 1 | 2) =>
 const normalizar = (valor = '') =>
   valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 
+const esEstudianteRetirado = (estudiante?: Estudiante | null) =>
+  normalizar(estudiante?.estado || '') === 'retirado'
+
 const celda = (valor: unknown) => {
   if (valor === null || valor === undefined || valor === '') return ''
   return String(valor)
@@ -208,16 +246,15 @@ const crearResumenAsistenciaVacio = (): ResumenAsistencia =>
     return acc
   }, {} as ResumenAsistencia)
 
-const calcularTotalesAsistencia = (asistenciaResumen: ResumenAsistencia) => {
+const calcularTotalesAsistencia = (asistenciaResumen: ResumenAsistencia, totalDiasTrabajados: number) => {
   const asistencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].asistencia, 0)
   const ausencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].ausencia, 0)
-  const total = asistencia + ausencia
 
   return {
     asistencia,
     ausencia,
-    porcentajeAsistencia: total > 0 ? Math.round((asistencia / total) * 100) : 0,
-    porcentajeAusencia: total > 0 ? Math.round((ausencia / total) * 100) : 0,
+    porcentajeAsistencia: totalDiasTrabajados > 0 ? Math.round((asistencia / totalDiasTrabajados) * 100) : 0,
+    porcentajeAusencia: totalDiasTrabajados > 0 ? Math.round((ausencia / totalDiasTrabajados) * 100) : 0,
   }
 }
 
@@ -226,6 +263,7 @@ export default function GeneradorBoletines() {
   const [estudianteSeleccionado, setEstudianteSeleccionado] = useState('')
   const [filasBoletin, setFilasBoletin] = useState<FilaBoletin[]>([])
   const [asistenciaResumen, setAsistenciaResumen] = useState<ResumenAsistencia>(crearResumenAsistenciaVacio())
+  const [totalDiasTrabajadosBoletin, setTotalDiasTrabajadosBoletin] = useState(0)
   const [boletinesSeccion, setBoletinesSeccion] = useState<BoletinGenerado[]>([])
   const [modoSeccionCompleta, setModoSeccionCompleta] = useState(false)
   const [progresoSeccion, setProgresoSeccion] = useState('')
@@ -278,11 +316,13 @@ export default function GeneradorBoletines() {
   }, [estudianteSeleccionado, userId])
 
   const datosEstudiante = estudiantes.find(e => e.id === estudianteSeleccionado)
+  const estudiantesActivos = estudiantes.filter(estudiante => !esEstudianteRetirado(estudiante))
 
   const construirBoletin = async (idEstudiante: string, contexto?: ContextoBoletin): Promise<BoletinGenerado | null> => {
     if (!userId) return null
       const estudiante = estudiantes.find(e => e.id === idEstudiante)
       if (!estudiante) return null
+      if (esEstudianteRetirado(estudiante)) return null
       let perfil = contexto?.perfil
       if (!contexto) {
         const { data } = await supabase.from('perfiles').select('*').eq('id', userId).maybeSingle()
@@ -394,18 +434,31 @@ export default function GeneradorBoletines() {
 
       const seccionParaAsistencia = seccion || infoSeccion
       const { inicio, fin } = rangoAnoEscolar(seccionParaAsistencia?.ano_escolar)
+      const fechaInicioAsistencia = `${inicio}-08-01`
+      const fechaFinAsistencia = `${fin}-06-30`
       const { data: asistencia } = await supabase
         .from('asistencia')
         .select('fecha, estado')
         .eq('estudiante_id', idEstudiante)
         .eq('user_id', userId)
-        .gte('fecha', `${inicio}-08-01`)
-        .lte('fecha', `${fin}-06-30`)
+        .gte('fecha', fechaInicioAsistencia)
+        .lte('fecha', fechaFinAsistencia)
+
+      const { data: diasNoLaborables } = await supabase
+        .from('dias_bloqueados')
+        .select('fecha')
+        .eq('seccion_id', seccionParaAsistencia?.id || estudiante.seccion_id)
+        .gte('fecha', fechaInicioAsistencia)
+        .lte('fecha', fechaFinAsistencia)
 
       const resumen = crearResumenAsistenciaVacio()
+      const diasBloqueados = new Set((diasNoLaborables || []).map((dia: { fecha: string }) => normalizarFechaISO(dia.fecha)))
+      const totalDiasTrabajados = contarDiasTrabajados(fechaInicioAsistencia, fechaFinAsistencia, diasBloqueados)
 
       ;(asistencia as RegistroAsistencia[] | null)?.forEach(registro => {
-        const periodo = obtenerPeriodoAsistencia(registro.fecha)
+        const fecha = normalizarFechaISO(registro.fecha)
+        if (!fecha || diasBloqueados.has(fecha) || esFinDeSemana(fecha)) return
+        const periodo = obtenerPeriodoAsistencia(fecha)
         if (!periodo) return
         contarEstadoAsistencia(registro.estado, resumen[periodo])
       })
@@ -414,6 +467,7 @@ export default function GeneradorBoletines() {
         estudiante,
         filasBoletin: filas,
         asistenciaResumen: resumen,
+        totalDiasTrabajados,
         infoSeccion: seccion || null,
         infoColegio: colegio || null,
         infoPerfil: perfil || null,
@@ -434,6 +488,7 @@ export default function GeneradorBoletines() {
       setInfoColegio(boletin.infoColegio)
       setFilasBoletin(boletin.filasBoletin)
       setAsistenciaResumen(boletin.asistenciaResumen)
+      setTotalDiasTrabajadosBoletin(boletin.totalDiasTrabajados)
     } catch (error) {
       console.error(error)
     } finally {
@@ -444,7 +499,7 @@ export default function GeneradorBoletines() {
   const imprimirBoletin = () => window.print()
 
   const prepararSeccionCompleta = async () => {
-    if (!userId || estudiantes.length === 0) return
+    if (!userId || estudiantesActivos.length === 0) return
     setCargandoBoletin(true)
     setModoSeccionCompleta(true)
     setEstudianteSeleccionado('')
@@ -456,7 +511,7 @@ export default function GeneradorBoletines() {
     try {
       const { data: perfil } = await supabase.from('perfiles').select('*').eq('id', userId).maybeSingle()
       let seccion: Seccion | null = null
-      const seccionId = estudiantes[0]?.seccion_id
+      const seccionId = estudiantesActivos[0]?.seccion_id
       if (seccionId) {
         const { data } = await supabase
           .from('secciones')
@@ -468,7 +523,7 @@ export default function GeneradorBoletines() {
       }
 
       let colegio: Colegio | null = null
-      const colegioRelacionado = perfil?.colegio_id || estudiantes[0]?.colegio_id
+      const colegioRelacionado = perfil?.colegio_id || estudiantesActivos[0]?.colegio_id
       if (colegioRelacionado) {
         const { data } = await supabase.from('colegios').select('*').eq('id', colegioRelacionado).maybeSingle()
         colegio = data || null
@@ -487,15 +542,15 @@ export default function GeneradorBoletines() {
       }
 
       const generados: BoletinGenerado[] = []
-      for (const [index, estudiante] of estudiantes.entries()) {
-        setProgresoSeccion(`Preparando ${index + 1}/${estudiantes.length}: ${estudiante.nombre_completo || estudiante.nombres || 'Estudiante'}`)
+      for (const [index, estudiante] of estudiantesActivos.entries()) {
+        setProgresoSeccion(`Preparando ${index + 1}/${estudiantesActivos.length}: ${estudiante.nombre_completo || estudiante.nombres || 'Estudiante'}`)
         const boletin = await construirBoletin(estudiante.id, contexto)
         if (boletin) {
           generados.push(boletin)
           setBoletinesSeccion([...generados])
         }
       }
-      setProgresoSeccion(`Listos ${generados.length} boletines de ${estudiantes.length}`)
+      setProgresoSeccion(`Listos ${generados.length} boletines de ${estudiantesActivos.length}`)
     } catch (error) {
       console.error(error)
       setProgresoSeccion('No se pudo preparar la seccion completa.')
@@ -525,7 +580,7 @@ export default function GeneradorBoletines() {
             onChange={(e) => setEstudianteSeleccionado(e.target.value)}
           >
             <option value="">Elige un estudiante de la seccion activa</option>
-            {estudiantes.map(est => (
+            {estudiantesActivos.map(est => (
               <option key={est.id} value={est.id}>{est.numero_orden}. {est.nombre_completo}</option>
             ))}
           </select>
@@ -538,7 +593,7 @@ export default function GeneradorBoletines() {
               Imprimir
             </button>
           )}
-          {estudiantes.length > 0 && (
+          {estudiantesActivos.length > 0 && (
             <button
               onClick={prepararSeccionCompleta}
               disabled={cargandoBoletin}
@@ -556,6 +611,11 @@ export default function GeneradorBoletines() {
             </button>
           )}
         </div>
+        {estudiantes.length > 0 && estudiantesActivos.length === 0 && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            No hay estudiantes activos disponibles para generar boletines.
+          </div>
+        )}
         {progresoSeccion && (
           <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm font-semibold text-blue-800">
             {progresoSeccion}
@@ -584,6 +644,7 @@ export default function GeneradorBoletines() {
               estudiante: datosEstudiante,
               filasBoletin,
               asistenciaResumen,
+              totalDiasTrabajados: totalDiasTrabajadosBoletin,
               infoSeccion,
               infoColegio,
               infoPerfil,
@@ -726,7 +787,7 @@ function BoletinDocumento({ boletin }: { boletin: BoletinGenerado }) {
   const layoutCalificaciones = obtenerLayoutCalificaciones(gradoActual)
   const layoutAsistencia = obtenerLayoutAsistencia(gradoActual)
   const layoutPortada = obtenerLayoutPortada(gradoActual)
-  const totalesAsistencia = calcularTotalesAsistencia(boletin.asistenciaResumen)
+  const totalesAsistencia = calcularTotalesAsistencia(boletin.asistenciaResumen, boletin.totalDiasTrabajados)
 
   return (
     <>
@@ -757,12 +818,12 @@ function BoletinDocumento({ boletin }: { boletin: BoletinGenerado }) {
         ))}
         {periodos.map((periodo, index) => (
           <div key={periodo}>
-            <TemplateGrade left={layoutAsistencia.columnLefts.asistencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].asistencia || ''}</TemplateGrade>
-            <TemplateGrade left={layoutAsistencia.columnLefts.ausencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].ausencia || ''}</TemplateGrade>
+            <TemplateGrade left={layoutAsistencia.columnLefts.asistencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].asistencia}</TemplateGrade>
+            <TemplateGrade left={layoutAsistencia.columnLefts.ausencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].ausencia}</TemplateGrade>
           </div>
         ))}
-        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAsistencia} top={layoutAsistencia.totalTop}>{totalesAsistencia.asistencia ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
-        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAusencia} top={layoutAsistencia.totalTop}>{totalesAsistencia.ausencia ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
+        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAsistencia} top={layoutAsistencia.totalTop}>{boletin.totalDiasTrabajados ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
+        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAusencia} top={layoutAsistencia.totalTop}>{boletin.totalDiasTrabajados ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
       </section>
     </>
   )
