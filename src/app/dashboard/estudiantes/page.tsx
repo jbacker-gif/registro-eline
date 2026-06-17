@@ -52,7 +52,7 @@ export default function MisEstudiantes() {
   const [responsableProfesion, setResponsableProfesion] = useState('')
   const [responsableNivelEducativo, setResponsableNivelEducativo] = useState('')
 
-  const condicionInicialOpciones = ['Nuevo inscrito', 'Promovido/a', 'Repitente', 'Reentrante', 'Retirado', 'Trasladado']
+  const condicionInicialOpciones = ['Promovido', 'Repitiente', 'Reentrante']
   const nacionalidadOpciones = ['Dominicana', 'Haitiana', 'Venezolana', 'Estadounidense', 'Española', 'Colombiana', 'Cubana', 'Otra']
   const parentescoViveOpciones = ['Madre', 'Padre', 'Abuelo/a', 'Tio/a', 'Hermano/a', 'Tutor/a', 'Otro']
   const responsableParentescoOpciones = ['Padre', 'Madre', 'Tutor/a']
@@ -751,8 +751,25 @@ export default function MisEstudiantes() {
                         <input type="text" value={sigerdId} onChange={(e) => setSigerdId(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
                       </div>
                       <div>
-                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Fecha retiro</label>
-                        <input type="date" value={fechaRetiro} onChange={(e) => setFechaRetiro(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Libro / folio</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={libro} onChange={(e) => setLibro(e.target.value)} placeholder="Libro" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                          <input type="text" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="Folio" className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Situacion de inscripcion</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nuevo inscrito</label>
+                          <input type="date" value={fechaNuevoInscrito} onChange={(e) => setFechaNuevoInscrito(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Retirado</label>
+                          <input type="date" value={fechaRetiro} onChange={(e) => setFechaRetiro(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                        </div>
                       </div>
                     </div>
                   </>
