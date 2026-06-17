@@ -72,7 +72,7 @@ type FilaBoletin = {
   finalArea: number | null
 }
 
-type ResumenAsistencia = Record<Periodo, { asistencia: number; ausencia: number }>
+type ResumenAsistencia = Record<Periodo, { asistencia: number; ausencia: number; excusa: number; tardanza: number }>
 
 type BoletinGenerado = {
   estudiante: Estudiante
@@ -176,19 +176,21 @@ const contarDiasTrabajados = (inicio: string, fin: string, bloqueados: Set<strin
 
 const normalizarFechaISO = (fecha?: string | null) => fecha ? fecha.slice(0, 10) : ''
 
-const normalizarEstadoAsistencia = (estado?: string | null): 'P' | 'A' | null => {
+const normalizarEstadoAsistencia = (estado?: string | null): 'P' | 'A' | 'E' | 'T' | null => {
   const valor = (estado || '').trim().toUpperCase()
-  if (valor === 'P' || valor === 'A') return valor
+  if (valor === 'P' || valor === 'A' || valor === 'E' || valor === 'T') return valor
   return null
 }
 
 const contarEstadoAsistencia = (
   estado: string,
-  resumenPeriodo: { asistencia: number; ausencia: number }
+  resumenPeriodo: { asistencia: number; ausencia: number; excusa: number; tardanza: number }
 ) => {
   const estadoNormalizado = normalizarEstadoAsistencia(estado)
   if (estadoNormalizado === 'P') resumenPeriodo.asistencia += 1
   if (estadoNormalizado === 'A') resumenPeriodo.ausencia += 1
+  if (estadoNormalizado === 'E') resumenPeriodo.excusa += 1
+  if (estadoNormalizado === 'T') resumenPeriodo.tardanza += 1
 }
 
 const etiquetaGrado: Record<string, string> = {
@@ -242,19 +244,25 @@ const rangoAnoEscolar = (anoEscolar?: string | null) => {
 
 const crearResumenAsistenciaVacio = (): ResumenAsistencia =>
   periodos.reduce((acc, periodo) => {
-    acc[periodo] = { asistencia: 0, ausencia: 0 }
+    acc[periodo] = { asistencia: 0, ausencia: 0, excusa: 0, tardanza: 0 }
     return acc
   }, {} as ResumenAsistencia)
 
-const calcularTotalesAsistencia = (asistenciaResumen: ResumenAsistencia, totalDiasTrabajados: number) => {
+const calcularTotalesAsistencia = (asistenciaResumen: ResumenAsistencia) => {
   const asistencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].asistencia, 0)
   const ausencia = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].ausencia, 0)
+  const excusa = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].excusa, 0)
+  const tardanza = periodos.reduce((total, periodo) => total + asistenciaResumen[periodo].tardanza, 0)
+  const totalReportado = asistencia + ausencia + excusa + tardanza
 
   return {
     asistencia,
     ausencia,
-    porcentajeAsistencia: totalDiasTrabajados > 0 ? Math.round((asistencia / totalDiasTrabajados) * 100) : 0,
-    porcentajeAusencia: totalDiasTrabajados > 0 ? Math.round((ausencia / totalDiasTrabajados) * 100) : 0,
+    excusa,
+    tardanza,
+    totalReportado,
+    porcentajeAsistencia: totalReportado > 0 ? Math.round((asistencia / totalReportado) * 100) : 0,
+    porcentajeAusencia: totalReportado > 0 ? Math.round((ausencia / totalReportado) * 100) : 0,
   }
 }
 
@@ -455,12 +463,20 @@ export default function GeneradorBoletines() {
       const diasBloqueados = new Set((diasNoLaborables || []).map((dia: { fecha: string }) => normalizarFechaISO(dia.fecha)))
       const totalDiasTrabajados = contarDiasTrabajados(fechaInicioAsistencia, fechaFinAsistencia, diasBloqueados)
 
+      const asistenciaPorFecha = new Map<string, 'P' | 'A' | 'E' | 'T'>()
+
       ;(asistencia as RegistroAsistencia[] | null)?.forEach(registro => {
         const fecha = normalizarFechaISO(registro.fecha)
         if (!fecha || diasBloqueados.has(fecha) || esFinDeSemana(fecha)) return
+        const estado = normalizarEstadoAsistencia(registro.estado)
+        if (!estado) return
+        asistenciaPorFecha.set(fecha, estado)
+      })
+
+      asistenciaPorFecha.forEach((estado, fecha) => {
         const periodo = obtenerPeriodoAsistencia(fecha)
         if (!periodo) return
-        contarEstadoAsistencia(registro.estado, resumen[periodo])
+        contarEstadoAsistencia(estado, resumen[periodo])
       })
 
       return {
@@ -787,7 +803,7 @@ function BoletinDocumento({ boletin }: { boletin: BoletinGenerado }) {
   const layoutCalificaciones = obtenerLayoutCalificaciones(gradoActual)
   const layoutAsistencia = obtenerLayoutAsistencia(gradoActual)
   const layoutPortada = obtenerLayoutPortada(gradoActual)
-  const totalesAsistencia = calcularTotalesAsistencia(boletin.asistenciaResumen, boletin.totalDiasTrabajados)
+  const totalesAsistencia = calcularTotalesAsistencia(boletin.asistenciaResumen)
 
   return (
     <>
@@ -822,8 +838,8 @@ function BoletinDocumento({ boletin }: { boletin: BoletinGenerado }) {
             <TemplateGrade left={layoutAsistencia.columnLefts.ausencia} top={layoutAsistencia.rowTops[index]}>{boletin.asistenciaResumen[periodo].ausencia}</TemplateGrade>
           </div>
         ))}
-        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAsistencia} top={layoutAsistencia.totalTop}>{boletin.totalDiasTrabajados ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
-        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAusencia} top={layoutAsistencia.totalTop}>{boletin.totalDiasTrabajados ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
+        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAsistencia} top={layoutAsistencia.totalTop}>{totalesAsistencia.totalReportado ? `${totalesAsistencia.porcentajeAsistencia}%` : ''}</TemplateGrade>
+        <TemplateGrade left={layoutAsistencia.columnLefts.porcentajeAusencia} top={layoutAsistencia.totalTop}>{totalesAsistencia.totalReportado ? `${totalesAsistencia.porcentajeAusencia}%` : ''}</TemplateGrade>
       </section>
     </>
   )
