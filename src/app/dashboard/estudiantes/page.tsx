@@ -175,7 +175,7 @@ export default function MisEstudiantes() {
 
       if (!neae.trim() || !enfermedadesAlergias.trim() || !emergenciaNombre.trim() || soloDigitos(emergenciaTelefono).length !== 10) {
         setPestanaFormulario('salud')
-        setMensaje({ texto: 'Completa NEAE, salud y contacto de emergencia. Marca Ninguna cuando no aplique.', tipo: 'error' })
+        setMensaje({ texto: 'Completa Necesidades Especificas de Apoyo Educativo (NEAE), salud y contacto de emergencia. Marca Ninguna cuando no aplique.', tipo: 'error' })
         return
       }
 
@@ -779,7 +779,7 @@ export default function MisEstudiantes() {
                   <div className="space-y-4">
                     <div>
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">NEAE</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Necesidades Especificas de Apoyo Educativo (NEAE)</label>
                         <label className="flex items-center gap-2 text-xs font-bold text-slate-500">
                           <input type="checkbox" checked={neae === 'Ninguna'} onChange={(e) => setNeae(e.target.checked ? 'Ninguna' : '')} className="h-4 w-4 rounded border-slate-300"/>
                           Ninguna
