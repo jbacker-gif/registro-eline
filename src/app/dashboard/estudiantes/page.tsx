@@ -9,7 +9,7 @@ export default function MisEstudiantes() {
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
   const [formularioAbierto, setFormularioAbierto] = useState(false)
-  const [pestanaFormulario, setPestanaFormulario] = useState<'personales' | 'escolaridad' | 'salud' | 'responsable'>('personales')
+  const [pestanaFormulario, setPestanaFormulario] = useState<'generales' | 'salud' | 'responsable'>('generales')
 
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
@@ -47,20 +47,43 @@ export default function MisEstudiantes() {
   const [responsableNombre, setResponsableNombre] = useState('')
   const [responsableParentesco, setResponsableParentesco] = useState('')
   const [responsableCedula, setResponsableCedula] = useState('')
+  const [responsableDocumentoExtranjero, setResponsableDocumentoExtranjero] = useState(false)
   const [responsableTelefono, setResponsableTelefono] = useState('')
   const [responsableProfesion, setResponsableProfesion] = useState('')
   const [responsableNivelEducativo, setResponsableNivelEducativo] = useState('')
 
+  const condicionInicialOpciones = ['Nuevo inscrito', 'Promovido/a', 'Repitente', 'Reentrante', 'Retirado', 'Trasladado']
+  const nacionalidadOpciones = ['Dominicana', 'Haitiana', 'Venezolana', 'Estadounidense', 'Española', 'Colombiana', 'Cubana', 'Otra']
+  const parentescoViveOpciones = ['Madre', 'Padre', 'Abuelo/a', 'Tio/a', 'Hermano/a', 'Tutor/a', 'Otro']
+  const responsableParentescoOpciones = ['Padre', 'Madre', 'Tutor/a']
+  const responsableNivelOpciones = ['Sin escolaridad', 'Primaria incompleta', 'Primaria completa', 'Secundaria incompleta', 'Secundaria completa', 'Superior incompleto', 'Superior completo', 'Desconocido']
+
+  const soloDigitos = (valor: string) => valor.replace(/\D/g, '')
+
+  const formatearTelefono = (valor: string) => {
+    const digitos = soloDigitos(valor).slice(0, 10)
+    if (digitos.length <= 3) return digitos
+    if (digitos.length <= 6) return `(${digitos.slice(0, 3)}) ${digitos.slice(3)}`
+    return `(${digitos.slice(0, 3)}) ${digitos.slice(3, 6)}-${digitos.slice(6)}`
+  }
+
+  const formatearCedula = (valor: string) => {
+    const digitos = soloDigitos(valor).slice(0, 11)
+    if (digitos.length <= 3) return digitos
+    if (digitos.length <= 10) return `${digitos.slice(0, 3)}-${digitos.slice(3)}`
+    return `${digitos.slice(0, 3)}-${digitos.slice(3, 10)}-${digitos.slice(10)}`
+  }
+
   const abrirNuevoEstudiante = () => {
     limpiarFormulario()
-    setPestanaFormulario('personales')
+    setPestanaFormulario('generales')
     setFormularioAbierto(true)
   }
 
   const cerrarFormulario = () => {
     limpiarFormulario()
     setFormularioAbierto(false)
-    setPestanaFormulario('personales')
+    setPestanaFormulario('generales')
   }
 
   useEffect(() => {
@@ -139,8 +162,35 @@ export default function MisEstudiantes() {
     
     try {
       if (!nuevoNumero || !nombres.trim() || !apellidos.trim() || !sexo || !nacionalidad.trim()) {
-        setPestanaFormulario('personales')
+        setPestanaFormulario('generales')
         setMensaje({ texto: 'Completa los datos obligatorios del estudiante.', tipo: 'error' })
+        return
+      }
+
+      if (!condicionInicial || !fechaNacimiento || !direccionResidencia.trim() || !parentescoVive) {
+        setPestanaFormulario('generales')
+        setMensaje({ texto: 'Completa condicion inicial, fecha de nacimiento, direccion y parentesco con quien vive.', tipo: 'error' })
+        return
+      }
+
+      if (!neae.trim() || !enfermedadesAlergias.trim() || !emergenciaNombre.trim() || soloDigitos(emergenciaTelefono).length !== 10) {
+        setPestanaFormulario('salud')
+        setMensaje({ texto: 'Completa NEAE, salud y contacto de emergencia. Marca Ninguna cuando no aplique.', tipo: 'error' })
+        return
+      }
+
+      const cedulaDigitos = soloDigitos(responsableCedula)
+      if (
+        !responsableNombre.trim() ||
+        !responsableParentesco ||
+        !responsableTelefono.trim() ||
+        soloDigitos(responsableTelefono).length !== 10 ||
+        !responsableNivelEducativo ||
+        (!responsableDocumentoExtranjero && cedulaDigitos.length !== 11) ||
+        (responsableDocumentoExtranjero && !responsableCedula.trim())
+      ) {
+        setPestanaFormulario('responsable')
+        setMensaje({ texto: 'Completa los datos obligatorios del responsable.', tipo: 'error' })
         return
       }
 
@@ -199,7 +249,7 @@ export default function MisEstudiantes() {
 
       limpiarFormulario()
       setFormularioAbierto(false)
-      setPestanaFormulario('personales')
+      setPestanaFormulario('generales')
       cargarEstudiantes(seccionId, userId)
       setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000)
     } catch (error) {
@@ -215,6 +265,8 @@ export default function MisEstudiantes() {
   const cargarParaEditar = (est: any) => {
     const nombreResponsable = est.responsable_principal?.nombre_completo || est.nombre_tutor || ''
     const telefonoResponsable = est.responsable_principal?.telefono || est.telefono_contacto || ''
+    const documentoResponsable = est.responsable_principal?.cedula || ''
+    const esDocumentoExtranjero = Boolean(documentoResponsable && soloDigitos(documentoResponsable).length !== 11)
 
     setIdEditando(est.id)
     setNuevoNumero(est.numero_orden.toString())
@@ -225,7 +277,7 @@ export default function MisEstudiantes() {
     setNacionalidad(est.nacionalidad || 'Dominicana')
     setFechaNacimiento(est.fecha_nacimiento || '')
     setTutor(nombreResponsable)
-    setTelefono(telefonoResponsable)
+    setTelefono(formatearTelefono(telefonoResponsable))
     setLibro(est.libro || '')
     setFolio(est.folio || '')
     setParentescoVive(est.parentesco_con_quien_vive || '')
@@ -237,14 +289,15 @@ export default function MisEstudiantes() {
     setEnfermedadesAlergias(est.enfermedades_alergias || '')
     setMedicamentosUsa(est.medicamentos_usa || '')
     setEmergenciaNombre(est.emergencia_nombre || '')
-    setEmergenciaTelefono(est.emergencia_telefono || '')
+    setEmergenciaTelefono(formatearTelefono(est.emergencia_telefono || ''))
     setResponsableNombre(nombreResponsable)
     setResponsableParentesco(est.responsable_principal?.parentesco || '')
-    setResponsableCedula(est.responsable_principal?.cedula || '')
-    setResponsableTelefono(telefonoResponsable)
+    setResponsableCedula(esDocumentoExtranjero ? documentoResponsable : formatearCedula(documentoResponsable))
+    setResponsableTelefono(formatearTelefono(telefonoResponsable))
     setResponsableProfesion(est.responsable_principal?.profesion_oficio || '')
     setResponsableNivelEducativo(est.responsable_principal?.nivel_educativo || '')
-    setPestanaFormulario('personales')
+    setResponsableDocumentoExtranjero(esDocumentoExtranjero)
+    setPestanaFormulario('generales')
     setFormularioAbierto(true)
     
     // Hacemos scroll suave hacia arriba en el contenedor interno
@@ -259,6 +312,7 @@ export default function MisEstudiantes() {
     setLibro(''); setFolio(''); setParentescoVive(''); setDireccionResidencia(''); setFechaNuevoInscrito(''); setFechaRetiro(''); setCondicionInicial('');
     setNeae(''); setEnfermedadesAlergias(''); setMedicamentosUsa(''); setEmergenciaNombre(''); setEmergenciaTelefono('');
     setResponsableNombre(''); setResponsableParentesco(''); setResponsableCedula(''); setResponsableTelefono(''); setResponsableProfesion(''); setResponsableNivelEducativo('');
+    setResponsableDocumentoExtranjero(false)
   }
 
   const normalizarFechaNacimientoCSV = (fechaDirecta: string, diaCsv: string, mesCsv: string, anoCsv: string) => {
@@ -610,10 +664,9 @@ export default function MisEstudiantes() {
                 </button>
               </div>
 
-              <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 text-xs font-bold text-slate-500 md:grid-cols-4">
+              <div className="mb-5 grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1 text-xs font-bold text-slate-500">
                 {[
-                  ['personales', 'Datos'],
-                  ['escolaridad', 'Escolaridad'],
+                  ['generales', 'Generales'],
                   ['salud', 'Salud'],
                   ['responsable', 'Responsable'],
                 ].map(([clave, etiqueta]) => (
@@ -629,113 +682,166 @@ export default function MisEstudiantes() {
               </div>
               
               <form onSubmit={guardarEstudiante} className="space-y-4">
-                {pestanaFormulario === 'personales' && (
+                {pestanaFormulario === 'generales' && (
                   <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">No. Lista</label>
-                    <input type="number" required value={nuevoNumero} onChange={(e) => setNuevoNumero(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-center font-black text-slate-700"/>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sexo</label>
-                    <select required value={sexo} onChange={(e) => setSexo(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700">
-                      <option value="">Seleccione</option>
-                      <option value="M">Masculino</option>
-                      <option value="F">Femenino</option>
-                    </select>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">No. de orden</label>
+                        <input type="number" readOnly value={nuevoNumero} className="w-full rounded-xl border border-slate-200 bg-slate-100 p-3 text-center font-black text-slate-500 outline-none"/>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Sexo</label>
+                        <select required value={sexo} onChange={(e) => setSexo(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500">
+                          <option value="">Seleccione</option>
+                          <option value="F">Femenino</option>
+                          <option value="M">Masculino</option>
+                        </select>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombres</label>
-                  <input type="text" required value={nombres} onChange={(e) => setNombres(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700"/>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nombres</label>
+                        <input type="text" required value={nombres} onChange={(e) => setNombres(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Apellidos</label>
+                        <input type="text" required value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Apellidos</label>
-                  <input type="text" required value={apellidos} onChange={(e) => setApellidos(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700"/>
-                </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Condicion inicial de inscripcion</label>
+                      <select required value={condicionInicial} onChange={(e) => setCondicionInicial(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccione una condicion</option>
+                        {condicionInicialOpciones.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ID SIGERD</label>
-                  <input type="text" value={sigerdId} onChange={(e) => setSigerdId(e.target.value)} placeholder="Numero de identificacion SIGERD" className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-slate-700"/>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Fecha de nacimiento</label>
+                        <input type="date" required value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nacionalidad</label>
+                        <input list="nacionalidades-estudiante" required value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                        <datalist id="nacionalidades-estudiante">
+                          {nacionalidadOpciones.map(opcion => <option key={opcion} value={opcion} />)}
+                        </datalist>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-truncate">F. Nacimiento</label>
-                    <input type="date" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm font-medium text-slate-700"/>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-truncate">Nacionalidad</label>
-                    <input type="text" required value={nacionalidad} onChange={(e) => setNacionalidad(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm font-medium text-slate-700"/>
-                  </div>
-                </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Direccion donde reside</label>
+                      <textarea required value={direccionResidencia} onChange={(e) => setDireccionResidencia(e.target.value)} rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Parentesco de la persona con quien vive</label>
+                      <select required value={parentescoVive} onChange={(e) => setParentescoVive(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccione</option>
+                        {parentescoViveOpciones.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">ID SIGERD</label>
+                        <input type="text" value={sigerdId} onChange={(e) => setSigerdId(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Fecha retiro</label>
+                        <input type="date" value={fechaRetiro} onChange={(e) => setFechaRetiro(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                      </div>
+                    </div>
                   </>
                 )}
 
-                {pestanaFormulario === 'escolaridad' && (
-                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Escolaridad oficial</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="text" value={libro} onChange={(e) => setLibro(e.target.value)} placeholder="Libro" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="Folio" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={parentescoVive} onChange={(e) => setParentescoVive(e.target.value)} placeholder="Vive con / parentesco" className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={direccionResidencia} onChange={(e) => setDireccionResidencia(e.target.value)} placeholder="Direccion donde reside" className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <select value={condicionInicial} onChange={(e) => setCondicionInicial(e.target.value)} className="col-span-2 w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700">
-                      <option value="">Condicion inicial</option>
-                      <option value="Aplazado/a">Aplazado/a</option>
-                      <option value="Promovido/a">Promovido/a</option>
-                      <option value="Repitente">Repitente</option>
-                      <option value="Reentrante">Reentrante</option>
-                    </select>
-                    <div>
-                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Nuevo inscrito</label>
-                      <input type="date" value={fechaNuevoInscrito} onChange={(e) => setFechaNuevoInscrito(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Fecha retiro</label>
-                      <input type="date" value={fechaRetiro} onChange={(e) => setFechaRetiro(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    </div>
-                  </div>
-                </div>
-                )}
-
                 {pestanaFormulario === 'salud' && (
-                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Salud y apoyo educativo</p>
-                  <div className="space-y-3">
-                    <textarea value={neae} onChange={(e) => setNeae(e.target.value)} placeholder="Necesidades especificas de apoyo educativo (NEAE)" rows={2} className="w-full resize-none border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <textarea value={enfermedadesAlergias} onChange={(e) => setEnfermedadesAlergias(e.target.value)} placeholder="Enfermedades, alergias u observaciones de salud" rows={2} className="w-full resize-none border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={medicamentosUsa} onChange={(e) => setMedicamentosUsa(e.target.value)} placeholder="Medicamentos que usa" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={emergenciaNombre} onChange={(e) => setEmergenciaNombre(e.target.value)} placeholder="En emergencia llamar a" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="tel" value={emergenciaTelefono} onChange={(e) => setEmergenciaTelefono(e.target.value)} placeholder="Telefono de emergencia" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">NEAE</label>
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                          <input type="checkbox" checked={neae === 'Ninguna'} onChange={(e) => setNeae(e.target.checked ? 'Ninguna' : '')} className="h-4 w-4 rounded border-slate-300"/>
+                          Ninguna
+                        </label>
+                      </div>
+                      <textarea value={neae === 'Ninguna' ? '' : neae} disabled={neae === 'Ninguna'} onChange={(e) => setNeae(e.target.value)} rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"/>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Enfermedades o condiciones alergicas</label>
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                          <input type="checkbox" checked={enfermedadesAlergias === 'Ninguna'} onChange={(e) => setEnfermedadesAlergias(e.target.checked ? 'Ninguna' : '')} className="h-4 w-4 rounded border-slate-300"/>
+                          Ninguna
+                        </label>
+                      </div>
+                      <textarea value={enfermedadesAlergias === 'Ninguna' ? '' : enfermedadesAlergias} disabled={enfermedadesAlergias === 'Ninguna'} onChange={(e) => setEnfermedadesAlergias(e.target.value)} rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Medicamentos que usa</label>
+                      <input type="text" value={medicamentosUsa} onChange={(e) => setMedicamentosUsa(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Contacto de emergencia</label>
+                      <input type="text" required value={emergenciaNombre} onChange={(e) => setEmergenciaNombre(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Telefono de emergencia</label>
+                      <input type="tel" inputMode="numeric" maxLength={14} required value={emergenciaTelefono} onChange={(e) => setEmergenciaTelefono(formatearTelefono(e.target.value))} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
                   </div>
-                </div>
                 )}
 
                 {pestanaFormulario === 'responsable' && (
-                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 mt-6">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Responsable principal</p>
-                  <div className="space-y-3">
-                    <input type="text" value={responsableNombre} onChange={(e) => { setResponsableNombre(e.target.value); setTutor(e.target.value) }} placeholder="Nombre completo del responsable" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="text" value={responsableParentesco} onChange={(e) => setResponsableParentesco(e.target.value)} placeholder="Parentesco" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                      <input type="text" value={responsableCedula} onChange={(e) => setResponsableCedula(e.target.value)} placeholder="Cedula" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nombre y apellido del responsable</label>
+                      <input type="text" required value={responsableNombre} onChange={(e) => { setResponsableNombre(e.target.value); setTutor(e.target.value) }} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
                     </div>
-                    <input type="tel" value={responsableTelefono} onChange={(e) => { setResponsableTelefono(e.target.value); setTelefono(e.target.value) }} placeholder="Telefono (Ej: 809-555-0000)" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <input type="text" value={responsableProfesion} onChange={(e) => setResponsableProfesion(e.target.value)} placeholder="Profesion u oficio" className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700"/>
-                    <select value={responsableNivelEducativo} onChange={(e) => setResponsableNivelEducativo(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors text-slate-700">
-                      <option value="">Nivel educativo</option>
-                      <option value="Primario">Primario</option>
-                      <option value="Secundario">Secundario</option>
-                      <option value="Tecnico">Tecnico</option>
-                      <option value="Universitario">Universitario</option>
-                      <option value="Postgrado">Postgrado</option>
-                      <option value="No especificado">No especificado</option>
-                    </select>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Parentesco</label>
+                      <select required value={responsableParentesco} onChange={(e) => setResponsableParentesco(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccione</option>
+                        {responsableParentescoOpciones.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">Cedula o documento</label>
+                        <button type="button" onClick={() => { setResponsableDocumentoExtranjero(!responsableDocumentoExtranjero); setResponsableCedula('') }} className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-slate-500 transition-colors hover:border-blue-300 hover:text-blue-700">
+                          {responsableDocumentoExtranjero ? 'Usar cedula' : 'Es extranjero / Pasaporte'}
+                        </button>
+                      </div>
+                      <input type="text" required inputMode={responsableDocumentoExtranjero ? 'text' : 'numeric'} maxLength={responsableDocumentoExtranjero ? 30 : 13} value={responsableCedula} onChange={(e) => setResponsableCedula(responsableDocumentoExtranjero ? e.target.value.toUpperCase() : formatearCedula(e.target.value))} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Telefono</label>
+                      <input type="tel" inputMode="numeric" maxLength={14} required value={responsableTelefono} onChange={(e) => { const telefonoFormateado = formatearTelefono(e.target.value); setResponsableTelefono(telefonoFormateado); setTelefono(telefonoFormateado) }} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Profesion u oficio</label>
+                      <input type="text" value={responsableProfesion} onChange={(e) => setResponsableProfesion(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nivel educativo alcanzado</label>
+                      <select required value={responsableNivelEducativo} onChange={(e) => setResponsableNivelEducativo(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:ring-2 focus:ring-blue-500">
+                        <option value="">Seleccione</option>
+                        {responsableNivelOpciones.map(opcion => <option key={opcion} value={opcion}>{opcion}</option>)}
+                      </select>
+                    </div>
                   </div>
-                </div>
                 )}
 
                 <button type="submit" className={`w-full text-white font-bold py-4 rounded-xl transition-all shadow-md mt-4 flex justify-center items-center gap-2 ${idEditando ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
