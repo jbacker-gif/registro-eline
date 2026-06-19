@@ -62,6 +62,10 @@ type Calificacion = {
   nota: number | string | null
 }
 
+type ConsultaPaginada<T> = {
+  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+}
+
 type ConteoAsistencia = {
   asistencia: number
   tardanza: number
@@ -83,6 +87,7 @@ type AreaSabana = {
   key: string
   nombre: string
   aliases: string[]
+  tokens?: string[]
 }
 
 type ResultadoArea = {
@@ -213,15 +218,92 @@ const celda = (valor: unknown) => {
 const calcularPorcentaje = (valor: number, total: number) =>
   total > 0 ? Math.round((valor / total) * 100) : 0
 
-const buscarAsignatura = (area: AreaSabana, asignaturas: Asignatura[]) =>
-  asignaturas.find(asignatura => area.aliases.some(alias => normalizarTexto(alias) === normalizarTexto(asignatura.nombre)))
+const cargarTodosLosRegistros = async <T,>(
+  crearConsulta: () => ConsultaPaginada<T>,
+  tamanoPagina = 1000
+) => {
+  const registros: T[] = []
+  let desde = 0
+
+  while (true) {
+    const hasta = desde + tamanoPagina - 1
+    const { data, error } = await crearConsulta().range(desde, hasta)
+    if (error) throw error
+
+    const pagina = data || []
+    registros.push(...pagina)
+
+    if (pagina.length < tamanoPagina) break
+    desde += tamanoPagina
+  }
+
+  return registros
+}
+
+const aliasesExtraPorArea: Record<string, string[]> = {
+  lengua: ['Espanol', 'Español', 'Lengua'],
+  sociales: ['Cs Sociales', 'C. Sociales', 'Sociales'],
+  naturaleza: ['Cs Naturales', 'C. Naturales', 'Naturales', 'Ciencias Naturales'],
+  fisica: ['Edu. Fisica', 'Ed. Fisica', 'Fisica', 'Educacion Fisica'],
+  formacion: ['Formacion Humana', 'Formacion Integral', 'FIHR', 'F.I.H.R.', 'Humana y Religiosa'],
+  artistica: ['Edu. Artistica', 'Ed. Artistica', 'Artistica', 'Educacion Artistica'],
+  ingles: ['Ingles', 'Idioma Ingles', 'Lenguas Extranjeras'],
+}
+
+const tokensPorArea: Record<string, string[]> = {
+  lengua: ['lengua'],
+  matematica: ['matematica'],
+  sociales: ['ciencias', 'sociales'],
+  naturaleza: ['naturaleza'],
+  fisica: ['fisica'],
+  formacion: ['formacion', 'humana'],
+  artistica: ['artistica'],
+  ingles: ['ingles'],
+}
+
+const normalizarAsignatura = (valor?: string | null) =>
+  normalizarTexto(valor)
+    .replace(/ã¡/g, 'a')
+    .replace(/ã©/g, 'e')
+    .replace(/ã­/g, 'i')
+    .replace(/ã³/g, 'o')
+    .replace(/ãº/g, 'u')
+    .replace(/ã±/g, 'n')
+    .replace(/\bcs\b/g, 'ciencias')
+    .replace(/\bc\b/g, 'ciencias')
+    .replace(/\bedu\b/g, 'educacion')
+    .replace(/\bed\b/g, 'educacion')
+    .replace(/\bfis\b/g, 'fisica')
+    .replace(/\bart\b/g, 'artistica')
+    .replace(/\bsoc\b/g, 'sociales')
+    .replace(/\bnat\b/g, 'naturaleza')
+    .replace(/\bfihr\b/g, 'formacion integral humana religiosa')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const coincideAsignatura = (area: AreaSabana, asignatura: Asignatura) => {
+  const nombre = normalizarAsignatura(asignatura.nombre)
+  const aliases = [area.nombre, ...area.aliases, ...(aliasesExtraPorArea[area.key] || [])].map(normalizarAsignatura)
+  const tokens = area.tokens || tokensPorArea[area.key] || []
+
+  if (aliases.includes(nombre)) return true
+  if (area.key === 'naturaleza' && nombre.includes('natural')) return true
+  if (area.key === 'formacion' && nombre.includes('religiosa')) return true
+
+  return tokens.length > 0 && tokens.every(token => nombre.includes(normalizarAsignatura(token)))
+}
+
+const buscarAsignaturasArea = (area: AreaSabana, asignaturas: Asignatura[]) =>
+  asignaturas.filter(asignatura => coincideAsignatura(area, asignatura))
 
 const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificaciones: Calificacion[], estudianteId: string): ResultadoArea => {
-  const asignatura = buscarAsignatura(area, asignaturas)
-  if (!asignatura) return { area, finalArea: null, recuperacionFinal: null, recuperacionEspecial: null }
+  const asignaturasArea = buscarAsignaturasArea(area, asignaturas)
+  if (asignaturasArea.length === 0) return { area, finalArea: null, recuperacionFinal: null, recuperacionEspecial: null }
+  const idsAsignaturasArea = new Set(asignaturasArea.map(asignatura => asignatura.id))
 
   const notasArea = calificaciones.filter(nota =>
-    nota.estudiante_id === estudianteId && nota.asignatura_id === asignatura.id
+    nota.estudiante_id === estudianteId && idsAsignaturasArea.has(nota.asignatura_id)
   )
 
   const finalesCompetencia = competencias.map(competencia => {
@@ -303,10 +385,8 @@ export default function ResumenAnual() {
       const [
         { data: perfil },
         { data: listaEstudiantes, error: estudiantesError },
-        { data: asistencia, error: asistenciaError },
         { data: bloqueados, error: bloqueadosError },
         { data: listaAsignaturas, error: asignaturasError },
-        { data: notas, error: notasError },
       ] = await Promise.all([
         supabase.from('perfiles').select('*').eq('id', session.user.id).maybeSingle(),
         supabase
@@ -316,38 +396,46 @@ export default function ResumenAnual() {
           .eq('user_id', session.user.id)
           .order('numero_orden', { ascending: true }),
         supabase
-          .from('asistencia')
-          .select('estudiante_id, fecha, estado')
-          .eq('seccion_id', secId)
-          .eq('user_id', session.user.id)
-          .gte('fecha', rangoSeccion.fechaInicio)
-          .lte('fecha', rangoSeccion.fechaFin),
-        supabase
           .from('dias_bloqueados')
           .select('fecha')
           .eq('seccion_id', secId)
           .gte('fecha', rangoSeccion.fechaInicio)
           .lte('fecha', rangoSeccion.fechaFin),
         supabase.from('asignaturas').select('*'),
-        supabase
-          .from('calificaciones')
-          .select('*')
-          .eq('seccion_id', secId)
-          .eq('user_id', session.user.id),
       ])
 
       if (estudiantesError) throw estudiantesError
-      if (asistenciaError) throw asistenciaError
       if (bloqueadosError) throw bloqueadosError
       if (asignaturasError) throw asignaturasError
-      if (notasError) throw notasError
+
+      const [asistencia, notas] = await Promise.all([
+        cargarTodosLosRegistros<RegistroAsistencia>(() =>
+          supabase
+            .from('asistencia')
+            .select('estudiante_id, fecha, estado')
+            .eq('seccion_id', secId)
+            .eq('user_id', session.user.id)
+            .gte('fecha', rangoSeccion.fechaInicio)
+            .lte('fecha', rangoSeccion.fechaFin)
+            .order('fecha', { ascending: true }) as unknown as ConsultaPaginada<RegistroAsistencia>
+        ),
+        cargarTodosLosRegistros<Calificacion>(() =>
+          supabase
+            .from('calificaciones')
+            .select('estudiante_id, asignatura_id, periodo, competencia, nota')
+            .eq('seccion_id', secId)
+            .eq('user_id', session.user.id)
+            .order('asignatura_id', { ascending: true })
+            .order('estudiante_id', { ascending: true }) as unknown as ConsultaPaginada<Calificacion>
+        ),
+      ])
 
       setInfoPerfil(perfil || null)
       setEstudiantes((listaEstudiantes || []) as Estudiante[])
-      setRegistrosAsistencia((asistencia || []) as RegistroAsistencia[])
+      setRegistrosAsistencia(asistencia)
       setDiasBloqueados((bloqueados || []).map((dia: { fecha: string }) => normalizarFechaISO(dia.fecha)))
       setAsignaturas((listaAsignaturas || []) as Asignatura[])
-      setCalificaciones((notas || []) as Calificacion[])
+      setCalificaciones(notas)
 
       const colegioRelacionado = perfil?.colegio_id || (listaEstudiantes || [])[0]?.colegio_id
       if (colegioRelacionado) {
