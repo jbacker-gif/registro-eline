@@ -3,18 +3,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+type VistaResumen = 'asistencia' | 'sabana'
 type EstadoAsistencia = 'P' | 'A' | 'E' | 'T'
+type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
+type Competencia = 'C1' | 'C2' | 'C3'
 
 type Estudiante = {
   id: string
+  colegio_id?: string | null
   numero_orden?: number | null
   nombre_completo?: string | null
   nombres?: string | null
   apellidos?: string | null
   sexo?: string | null
-  nacionalidad?: string | null
   estado?: string | null
-  condicion_inicial?: string | null
   fecha_nuevo_inscrito?: string | null
   fecha_retiro?: string | null
 }
@@ -27,27 +29,109 @@ type Seccion = {
   tanda?: string | null
 }
 
+type Perfil = {
+  id: string
+  colegio_id?: string | null
+  nombre_completo?: string | null
+  full_name?: string | null
+}
+
+type Colegio = {
+  id: string
+  nombre?: string | null
+  distrito_educativo?: string | null
+  regional_educacion?: string | null
+}
+
+type Asignatura = {
+  id: string
+  nombre: string
+}
+
 type RegistroAsistencia = {
   estudiante_id: string
   fecha: string
   estado: EstadoAsistencia | string
 }
 
-type ResumenEstudiante = {
-  estudiante: Estudiante
-  p: number
-  a: number
-  e: number
-  t: number
-  diasTrabajados: number
-  total: number
-  porcentajePresencia: number
-  porcentajeAusencia: number
-  porcentajeExcusa: number
-  porcentajeTardanza: number
+type Calificacion = {
+  estudiante_id: string
+  asignatura_id: string
+  periodo: Periodo | string
+  competencia: Competencia | `${Competencia}_RP` | string
+  nota: number | string | null
 }
 
-const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+type ConteoAsistencia = {
+  asistencia: number
+  tardanza: number
+  ausencia: number
+  excusa: number
+  diasTrabajados: number
+}
+
+type ResumenEstudiante = {
+  estudiante: Estudiante
+  porMes: Map<string, ConteoAsistencia>
+  anual: ConteoAsistencia
+  porcentajeAsistencia: number
+  porcentajeAusencia: number
+  porcentajeExcusa: number
+}
+
+type AreaSabana = {
+  key: string
+  nombre: string
+  aliases: string[]
+}
+
+type ResultadoArea = {
+  area: AreaSabana
+  finalArea: number | null
+  recuperacionFinal: number | null
+  recuperacionEspecial: number | null
+}
+
+const meses = [
+  { clave: '08', nombre: 'Agosto' },
+  { clave: '09', nombre: 'Septiembre' },
+  { clave: '10', nombre: 'Octubre' },
+  { clave: '11', nombre: 'Noviembre' },
+  { clave: '12', nombre: 'Diciembre' },
+  { clave: '01', nombre: 'Enero' },
+  { clave: '02', nombre: 'Febrero' },
+  { clave: '03', nombre: 'Marzo' },
+  { clave: '04', nombre: 'Abril' },
+  { clave: '05', nombre: 'Mayo' },
+  { clave: '06', nombre: 'Junio' },
+]
+
+const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
+const competencias: Competencia[] = ['C1', 'C2', 'C3']
+
+const areasBase: AreaSabana[] = [
+  { key: 'lengua', nombre: 'Lengua Espanola', aliases: ['Lengua Espanola', 'Lengua Española'] },
+  { key: 'matematica', nombre: 'Matematica', aliases: ['Matematica', 'Matemática'] },
+  { key: 'sociales', nombre: 'Ciencias Sociales', aliases: ['Ciencias Sociales'] },
+  { key: 'naturaleza', nombre: 'Ciencias de la Naturaleza', aliases: ['Ciencias de la Naturaleza', 'Ciencias Naturales'] },
+  { key: 'fisica', nombre: 'Educacion Fisica', aliases: ['Educacion Fisica', 'Educación Física'] },
+  { key: 'formacion', nombre: 'Formacion Integral Humana y Religiosa', aliases: ['Formacion Integral Humana y Religiosa', 'Formación Integral Humana y Religiosa', 'Formacion Integral, Humana y Religiosa', 'Formación Integral, Humana y Religiosa'] },
+  { key: 'artistica', nombre: 'Educacion Artistica', aliases: ['Educacion Artistica', 'Educación Artística'] },
+]
+
+const areaIngles: AreaSabana = {
+  key: 'ingles',
+  nombre: 'Lenguas Extranjeras (ingles)',
+  aliases: ['Lenguas Extranjeras', 'Lenguas Extranjeras (ingles)', 'Lenguas Extranjeras (inglés)', 'Ingles', 'Inglés'],
+}
+
+const crearConteo = (): ConteoAsistencia => ({
+  asistencia: 0,
+  tardanza: 0,
+  ausencia: 0,
+  excusa: 0,
+  diasTrabajados: 0,
+})
 
 const obtenerRangoAnoEscolar = (anoEscolar?: string | null) => {
   const match = (anoEscolar || '').match(/(\d{4})\D+(\d{4})/)
@@ -61,19 +145,24 @@ const obtenerRangoAnoEscolar = (anoEscolar?: string | null) => {
     texto: `${inicio}-${fin}`,
     fechaInicio: `${inicio}-08-01`,
     fechaFin: `${fin}-06-30`,
-    corteMatricula: `${inicio}-10-15`,
   }
 }
 
-const compararFecha = (fecha?: string | null, referencia?: string | null) => {
-  if (!fecha || !referencia) return null
-  return fecha <= referencia
-}
+const normalizarTexto = (valor?: string | null) =>
+  (valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+
+const normalizarFechaISO = (fecha?: string | null) => fecha ? fecha.slice(0, 10) : ''
+
+const obtenerNombreEstudiante = (estudiante: Estudiante) =>
+  estudiante.nombre_completo || [estudiante.nombres, estudiante.apellidos].filter(Boolean).join(' ') || ''
+
+const esEstudianteRetirado = (estudiante: Estudiante) =>
+  normalizarTexto(estudiante.estado) === 'retirado'
 
 const estaActivoEnFecha = (estudiante: Estudiante, fecha: string) => {
-  const inscritoAntes = !estudiante.fecha_nuevo_inscrito || compararFecha(estudiante.fecha_nuevo_inscrito, fecha)
-  const retiradoAntes = estudiante.fecha_retiro ? estudiante.fecha_retiro < fecha : false
-  return Boolean(inscritoAntes && !retiradoAntes)
+  const inscritoAntes = !estudiante.fecha_nuevo_inscrito || normalizarFechaISO(estudiante.fecha_nuevo_inscrito) <= fecha
+  const retiradoAntes = estudiante.fecha_retiro ? normalizarFechaISO(estudiante.fecha_retiro) < fecha : false
+  return inscritoAntes && !retiradoAntes
 }
 
 const esFinDeSemana = (fechaISO: string) => {
@@ -88,64 +177,98 @@ const sumarDia = (fechaISO: string) => {
   return fecha.toISOString().slice(0, 10)
 }
 
-const obtenerDiasLaborablesPorMes = (inicio: string, fin: string, bloqueados: Set<string>) => {
-  const dias: string[] = []
-  const porMes = new Map<string, number>()
-  let cursor = inicio
-
-  while (cursor <= fin) {
-    if (!esFinDeSemana(cursor) && !bloqueados.has(cursor)) {
-      dias.push(cursor)
-      const claveMes = cursor.slice(0, 7)
-      porMes.set(claveMes, (porMes.get(claveMes) || 0) + 1)
-    }
-    cursor = sumarDia(cursor)
-  }
-
-  return { dias, porMes }
-}
-
-const normalizarFechaISO = (fecha?: string | null) => {
-  if (!fecha) return ''
-  return fecha.slice(0, 10)
-}
-
-const normalizarTexto = (valor?: string | null) =>
-  (valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
-
-const esEstudianteRetirado = (estudiante: Estudiante) =>
-  normalizarTexto(estudiante.estado) === 'retirado'
-
-const normalizarSexo = (sexo?: string | null) => {
-  const valor = normalizarTexto(sexo)
-  if (valor === 'm' || valor === 'masculino') return 'M'
-  if (valor === 'f' || valor === 'femenino') return 'F'
-  return ''
-}
-
 const normalizarEstadoAsistencia = (estado?: string | null): EstadoAsistencia | null => {
   const valor = (estado || '').trim().toUpperCase()
-  return ['P', 'A', 'E', 'T'].includes(valor) ? valor as EstadoAsistencia : null
+  if (valor === 'P' || valor === 'A' || valor === 'E' || valor === 'T') return valor
+  return null
 }
 
-const normalizarEtiqueta = (valor?: string | null) => {
-  const limpio = (valor || '').trim()
-  if (!limpio) return 'No especificada'
-  return limpio
-    .toLocaleLowerCase('es-DO')
-    .replace(/\s+/g, ' ')
-    .replace(/(^|\s|-)([a-záéíóúñü])/g, texto => texto.toLocaleUpperCase('es-DO'))
+const contarEstado = (conteo: ConteoAsistencia, estado: EstadoAsistencia) => {
+  if (estado === 'P') conteo.asistencia += 1
+  if (estado === 'T') conteo.tardanza += 1
+  if (estado === 'A') conteo.ausencia += 1
+  if (estado === 'E') conteo.excusa += 1
+}
+
+const obtenerClaveMes = (fecha: string) => fecha.slice(5, 7)
+
+const usaOchoAreas = (grado?: string | null) => ['4to', '5to', '6to'].includes(grado || '')
+
+const usaSabanaConSituacion = (grado?: string | null) => ['3ro', '4to', '5to', '6to'].includes(grado || '')
+
+const obtenerAreasSabana = (grado?: string | null) =>
+  usaOchoAreas(grado) ? [...areasBase.slice(0, 4), areaIngles, ...areasBase.slice(4)] : areasBase
+
+const obtenerGrupoSabana = (grado?: string | null) => {
+  if (grado === '1ro' || grado === '2do') return '1ro a 2do'
+  if (grado === '3ro') return '3ro'
+  return '4to a 6to'
+}
+
+const celda = (valor: unknown) => {
+  if (valor === null || valor === undefined || valor === '') return ''
+  return String(valor)
+}
+
+const calcularPorcentaje = (valor: number, total: number) =>
+  total > 0 ? Math.round((valor / total) * 100) : 0
+
+const buscarAsignatura = (area: AreaSabana, asignaturas: Asignatura[]) =>
+  asignaturas.find(asignatura => area.aliases.some(alias => normalizarTexto(alias) === normalizarTexto(asignatura.nombre)))
+
+const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificaciones: Calificacion[], estudianteId: string): ResultadoArea => {
+  const asignatura = buscarAsignatura(area, asignaturas)
+  if (!asignatura) return { area, finalArea: null, recuperacionFinal: null, recuperacionEspecial: null }
+
+  const notasArea = calificaciones.filter(nota =>
+    nota.estudiante_id === estudianteId && nota.asignatura_id === asignatura.id
+  )
+
+  const finalesCompetencia = competencias.map(competencia => {
+    const valores = periodos
+      .map(periodo => {
+        const recuperada = notasArea.find(nota => nota.periodo === periodo && nota.competencia === `${competencia}_RP`)?.nota
+        const ordinaria = notasArea.find(nota => nota.periodo === periodo && nota.competencia === competencia)?.nota
+        const valor = recuperada ?? ordinaria
+        return valor === null || valor === undefined || valor === '' ? null : Number(valor)
+      })
+      .filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
+
+    return valores.length > 0 ? Math.round(valores.reduce((total, nota) => total + nota, 0) / valores.length) : null
+  })
+
+  const validas = finalesCompetencia.filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
+
+  return {
+    area,
+    finalArea: validas.length > 0 ? Math.round(validas.reduce((total, nota) => total + nota, 0) / validas.length) : null,
+    recuperacionFinal: null,
+    recuperacionEspecial: null,
+  }
+}
+
+const obtenerSituacion = (resultados: ResultadoArea[]): string => {
+  const finales = resultados
+    .map(resultado => resultado.recuperacionEspecial ?? resultado.recuperacionFinal ?? resultado.finalArea)
+    .filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
+
+  if (finales.length === 0) return ''
+  return finales.some(nota => nota < 65) ? 'Aplazado/a' : 'Promovido/a'
 }
 
 export default function ResumenAnual() {
+  const [vista, setVista] = useState<VistaResumen>('asistencia')
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
   const [seccionId, setSeccionId] = useState<string | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<Seccion | null>(null)
+  const [infoPerfil, setInfoPerfil] = useState<Perfil | null>(null)
+  const [infoColegio, setInfoColegio] = useState<Colegio | null>(null)
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [registrosAsistencia, setRegistrosAsistencia] = useState<RegistroAsistencia[]>([])
   const [diasBloqueados, setDiasBloqueados] = useState<string[]>([])
+  const [asignaturas, setAsignaturas] = useState<Asignatura[]>([])
+  const [calificaciones, setCalificaciones] = useState<Calificacion[]>([])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -166,8 +289,6 @@ export default function ResumenAnual() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      setUserId(session.user.id)
-
       const { data: seccion, error: seccionError } = await supabase
         .from('secciones')
         .select('*')
@@ -179,7 +300,15 @@ export default function ResumenAnual() {
       const rangoSeccion = obtenerRangoAnoEscolar(seccion?.ano_escolar)
       setInfoSeccion(seccion)
 
-      const [{ data: listaEstudiantes, error: estudiantesError }, { data: asistencia, error: asistenciaError }, { data: bloqueados, error: bloqueadosError }] = await Promise.all([
+      const [
+        { data: perfil },
+        { data: listaEstudiantes, error: estudiantesError },
+        { data: asistencia, error: asistenciaError },
+        { data: bloqueados, error: bloqueadosError },
+        { data: listaAsignaturas, error: asignaturasError },
+        { data: notas, error: notasError },
+      ] = await Promise.all([
+        supabase.from('perfiles').select('*').eq('id', session.user.id).maybeSingle(),
         supabase
           .from('estudiantes')
           .select('*')
@@ -199,15 +328,35 @@ export default function ResumenAnual() {
           .eq('seccion_id', secId)
           .gte('fecha', rangoSeccion.fechaInicio)
           .lte('fecha', rangoSeccion.fechaFin),
+        supabase.from('asignaturas').select('*'),
+        supabase
+          .from('calificaciones')
+          .select('*')
+          .eq('seccion_id', secId)
+          .eq('user_id', session.user.id),
       ])
 
       if (estudiantesError) throw estudiantesError
       if (asistenciaError) throw asistenciaError
       if (bloqueadosError) throw bloqueadosError
+      if (asignaturasError) throw asignaturasError
+      if (notasError) throw notasError
 
-      setEstudiantes(listaEstudiantes || [])
+      setInfoPerfil(perfil || null)
+      setEstudiantes((listaEstudiantes || []) as Estudiante[])
       setRegistrosAsistencia((asistencia || []) as RegistroAsistencia[])
-      setDiasBloqueados((bloqueados || []).map((dia: { fecha: string }) => dia.fecha))
+      setDiasBloqueados((bloqueados || []).map((dia: { fecha: string }) => normalizarFechaISO(dia.fecha)))
+      setAsignaturas((listaAsignaturas || []) as Asignatura[])
+      setCalificaciones((notas || []) as Calificacion[])
+
+      const colegioRelacionado = perfil?.colegio_id || (listaEstudiantes || [])[0]?.colegio_id
+      if (colegioRelacionado) {
+        const { data: colegio } = await supabase.from('colegios').select('*').eq('id', colegioRelacionado).maybeSingle()
+        setInfoColegio(colegio || null)
+      } else {
+        const { data: colegios } = await supabase.from('colegios').select('*').limit(1)
+        setInfoColegio(colegios?.[0] || null)
+      }
     } catch (error) {
       console.error(error)
       setMensaje({ texto: 'No se pudo cargar el resumen anual.', tipo: 'error' })
@@ -216,332 +365,243 @@ export default function ResumenAnual() {
     }
   }
 
-  const estadisticasMatricula = useMemo(() => {
-    const activos = estudiantes.filter(est => !esEstudianteRetirado(est))
-    const retirados = estudiantes.filter(esEstudianteRetirado)
-    const nuevos = estudiantes.filter(est => normalizarFechaISO(est.fecha_nuevo_inscrito) > rango.corteMatricula)
-    const matriculaInicial = estudiantes.filter(est => estaActivoEnFecha(est, rango.corteMatricula))
-    const masculino = estudiantes.filter(est => normalizarSexo(est.sexo) === 'M')
-    const femenino = estudiantes.filter(est => normalizarSexo(est.sexo) === 'F')
-    const nacionalidades = new Map<string, number>()
-    const condiciones = new Map<string, number>()
-
-    estudiantes.forEach(est => {
-      const nacionalidad = normalizarEtiqueta(est.nacionalidad)
-      const condicion = normalizarEtiqueta(est.condicion_inicial)
-      nacionalidades.set(nacionalidad, (nacionalidades.get(nacionalidad) || 0) + 1)
-      condiciones.set(condicion, (condiciones.get(condicion) || 0) + 1)
-    })
-
-    return {
-      total: estudiantes.length,
-      activos: activos.length,
-      retirados: retirados.length,
-      nuevos: nuevos.length,
-      matriculaInicial: matriculaInicial.length,
-      masculino: masculino.length,
-      femenino: femenino.length,
-      noEspecificadoSexo: estudiantes.length - masculino.length - femenino.length,
-      nacionalidades: Array.from(nacionalidades.entries()),
-      condiciones: Array.from(condiciones.entries()),
-    }
-  }, [estudiantes, rango.corteMatricula])
-
   const resumenAsistencia = useMemo(() => {
     const bloqueados = new Set(diasBloqueados)
-    const { dias: diasLaborables, porMes: diasPorMes } = obtenerDiasLaborablesPorMes(rango.fechaInicio, rango.fechaFin, bloqueados)
-    const totalDiasTrabajados = diasLaborables.length
     const asistenciaPorEstudianteFecha = new Map<string, EstadoAsistencia>()
+    const diasTrabajadosPorMes = new Map<string, number>()
     const porEstudiante = new Map<string, ResumenEstudiante>()
-    const porMes = new Map<string, { p: number; a: number; e: number; t: number; diasTrabajados: number; diasEstudiante: number }>()
+    let totalDiasTrabajados = 0
 
     estudiantes.forEach(estudiante => {
       porEstudiante.set(estudiante.id, {
         estudiante,
-        p: 0,
-        a: 0,
-        e: 0,
-        t: 0,
-        diasTrabajados: 0,
-        total: 0,
-        porcentajePresencia: 0,
+        porMes: new Map(meses.map(mes => [mes.clave, crearConteo()])),
+        anual: crearConteo(),
+        porcentajeAsistencia: 0,
         porcentajeAusencia: 0,
         porcentajeExcusa: 0,
-        porcentajeTardanza: 0,
       })
-    })
-
-    diasPorMes.forEach((diasTrabajados, claveMes) => {
-      porMes.set(claveMes, { p: 0, a: 0, e: 0, t: 0, diasTrabajados, diasEstudiante: 0 })
     })
 
     registrosAsistencia.forEach(registro => {
       const fecha = normalizarFechaISO(registro.fecha)
       const estado = normalizarEstadoAsistencia(registro.estado)
-      if (!fecha || !estado) return
-      if (fecha < rango.fechaInicio || fecha > rango.fechaFin) return
-      if (bloqueados.has(fecha) || esFinDeSemana(fecha)) return
+      if (!fecha || !estado || bloqueados.has(fecha) || esFinDeSemana(fecha)) return
       asistenciaPorEstudianteFecha.set(`${registro.estudiante_id}_${fecha}`, estado)
     })
 
-    diasLaborables.forEach(fecha => {
-      const claveMes = fecha.slice(0, 7)
-      const resumenMes = porMes.get(claveMes)
-      if (!resumenMes) return
+    let cursor = rango.fechaInicio
+    while (cursor <= rango.fechaFin) {
+      if (!esFinDeSemana(cursor) && !bloqueados.has(cursor)) {
+        const claveMes = obtenerClaveMes(cursor)
+        totalDiasTrabajados += 1
+        diasTrabajadosPorMes.set(claveMes, (diasTrabajadosPorMes.get(claveMes) || 0) + 1)
 
-      estudiantes.forEach(estudiante => {
-        if (!estaActivoEnFecha(estudiante, fecha)) return
+        estudiantes.forEach(estudiante => {
+          if (!estaActivoEnFecha(estudiante, cursor)) return
 
-        const resumenEstudiante = porEstudiante.get(estudiante.id)
-        if (!resumenEstudiante) return
+          const resumen = porEstudiante.get(estudiante.id)
+          if (!resumen) return
 
-        resumenEstudiante.diasTrabajados += 1
-        resumenMes.diasEstudiante += 1
-        const estado = asistenciaPorEstudianteFecha.get(`${estudiante.id}_${fecha}`)
-        if (!estado) return
+          const resumenMes = resumen.porMes.get(claveMes)
+          if (!resumenMes) return
 
-        resumenEstudiante[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
-        resumenEstudiante.total += 1
-        resumenMes[estado.toLowerCase() as 'p' | 'a' | 'e' | 't'] += 1
-      })
-    })
+          resumenMes.diasTrabajados += 1
+          resumen.anual.diasTrabajados += 1
+
+          const estado = asistenciaPorEstudianteFecha.get(`${estudiante.id}_${cursor}`)
+          if (!estado) return
+
+          contarEstado(resumenMes, estado)
+          contarEstado(resumen.anual, estado)
+        })
+      }
+      cursor = sumarDia(cursor)
+    }
 
     const estudiantesResumen = Array.from(porEstudiante.values()).map(resumen => ({
       ...resumen,
-      porcentajePresencia: resumen.diasTrabajados > 0 ? Math.round((resumen.p / resumen.diasTrabajados) * 100) : 0,
-      porcentajeAusencia: resumen.diasTrabajados > 0 ? Math.round((resumen.a / resumen.diasTrabajados) * 100) : 0,
-      porcentajeExcusa: resumen.diasTrabajados > 0 ? Math.round((resumen.e / resumen.diasTrabajados) * 100) : 0,
-      porcentajeTardanza: resumen.diasTrabajados > 0 ? Math.round((resumen.t / resumen.diasTrabajados) * 100) : 0,
+      porcentajeAsistencia: calcularPorcentaje(resumen.anual.asistencia, resumen.anual.diasTrabajados),
+      porcentajeAusencia: calcularPorcentaje(resumen.anual.ausencia, resumen.anual.diasTrabajados),
+      porcentajeExcusa: calcularPorcentaje(resumen.anual.excusa, resumen.anual.diasTrabajados),
     }))
 
-    const totales = estudiantesResumen.reduce(
-      (acc, resumen) => {
-        acc.p += resumen.p
-        acc.a += resumen.a
-        acc.e += resumen.e
-        acc.t += resumen.t
-        acc.total += resumen.total
-        acc.diasTrabajados += resumen.diasTrabajados
-        return acc
-      },
-      { p: 0, a: 0, e: 0, t: 0, total: 0, diasTrabajados: 0 }
-    )
-
-    return {
-      totalDiasTrabajados,
-      estudiantesResumen,
-      meses: Array.from(porMes.entries()).sort(([a], [b]) => a.localeCompare(b)),
-      totales: {
-        ...totales,
-        porcentajePresencia: totales.diasTrabajados > 0 ? Math.round((totales.p / totales.diasTrabajados) * 100) : 0,
-        porcentajeAusencia: totales.diasTrabajados > 0 ? Math.round((totales.a / totales.diasTrabajados) * 100) : 0,
-        porcentajeExcusa: totales.diasTrabajados > 0 ? Math.round((totales.e / totales.diasTrabajados) * 100) : 0,
-        porcentajeTardanza: totales.diasTrabajados > 0 ? Math.round((totales.t / totales.diasTrabajados) * 100) : 0,
-      },
-    }
+    return { totalDiasTrabajados, diasTrabajadosPorMes, estudiantesResumen }
   }, [diasBloqueados, estudiantes, registrosAsistencia, rango.fechaFin, rango.fechaInicio])
+
+  const areasSabana = useMemo(() => obtenerAreasSabana(infoSeccion?.grado), [infoSeccion?.grado])
 
   if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando resumen anual...</div>
   if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una seccion en el Panel de Control.</div>
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50/50">
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <div className="h-full overflow-y-auto bg-slate-100">
+      <div className="mx-auto max-w-[1800px] p-4 md:p-8 print:p-0">
+        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end print:hidden">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-800">Resumen anual</h1>
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Modulo oficial</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-800">Resumen anual y Sabana</h1>
             <p className="mt-1 text-sm font-medium text-slate-500">
               {infoSeccion ? `${infoSeccion.grado} "${infoSeccion.identificador}" ${infoSeccion.tanda ? `(${infoSeccion.tanda})` : ''} | ${rango.texto}` : 'Resumen oficial de seccion'}
             </p>
           </div>
-          <button onClick={() => window.print()} className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700 print:hidden">
-            Imprimir resumen
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+              <button onClick={() => setVista('asistencia')} className={`rounded-md px-4 py-2 text-sm font-bold transition ${vista === 'asistencia' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                Asistencia anual
+              </button>
+              <button onClick={() => setVista('sabana')} className={`rounded-md px-4 py-2 text-sm font-bold transition ${vista === 'sabana' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                Sabana
+              </button>
+            </div>
+            <button onClick={() => window.print()} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
+              Imprimir
+            </button>
+          </div>
         </div>
 
         {mensaje.texto && (
-          <div className={`mb-6 rounded-xl border p-4 text-sm font-semibold ${mensaje.tipo === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 print:hidden">
             {mensaje.texto}
           </div>
         )}
 
-        <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {[
-            ['Matricula total', estadisticasMatricula.total],
-            ['Inicial al 15 oct.', estadisticasMatricula.matriculaInicial],
-            ['Activos', estadisticasMatricula.activos],
-            ['Retirados', estadisticasMatricula.retirados],
-            ['Dias trabajados', resumenAsistencia.totalDiasTrabajados],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-              <p className="mt-2 text-3xl font-black text-slate-800">{value}</p>
-            </div>
-          ))}
-        </section>
-
-        <section className="mb-6 grid gap-6 xl:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Resumen de matricula</h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg bg-blue-50 p-4">
-                <p className="text-xs font-bold text-blue-700">Masculino</p>
-                <p className="text-2xl font-black text-blue-900">{estadisticasMatricula.masculino}</p>
-              </div>
-              <div className="rounded-lg bg-rose-50 p-4">
-                <p className="text-xs font-bold text-rose-700">Femenino</p>
-                <p className="text-2xl font-black text-rose-900">{estadisticasMatricula.femenino}</p>
-              </div>
-              <div className="rounded-lg bg-emerald-50 p-4">
-                <p className="text-xs font-bold text-emerald-700">Nuevos despues corte</p>
-                <p className="text-2xl font-black text-emerald-900">{estadisticasMatricula.nuevos}</p>
-              </div>
-            </div>
-            {estadisticasMatricula.noEspecificadoSexo > 0 && (
-              <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
-                {estadisticasMatricula.noEspecificadoSexo} estudiante(s) sin sexo especificado.
-              </div>
-            )}
-
-            <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <ResumenLista titulo="Nacionalidad" datos={estadisticasMatricula.nacionalidades} />
-              <ResumenLista titulo="Condicion inicial" datos={estadisticasMatricula.condiciones} />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Resumen anual de asistencia</h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-5">
-              {[
-                ['P', resumenAsistencia.totales.p, `${resumenAsistencia.totales.porcentajePresencia}%`, 'bg-emerald-50 text-emerald-800'],
-                ['A', resumenAsistencia.totales.a, `${resumenAsistencia.totales.porcentajeAusencia}%`, 'bg-red-50 text-red-800'],
-                ['E', resumenAsistencia.totales.e, `${resumenAsistencia.totales.porcentajeExcusa}%`, 'bg-amber-50 text-amber-800'],
-                ['T', resumenAsistencia.totales.t, `${resumenAsistencia.totales.porcentajeTardanza}%`, 'bg-orange-50 text-orange-800'],
-                ['Dias', resumenAsistencia.totalDiasTrabajados, '100%', 'bg-slate-100 text-slate-800'],
-              ].map(([label, value, porcentaje, clase]) => (
-                <div key={label} className={`rounded-lg p-4 ${clase}`}>
-                  <p className="text-xs font-black uppercase">{label}</p>
-                  <p className="text-2xl font-black">{value}</p>
-                  <p className="mt-1 text-xs font-bold opacity-70">{porcentaje}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[11px] uppercase tracking-widest text-slate-400">
-                    <th className="py-2">Mes</th>
-                    <th className="py-2 text-center">Dias</th>
-                    <th className="py-2 text-center">P</th>
-                    <th className="py-2 text-center">A</th>
-                    <th className="py-2 text-center">E</th>
-                    <th className="py-2 text-center">T</th>
-                    <th className="py-2 text-center">% P</th>
-                    <th className="py-2 text-center">% A</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {resumenAsistencia.meses.map(([clave, resumen]) => {
-                    const [, mes] = clave.split('-').map(Number)
-                    const porcentajeP = resumen.diasEstudiante > 0 ? Math.round((resumen.p / resumen.diasEstudiante) * 100) : 0
-                    const porcentajeA = resumen.diasEstudiante > 0 ? Math.round((resumen.a / resumen.diasEstudiante) * 100) : 0
-                    return (
-                      <tr key={clave}>
-                        <td className="py-2 font-semibold text-slate-700">{nombresMeses[mes - 1]}</td>
-                        <td className="py-2 text-center font-bold text-slate-500">{resumen.diasTrabajados}</td>
-                        <td className="py-2 text-center">{resumen.p}</td>
-                        <td className="py-2 text-center">{resumen.a}</td>
-                        <td className="py-2 text-center">{resumen.e}</td>
-                        <td className="py-2 text-center">{resumen.t}</td>
-                        <td className="py-2 text-center font-bold text-slate-600">{porcentajeP}%</td>
-                        <td className="py-2 text-center font-bold text-slate-600">{porcentajeA}%</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 p-5">
-            <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Detalle anual por estudiante</h2>
-            <p className="mt-1 text-xs font-medium text-slate-400">Los porcentajes se calculan con los dias laborables completos del ano escolar, de agosto a junio, menos dias bloqueados.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] uppercase tracking-widest text-slate-400">
-                  <th className="p-3 text-center">No.</th>
-                  <th className="p-3">Estudiante</th>
-                  <th className="p-3 text-center">Sexo</th>
-                  <th className="p-3 text-center">Estado</th>
-                  <th className="p-3 text-center">P</th>
-                  <th className="p-3 text-center">A</th>
-                  <th className="p-3 text-center">E</th>
-                  <th className="p-3 text-center">T</th>
-                  <th className="p-3 text-center">Dias</th>
-                  <th className="p-3 text-center">% P</th>
-                  <th className="p-3 text-center">% A</th>
-                  <th className="p-3 text-center">% E</th>
-                  <th className="p-3 text-center">% T</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {resumenAsistencia.estudiantesResumen.map(({ estudiante, p, a, e, t, diasTrabajados, porcentajePresencia, porcentajeAusencia, porcentajeExcusa, porcentajeTardanza }) => (
-                  <tr key={estudiante.id} className="hover:bg-slate-50">
-                    <td className="p-3 text-center font-bold text-slate-400">{estudiante.numero_orden}</td>
-                    <td className="p-3 font-bold text-slate-800">{estudiante.nombre_completo || `${estudiante.apellidos || ''}, ${estudiante.nombres || ''}`}</td>
-                    <td className="p-3 text-center">{estudiante.sexo || '-'}</td>
-                    <td className="p-3 text-center">{estudiante.estado || 'Activo'}</td>
-                    <td className="p-3 text-center text-emerald-700">{p}</td>
-                    <td className="p-3 text-center text-red-700">{a}</td>
-                    <td className="p-3 text-center text-amber-700">{e}</td>
-                    <td className="p-3 text-center text-orange-700">{t}</td>
-                    <td className="p-3 text-center font-bold text-slate-500">{diasTrabajados}</td>
-                    <td className="p-3 text-center font-black text-slate-700">{porcentajePresencia}%</td>
-                    <td className="p-3 text-center font-black text-slate-700">{porcentajeAusencia}%</td>
-                    <td className="p-3 text-center font-black text-slate-700">{porcentajeExcusa}%</td>
-                    <td className="p-3 text-center font-black text-slate-700">{porcentajeTardanza}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {vista === 'asistencia' ? (
+          <ResumenAsistenciaOficial
+            infoSeccion={infoSeccion}
+            resumen={resumenAsistencia.estudiantesResumen}
+            diasTrabajadosPorMes={resumenAsistencia.diasTrabajadosPorMes}
+            totalDiasTrabajados={resumenAsistencia.totalDiasTrabajados}
+          />
+        ) : (
+          <SabanaOficial
+            infoSeccion={infoSeccion}
+            infoColegio={infoColegio}
+            infoPerfil={infoPerfil}
+            estudiantesResumen={resumenAsistencia.estudiantesResumen}
+            areas={areasSabana}
+            asignaturas={asignaturas}
+            calificaciones={calificaciones}
+            rangoTexto={rango.texto}
+          />
+        )}
       </div>
+
       <style jsx global>{`
+        .official-sheet,
+        .official-sheet * {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+
+        .official-table {
+          border-collapse: collapse;
+          width: 100%;
+          table-layout: fixed;
+          background: #fff;
+          color: #111827;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .official-table th,
+        .official-table td {
+          border: 1px solid #111827;
+          padding: 3px 4px;
+          vertical-align: middle;
+        }
+
+        .official-table th {
+          font-size: 10px;
+          font-weight: 800;
+          text-align: center;
+        }
+
+        .official-table td {
+          font-size: 11px;
+          height: 22px;
+        }
+
+        .rotate-label {
+          writing-mode: vertical-rl;
+          transform: rotate(180deg);
+          min-height: 68px;
+          white-space: nowrap;
+        }
+
+        .print-page {
+          background: #fff;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+          margin-bottom: 24px;
+          padding: 16px;
+        }
+
         @media print {
           @page {
             size: letter landscape;
-            margin: 0.35in;
+            margin: 0.25in;
           }
 
+          html,
           body {
             background: #fff !important;
+            height: auto !important;
+            margin: 0 !important;
+            overflow: visible !important;
           }
 
-          .dashboard-sidebar,
-          nav,
+          body * {
+            visibility: hidden !important;
+          }
+
+          .official-sheet,
+          .official-sheet * {
+            visibility: visible !important;
+          }
+
           aside,
-          button {
+          nav,
+          button,
+          .print\\:hidden {
             display: none !important;
           }
 
-          section {
-            break-inside: avoid;
+          main,
+          .official-sheet {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .print-page {
+            width: 100%;
+            min-height: 7.85in;
+            margin: 0;
+            padding: 0;
             box-shadow: none !important;
+            break-after: page;
+            page-break-after: always;
           }
 
-          table {
-            page-break-inside: auto;
+          .print-page:last-child {
+            break-after: auto;
+            page-break-after: auto;
           }
 
-          tr {
-            break-inside: avoid;
-            page-break-inside: avoid;
+          .official-table th {
+            font-size: 7px;
+            padding: 2px;
+          }
+
+          .official-table td {
+            font-size: 8px;
+            height: 18px;
+            padding: 2px;
+          }
+
+          .rotate-label {
+            min-height: 54px;
           }
         }
       `}</style>
@@ -549,18 +609,260 @@ export default function ResumenAnual() {
   )
 }
 
-function ResumenLista({ titulo, datos }: { titulo: string; datos: Array<[string, number]> }) {
+function ResumenAsistenciaOficial({
+  infoSeccion,
+  resumen,
+  diasTrabajadosPorMes,
+  totalDiasTrabajados,
+}: {
+  infoSeccion: Seccion | null
+  resumen: ResumenEstudiante[]
+  diasTrabajadosPorMes: Map<string, number>
+  totalDiasTrabajados: number
+}) {
   return (
-    <div>
-      <p className="mb-2 text-xs font-black uppercase tracking-widest text-slate-400">{titulo}</p>
-      <div className="space-y-2">
-        {datos.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-            <span className="text-sm font-semibold text-slate-600">{label}</span>
-            <span className="text-sm font-black text-slate-800">{value}</span>
+    <section className="official-sheet">
+      <div className="print-page overflow-x-auto">
+        <div className="mb-3 grid grid-cols-2 gap-6 text-sm font-bold text-slate-800">
+          <div>
+            <h2 className="text-center text-lg font-black uppercase">Resumen anual de asistencia</h2>
+            <p className="mt-2">Dias trabajados: {totalDiasTrabajados || '_____________________________________'}</p>
           </div>
-        ))}
+          <div className="text-right text-xs font-semibold">
+            <p>Grado: {infoSeccion?.grado || '____'} &nbsp; Seccion: {infoSeccion?.identificador || '____'}</p>
+            <p>Ano escolar: {infoSeccion?.ano_escolar || '____'}</p>
+          </div>
+        </div>
+
+        <table className="official-table min-w-[1500px]">
+          <thead>
+            <tr>
+              <th rowSpan={3} className="w-10">No.</th>
+              <th rowSpan={3} className="w-56">Nombre(s) y apellido(s)</th>
+              {meses.map(mes => <th key={mes.clave} colSpan={4}>{mes.nombre}</th>)}
+              <th colSpan={4}>Resumen Anual</th>
+              <th colSpan={2}>Porcentaje Anual</th>
+            </tr>
+            <tr>
+              {meses.map(mes => (
+                <th key={mes.clave} colSpan={4} className="text-[9px]">
+                  Dias: {diasTrabajadosPorMes.get(mes.clave) || ''}
+                </th>
+              ))}
+              <th colSpan={4}>Totales</th>
+              <th colSpan={2}>%</th>
+            </tr>
+            <tr>
+              {[...meses, { clave: 'anual', nombre: 'Anual' }].flatMap(mes => [
+                <th key={`${mes.clave}-p`}><span className="rotate-label">Asistencia</span></th>,
+                <th key={`${mes.clave}-t`}><span className="rotate-label">Tardanza</span></th>,
+                <th key={`${mes.clave}-a`}><span className="rotate-label">Ausencia</span></th>,
+                <th key={`${mes.clave}-e`}><span className="rotate-label">Excusa</span></th>,
+              ])}
+              <th><span className="rotate-label">Asistencia</span></th>
+              <th><span className="rotate-label">Ausencia</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: Math.max(45, resumen.length) }).map((_, index) => {
+              const item = resumen[index]
+              return (
+                <tr key={item?.estudiante.id || index}>
+                  <td className="text-center font-bold">{item?.estudiante.numero_orden || index + 1}</td>
+                  <td className="font-semibold">{item ? obtenerNombreEstudiante(item.estudiante) : ''}</td>
+                  {meses.map(mes => {
+                    const conteo = item?.porMes.get(mes.clave) || crearConteo()
+                    return (
+                      <AsistenciaCeldas
+                        key={mes.clave}
+                        asistencia={conteo.asistencia}
+                        tardanza={conteo.tardanza}
+                        ausencia={conteo.ausencia}
+                        excusa={conteo.excusa}
+                      />
+                    )
+                  })}
+                  <AsistenciaCeldas
+                    asistencia={item?.anual.asistencia || ''}
+                    tardanza={item?.anual.tardanza || ''}
+                    ausencia={item?.anual.ausencia || ''}
+                    excusa={item?.anual.excusa || ''}
+                  />
+                  <td className="text-center font-bold">{item ? `${item.porcentajeAsistencia}%` : ''}</td>
+                  <td className="text-center font-bold">{item ? `${item.porcentajeAusencia}%` : ''}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </section>
+  )
+}
+
+function AsistenciaCeldas({
+  asistencia,
+  tardanza,
+  ausencia,
+  excusa,
+}: {
+  asistencia: number | string
+  tardanza: number | string
+  ausencia: number | string
+  excusa: number | string
+}) {
+  return (
+    <>
+      <td className="text-center">{celda(asistencia)}</td>
+      <td className="text-center">{celda(tardanza)}</td>
+      <td className="text-center">{celda(ausencia)}</td>
+      <td className="text-center">{celda(excusa)}</td>
+    </>
+  )
+}
+
+function SabanaOficial({
+  infoSeccion,
+  infoColegio,
+  infoPerfil,
+  estudiantesResumen,
+  areas,
+  asignaturas,
+  calificaciones,
+  rangoTexto,
+}: {
+  infoSeccion: Seccion | null
+  infoColegio: Colegio | null
+  infoPerfil: Perfil | null
+  estudiantesResumen: ResumenEstudiante[]
+  areas: AreaSabana[]
+  asignaturas: Asignatura[]
+  calificaciones: Calificacion[]
+  rangoTexto: string
+}) {
+  const incluyeSituacion = usaSabanaConSituacion(infoSeccion?.grado)
+  const grupo = obtenerGrupoSabana(infoSeccion?.grado)
+
+  return (
+    <section className="official-sheet">
+      <div className="print-page overflow-x-auto">
+        <div className="mb-2 text-center font-bold text-slate-900">
+          <h2 className="text-base font-black uppercase">Acta de rendimiento del/de la estudiante de fin del ano escolar</h2>
+          <div className="mt-2 grid grid-cols-12 gap-2 text-left text-[11px]">
+            <p className="col-span-5">Centro educativo: <span className="font-semibold">{infoColegio?.nombre || '______________________________'}</span></p>
+            <p className="col-span-2">Regional: <span className="font-semibold">{infoColegio?.regional_educacion || '_____'}</span></p>
+            <p className="col-span-2">Distrito Educativo: <span className="font-semibold">{infoColegio?.distrito_educativo || '_____'}</span></p>
+            <p className="col-span-1">Grado: <span className="font-semibold">{infoSeccion?.grado || '____'}</span></p>
+            <p className="col-span-1">Seccion: <span className="font-semibold">{infoSeccion?.identificador || '____'}</span></p>
+            <p className="col-span-1">Ano: <span className="font-semibold">{rangoTexto}</span></p>
+          </div>
+        </div>
+
+        <p className="mb-2 text-right text-xs font-bold text-slate-500 print:hidden">Modelo: {grupo}</p>
+
+        <table className="official-table min-w-[1450px]">
+          <thead>
+            <tr>
+              <th rowSpan={3} className="w-10">No.</th>
+              <th rowSpan={3} className="w-64">Nombre(s) y apellido(s)</th>
+              {areas.map(area => (
+                <th key={area.key} colSpan={incluyeSituacion ? 3 : 2}>{area.nombre}</th>
+              ))}
+              <th colSpan={3}>Presencia y Ausencia</th>
+              {incluyeSituacion && <th colSpan={3}>Situacion del/de la estudiante</th>}
+              <th rowSpan={3} className="w-28">Observaciones</th>
+            </tr>
+            <tr>
+              {areas.map(area => (
+                <th key={area.key} colSpan={incluyeSituacion ? 3 : 2}>Resultados finales</th>
+              ))}
+              <th rowSpan={2}><span className="rotate-label">% de Asistencia</span></th>
+              <th rowSpan={2}><span className="rotate-label">% de Ausencia</span></th>
+              <th rowSpan={2}><span className="rotate-label">% de Excusa</span></th>
+              {incluyeSituacion && (
+                <>
+                  <th rowSpan={2}><span className="rotate-label">Aplazado/a</span></th>
+                  <th rowSpan={2}><span className="rotate-label">Promovido/a</span></th>
+                  <th rowSpan={2}><span className="rotate-label">Reprobado/a</span></th>
+                </>
+              )}
+            </tr>
+            <tr>
+              {areas.flatMap(area => [
+                <th key={`${area.key}-final`}><span className="rotate-label">Final del area</span></th>,
+                <th key={`${area.key}-rec`}><span className="rotate-label">Recuperacion final</span></th>,
+                incluyeSituacion ? <th key={`${area.key}-esp`}><span className="rotate-label">Recuperacion especial</span></th> : null,
+              ])}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: Math.max(45, estudiantesResumen.length) }).map((_, index) => {
+              const item = estudiantesResumen[index]
+              const resultados = item
+                ? areas.map(area => calcularArea(area, asignaturas, calificaciones, item.estudiante.id))
+                : []
+              const situacion = item && !esEstudianteRetirado(item.estudiante) ? obtenerSituacion(resultados) : ''
+
+              return (
+                <tr key={item?.estudiante.id || index}>
+                  <td className="text-center font-bold">{item?.estudiante.numero_orden || index + 1}</td>
+                  <td className="font-semibold">{item ? obtenerNombreEstudiante(item.estudiante) : ''}</td>
+                  {areas.map((area, areaIndex) => {
+                    const resultado = resultados[areaIndex]
+                    return (
+                      <SabanaAreaCeldas
+                        key={area.key}
+                        finalArea={resultado?.finalArea ?? ''}
+                        recuperacionFinal={resultado?.recuperacionFinal ?? ''}
+                        recuperacionEspecial={resultado?.recuperacionEspecial ?? ''}
+                        incluyeRecuperacionEspecial={incluyeSituacion}
+                      />
+                    )
+                  })}
+                  <td className="text-center font-bold">{item ? `${item.porcentajeAsistencia}%` : ''}</td>
+                  <td className="text-center font-bold">{item ? `${item.porcentajeAusencia}%` : ''}</td>
+                  <td className="text-center font-bold">{item ? `${item.porcentajeExcusa}%` : ''}</td>
+                  {incluyeSituacion && (
+                    <>
+                      <td className="text-center font-bold">{situacion === 'Aplazado/a' ? 'X' : ''}</td>
+                      <td className="text-center font-bold">{situacion === 'Promovido/a' ? 'X' : ''}</td>
+                      <td className="text-center font-bold">{situacion === 'Reprobado/a' ? 'X' : ''}</td>
+                    </>
+                  )}
+                  <td>{item && esEstudianteRetirado(item.estudiante) ? 'Retirado/a' : ''}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
+        <div className="mt-4 grid grid-cols-2 gap-8 text-xs font-semibold text-slate-800">
+          <p>Dado en: _______________________________, a los _____ dias del mes de _______________ del ano ________</p>
+          <p>Director o Directora del centro educativo: ______________________________________________</p>
+          <p>Docente: {infoPerfil?.nombre_completo || infoPerfil?.full_name || '______________________________________________'}</p>
+          <p>Firma y sello: ______________________________________________</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SabanaAreaCeldas({
+  finalArea,
+  recuperacionFinal,
+  recuperacionEspecial,
+  incluyeRecuperacionEspecial,
+}: {
+  finalArea: number | string
+  recuperacionFinal: number | string
+  recuperacionEspecial: number | string
+  incluyeRecuperacionEspecial: boolean
+}) {
+  return (
+    <>
+      <td className="text-center font-bold">{celda(finalArea)}</td>
+      <td className="text-center">{celda(recuperacionFinal)}</td>
+      {incluyeRecuperacionEspecial && <td className="text-center">{celda(recuperacionEspecial)}</td>}
+    </>
   )
 }
