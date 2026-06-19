@@ -609,6 +609,18 @@ export default function ResumenAnual() {
           height: 22px;
         }
 
+        .official-row-even td {
+          background: #ffffff;
+        }
+
+        .official-row-odd td {
+          background: #f1f5f9;
+        }
+
+        .official-row-empty td {
+          background: #f8fafc;
+        }
+
         .rotate-label {
           writing-mode: vertical-rl;
           transform: rotate(180deg);
@@ -755,7 +767,7 @@ function ResumenAsistenciaOficial({
             {Array.from({ length: Math.max(45, resumen.length) }).map((_, index) => {
               const item = resumen[index]
               return (
-                <tr key={item?.estudiante.id || index}>
+                <tr key={item?.estudiante.id || index} className={item ? (index % 2 === 0 ? 'official-row-even' : 'official-row-odd') : 'official-row-empty'}>
                   <td className="text-center font-bold">{item?.estudiante.numero_orden || index + 1}</td>
                   <td className="font-semibold">{item ? obtenerNombreEstudiante(item.estudiante) : ''}</td>
                   {meses.map(mes => {
@@ -892,7 +904,7 @@ function SabanaOficial({
               const situacion = item && !esEstudianteRetirado(item.estudiante) ? obtenerSituacion(resultados) : ''
 
               return (
-                <tr key={item?.estudiante.id || index}>
+                <tr key={item?.estudiante.id || index} className={item ? (index % 2 === 0 ? 'official-row-even' : 'official-row-odd') : 'official-row-empty'}>
                   <td className="text-center font-bold">{item?.estudiante.numero_orden || index + 1}</td>
                   <td className="font-semibold">{item ? obtenerNombreEstudiante(item.estudiante) : ''}</td>
                   {areas.map((area, areaIndex) => {
