@@ -695,7 +695,7 @@ export default function ResumenAnual() {
           }
 
           .official-table td {
-            font-size: 8px;
+            font-size: 12px;
             height: 18px;
             padding: 2px;
           }
