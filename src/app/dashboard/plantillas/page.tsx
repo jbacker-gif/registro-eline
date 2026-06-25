@@ -1,21 +1,21 @@
 const plantillas = [
   {
     nombre: 'Estudiantes',
-    descripcion: 'Alta y actualizacion de estudiantes por seccion. Usa SIGERD o numero de lista para actualizar sin duplicar.',
+    descripcion: 'Alta y actualizacion de estudiantes por seccion. Incluye datos academicos, contacto, salud y responsable principal.',
     archivo: '/plantillas/plantilla_estudiantes.csv',
-    columnas: 'numero_orden, nombres, apellidos, sexo, nacionalidad, fecha_nacimiento, sigerd_id, tutor, telefono y estado.',
+    columnas: 'numero_orden, nombres, apellidos, sexo, nacionalidad, fecha_nacimiento o dia/mes/ano, sigerd_id, nombre_tutor, telefono_contacto, estado, libro, folio, direccion_residencia, datos de salud y responsable.',
   },
   {
     nombre: 'Calificaciones',
-    descripcion: 'Carga notas por estudiante, periodo y competencias. En grados con RP puede incluir c1_rp, c2_rp y c3_rp.',
+    descripcion: 'Carga notas por estudiante, asignatura, periodo y competencias. En grados con RP puede incluir c1_rp, c2_rp y c3_rp.',
     archivo: '/plantillas/plantilla_calificaciones.csv',
-    columnas: 'numero_orden, sigerd_id, asignatura, periodo, c1, c1_rp, c2, c2_rp, c3 y c3_rp.',
+    columnas: 'numero_orden, sigerd_id, asignatura, periodo, c1, c1_rp, c2, c2_rp, c3 y c3_rp. Periodos validos: P1, P2, P3 y P4.',
   },
   {
     nombre: 'Asistencia',
-    descripcion: 'Carga asistencia por fecha. Estados permitidos: P, A, E y T.',
+    descripcion: 'Carga asistencia por estudiante y fecha del mes activo. Estados permitidos: P, A, E y T.',
     archivo: '/plantillas/plantilla_asistencia.csv',
-    columnas: 'numero_orden, sigerd_id, fecha y estado.',
+    columnas: 'numero_orden, sigerd_id, fecha y estado. Usa fechas del mes abierto en formato d/m/aaaa.',
   },
 ]
 
@@ -26,7 +26,7 @@ export default function Plantillas() {
         <div className="mb-8">
           <h1 className="text-2xl font-black tracking-tight text-slate-800">Plantillas CSV</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Descarga los formatos oficiales para importar estudiantes, calificaciones y asistencia.
+            Descarga los formatos oficiales actualizados para importar estudiantes, calificaciones y asistencia. Los CSV usan punto y coma (;).
           </p>
         </div>
 
