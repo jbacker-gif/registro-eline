@@ -37,6 +37,10 @@ dev-*.log
 # env files (can opt-in for committing if needed)
 .env*
 
+# database backups
+/supabase/backups/
+/supabase/.temp/
+
 # vercel
 .vercel
 
