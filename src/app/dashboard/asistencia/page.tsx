@@ -220,7 +220,6 @@ export default function Asistencia() {
 
     try {
       const filas = await readCsvFile(file)
-      const estudiantesPorSigerd = new Map(estudiantes.filter(est => est.sigerd_id).map(est => [String(est.sigerd_id).trim(), est]))
       const estudiantesPorNumero = new Map(estudiantes.map(est => [Number(est.numero_orden), est]))
       const nuevosRegistros: Record<string, string> = {}
       let aplicadas = 0
@@ -229,24 +228,11 @@ export default function Asistencia() {
       let otroMes = 0
       let estadoInvalido = 0
       let diaBloqueado = 0
+      let celdasVacias = 0
 
       filas.forEach(row => {
-        const fecha = normalizarFechaCSV(getCsvValue(row, ['fecha']))
-        const estado = getCsvValue(row, ['estado']).trim().toUpperCase()
-        const sigerd = getCsvValue(row, ['sigerd_id', 'id_sigerd', 'sigerd']).trim()
-        const numero = Number(getCsvValue(row, ['numero_orden', 'numero_de_orden', 'no_orden', 'no_lista', 'numero_lista', 'numero', 'orden']))
-        const estudiante = sigerd ? estudiantesPorSigerd.get(sigerd) : estudiantesPorNumero.get(numero)
+        const fecha = normalizarFechaCSV(getCsvValue(row, ['fecha', 'dia']))
         const fechaDato = new Date(`${fecha}T00:00:00`)
-
-        if (!estudiante) {
-          sinEstudiante++
-          return
-        }
-
-        if (!['P', 'A', 'E', 'T'].includes(estado)) {
-          estadoInvalido++
-          return
-        }
 
         if (Number.isNaN(fechaDato.getTime())) {
           fechaInvalida++
@@ -263,8 +249,31 @@ export default function Asistencia() {
           return
         }
 
-        nuevosRegistros[`${estudiante.id}_${fecha}`] = estado
-        aplicadas++
+        Object.entries(row).forEach(([columna, valor]) => {
+          if (columna === 'fecha' || columna === 'dia') return
+
+          const estado = valor.trim().toUpperCase()
+          if (!estado) {
+            celdasVacias++
+            return
+          }
+
+          const numeroOrden = Number(columna)
+          const estudiante = estudiantesPorNumero.get(numeroOrden)
+
+          if (!estudiante) {
+            sinEstudiante++
+            return
+          }
+
+          if (!['P', 'A', 'E', 'T'].includes(estado)) {
+            estadoInvalido++
+            return
+          }
+
+          nuevosRegistros[`${estudiante.id}_${fecha}`] = estado
+          aplicadas++
+        })
       })
 
       if (aplicadas > 0) {
@@ -273,7 +282,7 @@ export default function Asistencia() {
       }
 
       setMensaje({
-        texto: `CSV cargado: ${aplicadas} registros aplicados. Sin estudiante: ${sinEstudiante}. Fecha inválida: ${fechaInvalida}. Otro mes: ${otroMes}. Estado inválido: ${estadoInvalido}. Día bloqueado: ${diaBloqueado}. Revisa y presiona Guardar Mes.`,
+        texto: `CSV matricial cargado: ${aplicadas} registros aplicados. Celdas vacías ignoradas: ${celdasVacias}. Sin estudiante: ${sinEstudiante}. Fecha inválida: ${fechaInvalida}. Otro mes: ${otroMes}. Estado inválido: ${estadoInvalido}. Día bloqueado/no laborable: ${diaBloqueado}. Revisa y presiona Guardar Mes.`,
         tipo: aplicadas > 0 ? 'exito' : 'error',
       })
       if (archivoCsvRef.current) archivoCsvRef.current.value = ''
@@ -329,7 +338,7 @@ export default function Asistencia() {
             </div>
             <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarAsistenciaCSV} className="hidden" />
             <button onClick={() => archivoCsvRef.current?.click()} className="bg-white border border-slate-200 text-slate-700 hover:text-blue-700 hover:border-blue-300 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm">
-              Importar CSV
+              Importar matriz CSV
             </button>
             <button onClick={guardarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all">💾 Guardar Mes</button>
           </div>
