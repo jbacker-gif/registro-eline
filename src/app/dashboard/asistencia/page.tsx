@@ -231,26 +231,16 @@ export default function Asistencia() {
       let celdasVacias = 0
 
       filas.forEach(row => {
-        const fecha = normalizarFechaCSV(getCsvValue(row, ['fecha', 'dia']))
-        const fechaDato = new Date(`${fecha}T00:00:00`)
+        const numeroOrden = Number(getCsvValue(row, ['numero_orden', 'numero_de_orden', 'no_orden', 'no_lista', 'numero_lista', 'numero', 'orden']))
+        const estudiante = estudiantesPorNumero.get(numeroOrden)
 
-        if (Number.isNaN(fechaDato.getTime())) {
-          fechaInvalida++
-          return
-        }
-
-        if (fechaDato.getMonth() !== mesActual || fechaDato.getFullYear() !== anioActual) {
-          otroMes++
-          return
-        }
-
-        if (diasBloqueados.includes(fecha)) {
-          diaBloqueado++
+        if (!estudiante) {
+          sinEstudiante++
           return
         }
 
         Object.entries(row).forEach(([columna, valor]) => {
-          if (columna === 'fecha' || columna === 'dia') return
+          if (['numero_orden', 'numero_de_orden', 'no_orden', 'no_lista', 'numero_lista', 'numero', 'orden', 'estudiante', 'nombre', 'nombre_completo'].includes(columna)) return
 
           const estado = valor.trim().toUpperCase()
           if (!estado) {
@@ -258,11 +248,21 @@ export default function Asistencia() {
             return
           }
 
-          const numeroOrden = Number(columna)
-          const estudiante = estudiantesPorNumero.get(numeroOrden)
+          const fecha = normalizarFechaCSV(columna)
+          const fechaDato = new Date(`${fecha}T00:00:00`)
 
-          if (!estudiante) {
-            sinEstudiante++
+          if (Number.isNaN(fechaDato.getTime())) {
+            fechaInvalida++
+            return
+          }
+
+          if (fechaDato.getMonth() !== mesActual || fechaDato.getFullYear() !== anioActual) {
+            otroMes++
+            return
+          }
+
+          if (diasBloqueados.includes(fecha)) {
+            diaBloqueado++
             return
           }
 
@@ -282,7 +282,7 @@ export default function Asistencia() {
       }
 
       setMensaje({
-        texto: `CSV matricial cargado: ${aplicadas} registros aplicados. Celdas vacías ignoradas: ${celdasVacias}. Sin estudiante: ${sinEstudiante}. Fecha inválida: ${fechaInvalida}. Otro mes: ${otroMes}. Estado inválido: ${estadoInvalido}. Día bloqueado/no laborable: ${diaBloqueado}. Revisa y presiona Guardar Mes.`,
+        texto: `CSV matricial por estudiante cargado: ${aplicadas} registros aplicados. Celdas vacías ignoradas: ${celdasVacias}. Sin estudiante: ${sinEstudiante}. Fecha inválida: ${fechaInvalida}. Otro mes: ${otroMes}. Estado inválido: ${estadoInvalido}. Día bloqueado/no laborable: ${diaBloqueado}. Revisa y presiona Guardar Mes.`,
         tipo: aplicadas > 0 ? 'exito' : 'error',
       })
       if (archivoCsvRef.current) archivoCsvRef.current.value = ''

@@ -13,9 +13,9 @@ const plantillas = [
   },
   {
     nombre: 'Asistencia',
-    descripcion: 'Carga asistencia mensual en formato matricial: una fila por fecha y una columna por numero de orden del estudiante.',
+    descripcion: 'Carga asistencia mensual en formato matricial: una fila por estudiante y una columna por fecha del mes activo.',
     archivo: '/plantillas/plantilla_asistencia.csv',
-    columnas: 'fecha, 1, 2, 3, ... Solo se aplican dias laborables del mes abierto. Usa P, A, E o T; tambien acepta minusculas y las celdas vacias se ignoran.',
+    columnas: 'numero_orden, fechas del mes abierto como columnas. Solo se aplican dias laborables. Usa P, A, E o T; tambien acepta minusculas y las celdas vacias se ignoran.',
   },
 ]
 
