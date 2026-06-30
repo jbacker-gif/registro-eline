@@ -5,13 +5,32 @@ import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
+const servicios = [
+  { titulo: 'Impresiones y copias', descripcion: 'Material académico, documentos institucionales y trabajos listos para entregar con terminación profesional.', icono: '🖨️', tono: 'from-blue-50 to-sky-100 text-blue-700' },
+  { titulo: 'Encuadernación', descripcion: 'Presentación cuidada para tesis, monográficos, informes, manuales y documentos educativos.', icono: '📚', tono: 'from-amber-50 to-orange-100 text-amber-700' },
+  { titulo: 'Diagramación', descripcion: 'Organización visual de proyectos, portadas, reportes y materiales impresos o digitales.', icono: '🎨', tono: 'from-indigo-50 to-violet-100 text-indigo-700' },
+  { titulo: 'Asesoría de proyectos', descripcion: 'Acompañamiento para estructurar ideas, objetivos, metodologías y entregables académicos.', icono: '🧭', tono: 'from-emerald-50 to-teal-100 text-emerald-700' },
+  { titulo: 'Análisis de datos', descripcion: 'Apoyo en organización, revisión e interpretación de datos para proyectos e investigaciones.', icono: '📊', tono: 'from-cyan-50 to-blue-100 text-cyan-700' },
+  { titulo: 'Formato de tesis', descripcion: 'Adecuación de trabajos, tesis y monográficos según normas de presentación académica.', icono: '🎓', tono: 'from-slate-100 to-slate-200 text-slate-700' },
+  { titulo: 'Corrección de plagio', descripcion: 'Revisión, orientación y mejora de textos para fortalecer la originalidad del contenido.', icono: '✅', tono: 'from-rose-50 to-red-100 text-rose-700' },
+  { titulo: 'ELINE Registro Escolar', descripcion: 'App docente para asistencia, calificaciones, boletines, plantillas y resumen académico.', icono: '💻', tono: 'from-blue-600 to-slate-900 text-white' },
+]
+
+const preguntas = [
+  { pregunta: '¿Qué es ELINE Registro Escolar?', respuesta: 'Es una app de ADSP para que los maestros gestionen asistencia, calificaciones, boletines, plantillas y reportes escolares desde un entorno digital.' },
+  { pregunta: '¿Quiénes pueden acceder a ELINE?', respuesta: 'Los docentes y usuarios autorizados por la institución mediante sus credenciales de acceso.' },
+  { pregunta: '¿Cómo entra un maestro a la app?', respuesta: 'Desde el botón “Acceso ELINE”, el maestro abre el portal e inicia sesión con su correo y contraseña asignados.' },
+  { pregunta: '¿Qué hago si olvidé mi contraseña?', respuesta: 'Debe contactar a ADSP o al responsable institucional para validar la cuenta y solicitar asistencia con el acceso.' },
+  { pregunta: '¿ELINE permite asistencia y calificaciones?', respuesta: 'Sí. La plataforma permite registrar asistencia, cargar calificaciones, consultar resúmenes y trabajar con plantillas descargables.' },
+]
+
 export default function HomeInstitucional() {
   const router = useRouter()
-  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [verPassword, setVerPassword] = useState(false)
   const [cargando, setCargando] = useState(false)
+  const [mostrarLogin, setMostrarLogin] = useState(false)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
 
   const manejarLogin = async (e: React.FormEvent) => {
@@ -24,195 +43,75 @@ export default function HomeInstitucional() {
       if (error) throw error
       setMensaje({ texto: '¡Acceso concedido!', tipo: 'exito' })
       router.push('/dashboard')
-    } catch (error: any) {
+    } catch {
       setMensaje({ texto: 'Credenciales incorrectas.', tipo: 'error' })
       setCargando(false)
     }
   }
 
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  const abrirWhatsApp = () => window.open('https://wa.me/18496297248', '_blank', 'noopener,noreferrer')
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200">
-      
-      {/* ==========================================
-          BARRA DE NAVEGACIÓN
-          ========================================== */}
-      <nav className="fixed w-full bg-white/95 backdrop-blur-md border-b border-slate-200 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-            {/* AHORA ESPERA UN PNG TRANSPARENTE */}
-            <Image 
-              src="/logo_adsp.png" 
-              alt="ADSP Logo" 
-              width={160} 
-              height={50} 
-              className="object-contain"
-              priority
-            />
-          </div>
-          <div className="hidden md:flex gap-8 font-bold text-sm text-slate-500 uppercase tracking-wider">
-            <button onClick={() => scrollToSection('nosotros')} className="hover:text-blue-600 transition-colors">Nosotros</button>
-            <button onClick={() => scrollToSection('historia')} className="hover:text-blue-600 transition-colors">Historia</button>
-            <button onClick={() => scrollToSection('servicios')} className="hover:text-blue-600 transition-colors">Servicios</button>
-          </div>
-          <button onClick={() => scrollToSection('portal-docente')} className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95">
-            Acceso Docente
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-200">
+      <nav className="fixed z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+          <button className="flex items-center" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Ir al inicio">
+            <Image src="/logo_adsp.png" alt="ADSP Logo" width={160} height={50} className="object-contain" priority />
           </button>
+          <div className="hidden gap-8 text-sm font-bold uppercase tracking-wider text-slate-500 md:flex">
+            <button onClick={() => scrollToSection('nosotros')} className="transition-colors hover:text-blue-600">Nosotros</button>
+            <button onClick={() => scrollToSection('servicios')} className="transition-colors hover:text-blue-600">Servicios</button>
+            <button onClick={() => scrollToSection('eline')} className="transition-colors hover:text-blue-600">ELINE</button>
+            <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-blue-600">Preguntas</button>
+          </div>
+          <button onClick={() => setMostrarLogin(true)} className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95">Acceso ELINE</button>
         </div>
       </nav>
 
-      {/* ==========================================
-          HERO SECTION & PORTAL ELINE
-          ========================================== */}
-      <section id="portal-docente" className="pt-32 pb-20 px-6 lg:pt-48 lg:pb-32 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-30">
-          <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-blue-500 blur-[120px]"></div>
-          <div className="absolute top-[60%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-500 blur-[120px]"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center relative z-10">
-          
+      <section className="relative overflow-hidden bg-white px-6 pb-20 pt-32 lg:pb-28 lg:pt-44">
+        <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-br from-blue-50 via-white to-amber-50" />
+        <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl lg:text-6xl font-black text-white leading-tight mb-6 tracking-tight">
-              Innovación Digital para el <span className="text-blue-400">Éxito Escolar</span>
-            </h1>
-            <p className="text-lg lg:text-xl text-blue-100/80 mb-8 max-w-xl mx-auto lg:mx-0 font-light leading-relaxed">
-              Descubre **ELINE**, la plataforma líder desarrollada por AD Soluciones Profesionales para la gestión moderna de asistencia y calificaciones.
-            </p>
-            <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-              <button onClick={() => scrollToSection('servicios')} className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 px-8 py-3.5 rounded-xl font-bold transition-all">
-                Nuestros Servicios
-              </button>
+            <span className="mb-4 inline-flex rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-blue-600 shadow-sm">AD Soluciones Profesionales</span>
+            <h1 className="mb-6 text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-6xl">Servicios académicos y tecnología escolar en un solo lugar.</h1>
+            <p className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-slate-600 lg:mx-0">ADSP acompaña a docentes, estudiantes e instituciones con soluciones profesionales, soporte académico y la app ELINE Registro Escolar.</p>
+            <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
+              <button onClick={() => scrollToSection('servicios')} className="rounded-2xl bg-slate-950 px-8 py-4 font-bold text-white shadow-xl transition hover:bg-slate-800">Ver servicios</button>
+              <button onClick={() => setMostrarLogin(true)} className="rounded-2xl border border-blue-200 bg-blue-50 px-8 py-4 font-bold text-blue-700 transition hover:bg-blue-100">Acceso ELINE</button>
+              <button onClick={abrirWhatsApp} className="rounded-2xl border border-emerald-200 bg-white px-8 py-4 font-bold text-emerald-700 transition hover:bg-emerald-50">WhatsApp</button>
             </div>
           </div>
-
-          <div className="w-full max-w-md mx-auto bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/20">
-            <div className="mb-8 text-center">
-              {/* AHORA ESPERA UN PNG TRANSPARENTE DEL SISTEMA */}
-              <div className="w-full h-24 flex items-center justify-center mb-2">
-                <Image 
-                  src="/logo.png" 
-                  alt="ELINE Logo" 
-                  width={120} 
-                  height={120} 
-                  className="object-contain"
-                />
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-8 text-white">
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white"><Image src="/logo.png" alt="ELINE Logo" width={52} height={52} className="object-contain" /></div>
+                <div><p className="text-xs font-black uppercase tracking-[0.25em] text-blue-200">App destacada</p><h2 className="text-2xl font-black">ELINE Registro Escolar</h2></div>
               </div>
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Portal ELINE</h2>
-              <p className="text-slate-500 mt-1 text-xs font-bold uppercase tracking-widest">Registro Escolar Digital</p>
+              <p className="mb-8 text-blue-50/90">Panel docente para gestionar la información escolar con rapidez, orden y una experiencia simple.</p>
+              <div className="grid grid-cols-2 gap-3 text-sm font-semibold">{['Asistencia', 'Calificaciones', 'Boletines', 'Plantillas'].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">{item}</div>)}</div>
+              <button onClick={() => setMostrarLogin(true)} className="mt-8 w-full rounded-2xl bg-white px-6 py-4 font-black text-blue-700 transition hover:bg-blue-50">Acceso ELINE</button>
             </div>
-
-            <form onSubmit={manejarLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Institucional</label>
-                <input 
-                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700"
-                  placeholder="usuario@adsp.com.do" disabled={cargando}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Contraseña</label>
-                <div className="relative">
-                  <input 
-                    type={verPassword ? "text" : "password"} 
-                    required value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full border border-slate-200 bg-slate-50 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium pr-12 text-slate-700"
-                    placeholder="••••••••" disabled={cargando}
-                  />
-                  <button type="button" onClick={() => setVerPassword(!verPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
-                    {verPassword ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" /></svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {mensaje.texto && (
-                <div className={`p-4 rounded-xl text-xs font-bold border ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
-                  {mensaje.texto}
-                </div>
-              )}
-
-              <button type="submit" disabled={cargando} className={`w-full text-white font-bold py-4 rounded-2xl transition-all shadow-xl mt-2 flex justify-center items-center gap-2 ${cargando ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'}`}>
-                {cargando ? 'Cargando Entorno...' : 'Entrar al Registro'}
-              </button>
-            </form>
           </div>
         </div>
       </section>
 
-      {/* ==========================================
-          SECCIÓN NOSOTROS
-          ========================================== */}
-      <section id="nosotros" className="py-24 px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col items-center text-center mb-16">
-          <span className="text-blue-600 font-black text-xs uppercase tracking-[0.3em] mb-3">Identidad Institucional</span>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">AD Soluciones Profesionales</h2>
-          <div className="w-12 h-1 bg-blue-600 mt-6 rounded-full"></div>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
-            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6">🎯</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Misión</h3>
-            <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Ofrecer soluciones tecnológicas innovadoras que optimicen la gestión administrativa y pedagógica de los centros educativos.
-            </p>
-          </div>
-
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
-            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6">👁️</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Visión</h3>
-            <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Ser el referente nacional en la digitalización escolar, impulsando la excelencia a través de herramientas eficientes.
-            </p>
-          </div>
-
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300">
-            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6">⭐</div>
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Valores</h3>
-            <p className="text-slate-500 leading-relaxed text-sm font-medium">
-              Integridad, innovación constante, compromiso con la educación y excelencia en el servicio al cliente.
-            </p>
-          </div>
-        </div>
+      <section id="nosotros" className="mx-auto max-w-7xl px-6 py-20">
+        <div className="mb-14 max-w-3xl"><span className="mb-3 block text-xs font-black uppercase tracking-[0.3em] text-blue-600">Identidad institucional</span><h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">ADSP combina atención profesional, soluciones académicas y herramientas digitales.</h2></div>
+        <div className="grid gap-6 md:grid-cols-3">{[['🎯', 'Misión', 'Ofrecer soluciones tecnológicas y profesionales que optimicen procesos educativos, académicos y administrativos.'], ['👁️', 'Visión', 'Ser referente nacional en servicios académicos y digitalización escolar con herramientas eficientes.'], ['⭐', 'Valores', 'Integridad, innovación, compromiso con la educación, confidencialidad y excelencia en el servicio.']].map(([icono, titulo, texto]) => <div key={titulo} className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm transition hover:shadow-xl"><div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-2xl">{icono}</div><h3 className="mb-3 text-xl font-bold text-slate-900">{titulo}</h3><p className="text-sm font-medium leading-relaxed text-slate-500">{texto}</p></div>)}</div>
       </section>
 
-      {/* ==========================================
-          FOOTER (Fondo Claro para que el logo se vea perfecto)
-          ========================================== */}
-      <footer className="bg-white text-slate-500 py-12 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center">
-            {/* AHORA ESPERA UN PNG TRANSPARENTE Y SOBRE FONDO BLANCO SE VERÁ GENIAL */}
-            <Image 
-              src="/logo_adsp.png" 
-              alt="ADSP Logo" 
-              width={200} 
-              height={60} 
-              className="object-contain" 
-            />
-          </div>
-          
-          <div className="text-center md:text-right">
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-widest mb-1">
-              Desarrollado por AD Soluciones Profesionales
-            </p>
-            <p className="text-[10px] font-medium opacity-80">
-              &copy; {new Date().getFullYear()} ADSP S.R.L. Santo Domingo, República Dominicana. <br/>
-              ELINE es una marca registrada. Todos los derechos reservados.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <section id="servicios" className="bg-white px-6 py-20">
+        <div className="mx-auto max-w-7xl"><div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><span className="mb-3 block text-xs font-black uppercase tracking-[0.3em] text-blue-600">Servicios ADSP</span><h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Soluciones para estudiantes, docentes e instituciones.</h2></div><p className="max-w-xl text-sm font-medium leading-relaxed text-slate-500">Cada servicio se trabaja con enfoque profesional, presentación limpia y orientación práctica para apoyar tus entregas académicas y procesos escolares.</p></div><div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">{servicios.map((servicio) => <article key={servicio.titulo} className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><div className={`flex h-36 items-center justify-center bg-gradient-to-br ${servicio.tono}`}><span className="text-5xl transition group-hover:scale-110">{servicio.icono}</span></div><div className="p-6"><h3 className="mb-3 text-lg font-black text-slate-900">{servicio.titulo}</h3><p className="text-sm font-medium leading-relaxed text-slate-500">{servicio.descripcion}</p></div></article>)}</div></div>
+      </section>
 
+      <section id="eline" className="px-6 py-20"><div className="mx-auto grid max-w-7xl gap-10 rounded-[2.5rem] bg-slate-950 p-8 text-white md:p-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"><div><Image src="/logo.png" alt="Logo ELINE" width={92} height={92} className="mb-6 rounded-2xl bg-white p-2" /><h2 className="mb-4 text-3xl font-black tracking-tight md:text-4xl">ELINE para maestros</h2><p className="mb-8 leading-relaxed text-slate-300">Acceso rápido al panel docente para registrar datos escolares, consultar información por sección y mantener organizado el proceso académico.</p><button onClick={() => setMostrarLogin(true)} className="rounded-2xl bg-blue-600 px-8 py-4 font-black text-white shadow-lg transition hover:bg-blue-500">Acceso ELINE</button></div><div className="grid gap-4 sm:grid-cols-2">{['Registro de asistencia mensual', 'Carga y resumen de calificaciones', 'Generación de boletines', 'Descarga de plantillas CSV'].map((item) => <div key={item} className="rounded-2xl border border-white/10 bg-white/10 p-5 font-bold text-blue-50">{item}</div>)}</div></div></section>
+
+      <section id="faq" className="bg-white px-6 py-20"><div className="mx-auto max-w-4xl"><div className="mb-12 text-center"><span className="mb-3 block text-xs font-black uppercase tracking-[0.3em] text-blue-600">Preguntas frecuentes</span><h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Dudas comunes sobre ELINE</h2></div><div className="space-y-4">{preguntas.map((item) => <details key={item.pregunta} className="group rounded-2xl border border-slate-200 bg-slate-50 p-6 open:bg-white open:shadow-md"><summary className="cursor-pointer list-none text-base font-black text-slate-900">{item.pregunta}</summary><p className="mt-3 text-sm font-medium leading-relaxed text-slate-500">{item.respuesta}</p></details>)}</div></div></section>
+
+      <footer className="border-t border-slate-200 bg-white py-12 text-slate-500"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-6 md:flex-row"><Image src="/logo_adsp.png" alt="ADSP Logo" width={200} height={60} className="object-contain" /><div className="text-center md:text-right"><p className="mb-2 text-sm font-bold text-slate-800">WhatsApp: (849) 629-7248 · Redes: @adsp_rd</p><p className="text-xs font-bold uppercase tracking-widest text-slate-700">Desarrollado por AD Soluciones Profesionales</p><p className="mt-1 text-[10px] font-medium opacity-80">&copy; {new Date().getFullYear()} ADSP S.R.L. Santo Domingo, República Dominicana. ELINE es una marca registrada.</p></div></div></footer>
+
+      {mostrarLogin && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Acceso ELINE"><div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl"><div className="mb-6 flex items-start justify-between gap-4"><div><Image src="/logo.png" alt="ELINE Logo" width={68} height={68} className="mb-3 object-contain" /><h2 className="text-2xl font-black text-slate-900">Acceso ELINE</h2><p className="text-sm font-bold uppercase tracking-widest text-slate-400">Registro Escolar Digital</p></div><button onClick={() => setMostrarLogin(false)} className="rounded-full border border-slate-200 px-3 py-1 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Cerrar acceso ELINE">×</button></div><form onSubmit={manejarLogin} className="space-y-4"><div><label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-slate-400">Email Institucional</label><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="usuario@adsp.com.do" disabled={cargando} /></div><div><label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-slate-400">Contraseña</label><div className="relative"><input type={verPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 pr-12 font-medium text-slate-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="••••••••" disabled={cargando} /><button type="button" onClick={() => setVerPassword(!verPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-600">{verPassword ? 'Ocultar' : 'Ver'}</button></div></div>{mensaje.texto && <div className={`rounded-xl border p-4 text-xs font-bold ${mensaje.tipo === 'error' ? 'border-red-100 bg-red-50 text-red-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>{mensaje.texto}</div>}<button type="submit" disabled={cargando} className={`mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold text-white shadow-xl transition-all ${cargando ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'}`}>{cargando ? 'Cargando Entorno...' : 'Entrar al Registro'}</button></form></div></div>}
     </div>
   )
 }
