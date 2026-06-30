@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase'
 
 export default function Dashboard() {
   const router = useRouter()
-  
+
   const [secciones, setSecciones] = useState<any[]>([])
   const [seccionActiva, setSeccionActiva] = useState('')
   const [cargando, setCargando] = useState(true)
@@ -41,9 +41,9 @@ export default function Dashboard() {
         .order('identificador', { ascending: true })
         .order('ano_escolar', { ascending: false })
       if (error) throw error
-      
+
       setSecciones(data || [])
-      
+
       if (data && data.length > 0) {
         const ultimaSeccion = localStorage.getItem('ultimaSeccionActiva')
         const seccionExiste = data.find(s => s.id === ultimaSeccion)
@@ -86,14 +86,14 @@ export default function Dashboard() {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h1>
           <p className="text-sm text-slate-500 font-medium">Ciclo Escolar {seccionSeleccionada?.ano_escolar || 'sin definir'}</p>
         </div>
-        
+
         {cargando ? (
           <p className="text-sm text-slate-500">Cargando...</p>
         ) : secciones.length > 0 && (
           <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
             <span className="text-sm text-slate-600 font-bold hidden md:block pl-2">Sección Activa:</span>
-            <select 
-              value={seccionActiva} 
+            <select
+              value={seccionActiva}
               onChange={(e) => manejarCambioSeccion(e.target.value)}
               className="bg-white border border-slate-300 text-blue-700 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 block p-2 font-bold outline-none cursor-pointer w-full sm:w-auto shadow-sm"
             >
@@ -111,7 +111,7 @@ export default function Dashboard() {
           CONTENIDO CENTRAL: DISEÑO MINIMALISTA Y MODERNO
           ======================================================== */}
       <div className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-50/50">
-        
+
         {secciones.length === 0 && !cargando && (
           <div className="bg-white border border-blue-100 p-8 rounded-3xl mb-10 flex flex-col md:flex-row items-center justify-between shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
@@ -131,12 +131,12 @@ export default function Dashboard() {
             <p className="text-sm text-slate-500 mt-1">Selecciona una materia para gestionar calificaciones.</p>
           </div>
         </div>
-        
+
         {/* NUEVA CUADRÍCULA DE ASIGNATURAS (Estilo Tarjetas SaaS) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {asignaturas.map((materia) => (
-            <div 
-              key={materia.id} 
+            <div
+              key={materia.id}
               onClick={() => secciones.length > 0 && navegarConContexto('/dashboard/calificaciones', `&materia=${materia.dbNombre}&titulo=${materia.nombre}`)}
               className={`group flex items-center p-5 bg-white border border-slate-200 rounded-2xl transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1'}`}
             >
@@ -144,7 +144,7 @@ export default function Dashboard() {
               <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-2xl ${materia.iconBg} ${materia.iconColor} transition-transform duration-300 group-hover:scale-110 mr-5`}>
                 {materia.icono}
               </div>
-              
+
               {/* Textos */}
               <div className="flex-1">
                 <h3 className="font-bold text-slate-800 text-sm md:text-base leading-snug group-hover:text-blue-600 transition-colors">
@@ -165,12 +165,29 @@ export default function Dashboard() {
 
         {/* SECCIÓN DE ACCESOS RÁPIDOS REDISEÑADA */}
         <h2 className="text-lg font-bold text-slate-800 mt-14 mb-6 tracking-tight">Accesos Rápidos</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
+            {/* Tarjeta Carga Masiva */}
+            <button
+              type="button"
+              onClick={() => navegarConContexto('/dashboard/calificaciones-masivas')}
+              className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 text-left transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-200 hover:shadow-xl hover:shadow-blue-900/5'}`}
+            >
+                <div className="flex items-center gap-6 relative z-10">
+                    <div className="bg-blue-50 text-blue-600 w-16 h-16 flex items-center justify-center rounded-2xl text-3xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                      CSV
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-xl group-hover:text-blue-600 transition-colors">Carga Masiva de Notas</h3>
+                        <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">Importa una matriz completa por periodo para todas las asignaturas.</p>
+                    </div>
+                </div>
+                <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-blue-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
+            </button>
             {/* Tarjeta Asistencia */}
-            <div 
-              onClick={() => navegarConContexto('/dashboard/asistencia')} 
+            <div
+              onClick={() => navegarConContexto('/dashboard/asistencia')}
               className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-900/5'}`}
             >
                 <div className="flex items-center gap-6 relative z-10">
@@ -187,9 +204,9 @@ export default function Dashboard() {
             </div>
 
             {/* Tarjeta Estudiantes */}
-            <div 
-              onClick={() => navegarConContexto('/dashboard/estudiantes')} 
-              className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5'}`}
+            <div
+              onClick={() => navegarConContexto('/dashboard/estudiantes')}
+              className={`group relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-8 text-left transition-all duration-300 ${secciones.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5'}`}
             >
                 <div className="flex items-center gap-6 relative z-10">
                     <div className="bg-emerald-50 text-emerald-600 w-16 h-16 flex items-center justify-center rounded-2xl text-3xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">

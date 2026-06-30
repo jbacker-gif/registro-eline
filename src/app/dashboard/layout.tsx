@@ -9,6 +9,7 @@ const menuItems = [
   { label: 'Inicio', ruta: '/dashboard', clave: 'dashboard', requiereSeccion: false, icono: 'home' },
   { label: 'Asistencia', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
   { label: 'Estudiantes', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
+  { label: 'Carga Notas', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'report' },
   { label: 'Resumen', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report' },
   { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'report' },
   { label: 'Plantillas', ruta: '/dashboard/plantillas', clave: 'plantillas', requiereSeccion: false, icono: 'download' },

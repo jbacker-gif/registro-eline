@@ -7,9 +7,9 @@ const plantillas = [
   },
   {
     nombre: 'Calificaciones',
-    descripcion: 'Carga notas por estudiante, asignatura, periodo y competencias. En grados con RP puede incluir c1_rp, c2_rp y c3_rp.',
+    descripcion: 'Carga notas por periodo en formato matriz: una fila por estudiante y columnas por asignatura y competencia.',
     archivo: '/plantillas/plantilla_calificaciones.csv',
-    columnas: 'numero_orden, sigerd_id, asignatura, periodo, c1, c1_rp, c2, c2_rp, c3 y c3_rp. Periodos validos: P1, P2, P3 y P4.',
+    columnas: 'numero_orden, sigerd_id, nombres, apellidos, lengua_c1, lengua_c2, matematica_c1, sociales_c3, etc. El periodo se elige en la pagina de carga masiva.',
   },
   {
     nombre: 'Asistencia',
