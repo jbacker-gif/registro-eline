@@ -9,23 +9,24 @@ const menuItems = [
   { label: 'Inicio', ruta: '/dashboard', clave: 'dashboard', requiereSeccion: false, icono: 'home' },
   { label: 'Asistencia', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
   { label: 'Estudiantes', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
-  { label: 'Carga Notas', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'report' },
+  { label: 'Carga de notas', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload' },
   { label: 'Resumen', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report' },
-  { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'report' },
+  { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'file' },
   { label: 'Plantillas', ruta: '/dashboard/plantillas', clave: 'plantillas', requiereSeccion: false, icono: 'download' },
   { label: 'Secciones', ruta: '/dashboard/secciones', clave: 'secciones', requiereSeccion: false, icono: 'layers' },
   { label: 'Perfil', ruta: '/dashboard/perfil', clave: 'perfil', requiereSeccion: false, icono: 'user' },
 ]
 
 function Icono({ tipo }: { tipo: string }) {
-  const base = 'h-4 w-4'
-  if (tipo === 'home') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10.5 12 3l9 7.5M5.25 9.75V21h13.5V9.75" />
-  if (tipo === 'calendar') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 3v3m8-3v3M4 10h16M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1Z" />
-  if (tipo === 'report') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm7 1v5h5M9 13h6M9 17h6M9 9h2" />
-  if (tipo === 'download') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" />
-  if (tipo === 'users') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 19a4 4 0 0 0-8 0m13 0a4 4 0 0 0-6-3.46M15 7a3 3 0 1 1 0 6m-6-1a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-  if (tipo === 'user') return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0" />
-  return <path className={base} strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
+  if (tipo === 'home') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10.5 12 3l9 7.5M5.25 9.75V21h13.5V9.75" />
+  if (tipo === 'calendar') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 3v3m8-3v3M4 10h16M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1Z" />
+  if (tipo === 'users') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 19a4 4 0 0 0-8 0m13 0a4 4 0 0 0-6-3.46M15 7a3 3 0 1 1 0 6m-6-1a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+  if (tipo === 'upload') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 16V4m0 0 4 4m-4-4-4 4M5 20h14" />
+  if (tipo === 'report') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm7 1v5h5M9 13h6M9 17h6" />
+  if (tipo === 'file') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 3h7l5 5v13H8a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Zm7 0v6h5" />
+  if (tipo === 'download') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" />
+  if (tipo === 'user') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0" />
+  return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -64,60 +65,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return
     }
 
-    if (requiereSeccion && seccionId) {
-      router.push(`${ruta}?seccion_id=${seccionId}`)
-    } else {
-      router.push(ruta)
-    }
+    router.push(requiereSeccion && seccionId ? `${ruta}?seccion_id=${seccionId}` : ruta)
     setMenuAbierto(false)
   }
 
   if (validandoSesion) {
-    return <div className="p-8 text-center text-slate-500">Verificando sesión...</div>
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+        Verificando sesión...
+      </div>
+    )
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100">
+    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
       <div className="fixed left-0 top-0 z-50 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="ELINE" width={24} height={24} className="rounded-md object-contain" />
+          <Image src="/logo.png" alt="ELINE" width={26} height={26} className="rounded-md object-contain" />
           <span className="text-sm font-semibold tracking-wide text-slate-900">ELINE</span>
         </div>
-        <button onClick={() => setMenuAbierto(!menuAbierto)} className="rounded-lg border border-slate-200 p-2 text-slate-600">
-          {menuAbierto ? '✕' : '☰'}
+        <button
+          onClick={() => setMenuAbierto(!menuAbierto)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600"
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4">
+            {menuAbierto ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />}
+          </svg>
         </button>
       </div>
 
-      {menuAbierto && <div className="fixed inset-0 z-40 bg-slate-900/20 md:hidden" onClick={() => setMenuAbierto(false)} />}
+      {menuAbierto && <button className="fixed inset-0 z-40 bg-slate-950/25 md:hidden" onClick={() => setMenuAbierto(false)} aria-label="Cerrar menú" />}
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform md:static md:translate-x-0 ${
           menuAbierto ? 'translate-x-0' : ''
         }`}
       >
-        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5">
-          <Image src="/logo.png" alt="Logo" width={34} height={34} className="rounded-lg object-contain" />
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">ELINE</h2>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Panel docente</p>
+        <div className="border-b border-slate-100 px-5 py-5">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Logo ELINE" width={34} height={34} className="rounded-md object-contain" />
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">ELINE</h2>
+              <p className="text-xs font-medium text-slate-500">Panel docente</p>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-6 mt-14 md:mt-0">
+        <nav className="flex-1 space-y-1 px-3 py-5 mt-14 md:mt-0" aria-label="Navegación principal">
           {menuItems.map((item) => {
             const activo = pathname === item.ruta || (item.ruta !== '/dashboard' && pathname.includes(item.clave))
             return (
               <button
                 key={item.ruta}
                 onClick={() => navegarConContexto(item.ruta, item.requiereSeccion)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  activo ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition ${
+                  activo ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
                 }`}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4 shrink-0">
                   <Icono tipo={item.icono} />
                 </svg>
-                {item.label}
+                <span className="truncate">{item.label}</span>
               </button>
             )
           })}
@@ -126,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="border-t border-slate-100 p-3">
           <button
             onClick={cerrarSesion}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+            className="flex h-10 w-full items-center justify-center rounded-md border border-slate-200 px-3 text-sm font-medium text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
           >
             Cerrar sesión
           </button>

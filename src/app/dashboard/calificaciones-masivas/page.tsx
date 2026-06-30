@@ -67,14 +67,14 @@ const normalizarTexto = (valor = '') =>
     .replace(/^_+|_+$/g, '')
 
 const aliasesBase: Record<string, string[]> = {
-  'lengua_espanola': ['lengua', 'espanol', 'espanola', 'lengua_espanola'],
+  lengua_espanola: ['lengua', 'espanol', 'espanola', 'lengua_espanola'],
   matematica: ['matematica', 'matematicas'],
-  'ciencias_sociales': ['sociales', 'ciencias_sociales'],
-  'ciencias_de_la_naturaleza': ['naturales', 'ciencias_naturales', 'ciencias_de_la_naturaleza'],
-  'lenguas_extranjeras_ingles': ['ingles', 'lenguas_extranjeras_ingles'],
-  'educacion_fisica': ['educacion_fisica', 'fisica'],
-  'formacion_integral_humana_y_religiosa': ['formacion_humana', 'formacion_integral', 'religion', 'f_i_h_r'],
-  'educacion_artistica': ['artistica', 'educacion_artistica'],
+  ciencias_sociales: ['sociales', 'ciencias_sociales'],
+  ciencias_de_la_naturaleza: ['naturales', 'ciencias_naturales', 'ciencias_de_la_naturaleza'],
+  lenguas_extranjeras_ingles: ['ingles', 'lenguas_extranjeras_ingles'],
+  educacion_fisica: ['educacion_fisica', 'fisica'],
+  formacion_integral_humana_y_religiosa: ['formacion_humana', 'formacion_integral', 'religion', 'f_i_h_r'],
+  educacion_artistica: ['artistica', 'educacion_artistica'],
 }
 
 const crearAliasesAsignatura = (asignatura: Asignatura) => {
@@ -158,7 +158,7 @@ export default function CalificacionesMasivas() {
       ])
 
       if (!secData) {
-        setMensaje({ texto: 'No tienes permisos para acceder a esta seccion.', tipo: 'error' })
+        setMensaje({ texto: 'No tienes permisos para acceder a esta sección.', tipo: 'error' })
         return
       }
 
@@ -273,7 +273,7 @@ export default function CalificacionesMasivas() {
       setAsignaturasIncluidas(Array.from(asignaturasSet))
       setResumen(nuevoResumen)
       setMensaje({
-        texto: `Matriz leida: ${nuevoResumen.aplicadas} notas listas para guardar. Columnas invalidas: ${nuevoResumen.columnaInvalida}. Notas invalidas: ${nuevoResumen.notaInvalida}.`,
+        texto: `Matriz leída: ${nuevoResumen.aplicadas} notas listas para guardar. Columnas inválidas: ${nuevoResumen.columnaInvalida}. Notas inválidas: ${nuevoResumen.notaInvalida}.`,
         tipo: nuevoResumen.aplicadas > 0 ? 'exito' : 'error',
       })
     } catch (error) {
@@ -287,7 +287,7 @@ export default function CalificacionesMasivas() {
   const guardarNotas = async () => {
     if (!seccionId || !userId || notasPendientes.length === 0 || asignaturasIncluidas.length === 0) return
 
-    if (!window.confirm(`Confirmas guardar ${notasPendientes.length} notas del periodo ${periodo}?`)) return
+    if (!window.confirm(`¿Confirmas guardar ${notasPendientes.length} notas del período ${periodo}?`)) return
 
     setGuardando(true)
     setMensaje({ texto: 'Guardando calificaciones masivas...', tipo: 'info' })
@@ -305,7 +305,7 @@ export default function CalificacionesMasivas() {
       const { error: insertError } = await supabase.from('calificaciones').insert(notasPendientes)
       if (insertError) throw insertError
 
-      setMensaje({ texto: `Calificaciones guardadas: ${notasPendientes.length} notas del periodo ${periodo}.`, tipo: 'exito' })
+      setMensaje({ texto: `Calificaciones guardadas: ${notasPendientes.length} notas del período ${periodo}.`, tipo: 'exito' })
       limpiarImportacion()
     } catch (error) {
       setMensaje({ texto: 'Error al guardar las calificaciones masivas.', tipo: 'error' })
@@ -314,123 +314,136 @@ export default function CalificacionesMasivas() {
     }
   }
 
-  if (cargando) return <div className="p-10 text-center text-slate-500 font-medium w-full">Cargando carga masiva...</div>
-  if (!seccionId) return <div className="p-10 text-center text-slate-500 font-bold w-full">Por favor selecciona una seccion en el Panel de Control.</div>
+  if (cargando) return <div className="p-10 text-center text-sm font-medium text-slate-500">Cargando carga masiva...</div>
+  if (!seccionId) return <div className="p-10 text-center text-sm font-semibold text-slate-500">Selecciona una sección en el Panel de Control.</div>
+
+  const resumenItems = [
+    ['Notas listas', resumen.aplicadas, 'text-slate-950'],
+    ['Vacías', resumen.celdasVacias, 'text-slate-700'],
+    ['Sin estudiante', resumen.sinEstudiante, 'text-amber-700'],
+    ['Columnas inválidas', resumen.columnaInvalida, 'text-red-700'],
+    ['Notas inválidas', resumen.notaInvalida, 'text-red-700'],
+    ['Retirados', resumen.retirados, 'text-slate-700'],
+  ] as const
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50/50">
-      <div className="mx-auto max-w-7xl p-4 md:p-8">
-        <div className="mb-6 flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-800">Carga Masiva de Calificaciones</h1>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              Seccion: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}
-            </p>
+    <div className="min-h-full bg-slate-50">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">
+        <header className="mb-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Calificaciones</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Carga masiva de notas</h1>
+              <p className="mt-2 text-sm text-slate-500">
+                {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[150px_1fr_1fr]">
+              <select
+                value={periodo}
+                onChange={(e) => {
+                  setPeriodo(e.target.value as Periodo)
+                  limpiarImportacion()
+                }}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                {periodos.map(item => <option key={item} value={item}>Período {item.replace('P', '')}</option>)}
+              </select>
+              <a
+                href="/plantillas/plantilla_calificaciones.csv"
+                download
+                className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+              >
+                Descargar plantilla
+              </a>
+              <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarCSV} className="hidden" />
+              <button
+                onClick={() => archivoCsvRef.current?.click()}
+                className="h-10 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
+              >
+                Importar matriz
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <select
-              value={periodo}
-              onChange={(e) => {
-                setPeriodo(e.target.value as Periodo)
-                limpiarImportacion()
-              }}
-              className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {periodos.map(item => <option key={item} value={item}>Periodo {item.replace('P', '')}</option>)}
-            </select>
-            <a
-              href="/plantillas/plantilla_calificaciones.csv"
-              download
-              className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-700"
-            >
-              Descargar plantilla
-            </a>
-            <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarCSV} className="hidden" />
-            <button
-              onClick={() => archivoCsvRef.current?.click()}
-              className="h-11 rounded-lg bg-slate-900 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700"
-            >
-              Importar matriz
-            </button>
-          </div>
-        </div>
+        </header>
 
         {mensaje.texto && (
-          <div className={`mb-5 rounded-lg border p-4 text-sm font-semibold shadow-sm ${mensaje.tipo === 'error' ? 'border-red-200 bg-red-50 text-red-700' : mensaje.tipo === 'exito' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
+          <div className={`mb-5 rounded-md border p-4 text-sm font-semibold ${mensaje.tipo === 'error' ? 'border-red-200 bg-red-50 text-red-700' : mensaje.tipo === 'exito' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
             {mensaje.texto}
           </div>
         )}
 
-        <div className="mb-5 grid gap-3 md:grid-cols-6">
-          {[
-            ['Notas listas', resumen.aplicadas],
-            ['Vacias', resumen.celdasVacias],
-            ['Sin estudiante', resumen.sinEstudiante],
-            ['Columnas invalidas', resumen.columnaInvalida],
-            ['Notas invalidas', resumen.notaInvalida],
-            ['Retirados', resumen.retirados],
-          ].map(([label, value]) => (
+        <section className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          {resumenItems.map(([label, value, tone]) => (
             <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</p>
-              <p className="mt-1 text-2xl font-black text-slate-800">{value}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+              <p className={`mt-2 text-2xl font-semibold ${tone}`}>{value}</p>
             </div>
           ))}
-        </div>
+        </section>
 
-        <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-bold text-slate-700">Formato esperado</p>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Usa una fila por estudiante. Las columnas de notas deben combinar asignatura y competencia, por ejemplo:
-            <span className="font-mono text-slate-700"> lengua_c1, lengua_c2, matematica_c3, sociales_c1_rp</span>.
-            El periodo se elige arriba y aplica a todo el archivo.
-          </p>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-              <thead className="bg-slate-800 text-white">
-                <tr>
-                  <th className="p-3 font-bold">No.</th>
-                  <th className="p-3 font-bold">Estudiante</th>
-                  <th className="p-3 font-bold">Asignatura</th>
-                  <th className="p-3 text-center font-bold">Competencia</th>
-                  <th className="p-3 text-center font-bold">Nota</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vistaPrevia.length === 0 ? (
+        <section className="mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-950">Vista previa</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-sm font-semibold text-slate-400">
-                      Importa una matriz CSV para revisar las primeras notas antes de guardar.
-                    </td>
+                    <th className="px-4 py-3 font-semibold">No.</th>
+                    <th className="px-4 py-3 font-semibold">Estudiante</th>
+                    <th className="px-4 py-3 font-semibold">Asignatura</th>
+                    <th className="px-4 py-3 text-center font-semibold">Competencia</th>
+                    <th className="px-4 py-3 text-center font-semibold">Nota</th>
                   </tr>
-                ) : vistaPrevia.map((fila, index) => (
-                  <tr key={`${fila.numero}-${fila.asignatura}-${fila.competencia}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="border-t border-slate-100 p-3 font-bold text-slate-500">{fila.numero}</td>
-                    <td className="border-t border-slate-100 p-3 font-semibold text-slate-800">{fila.estudiante}</td>
-                    <td className="border-t border-slate-100 p-3 text-slate-600">{fila.asignatura}</td>
-                    <td className="border-t border-slate-100 p-3 text-center font-bold text-blue-700">{fila.competencia}</td>
-                    <td className="border-t border-slate-100 p-3 text-center font-black text-slate-900">{fila.nota}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {vistaPrevia.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-sm font-medium text-slate-400">
+                        Sin matriz importada.
+                      </td>
+                    </tr>
+                  ) : vistaPrevia.map((fila, index) => (
+                    <tr key={`${fila.numero}-${fila.asignatura}-${fila.competencia}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                      <td className="border-t border-slate-100 px-4 py-3 font-semibold text-slate-500">{fila.numero}</td>
+                      <td className="border-t border-slate-100 px-4 py-3 font-medium text-slate-900">{fila.estudiante}</td>
+                      <td className="border-t border-slate-100 px-4 py-3 text-slate-600">{fila.asignatura}</td>
+                      <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-blue-700">{fila.competencia}</td>
+                      <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-slate-950">{fila.nota}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-950">Columnas admitidas</h2>
+            <div className="mt-4 space-y-3 text-sm text-slate-600">
+              <p>Identidad: <span className="font-mono text-xs text-slate-800">numero_orden, sigerd_id</span></p>
+              <p>Notas: <span className="font-mono text-xs text-slate-800">lengua_c1, matematica_c2, sociales_c3_rp</span></p>
+              <p>El período activo se aplica a todo el archivo importado.</p>
+            </div>
+            <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+              Al guardar, se reemplazan las notas del período seleccionado solo para las asignaturas incluidas en la matriz.
+            </div>
+          </aside>
+        </section>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             onClick={limpiarImportacion}
             disabled={notasPendientes.length === 0 || guardando}
-            className="h-11 rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Limpiar
           </button>
           <button
             onClick={guardarNotas}
             disabled={notasPendientes.length === 0 || guardando}
-            className="h-11 rounded-lg bg-emerald-600 px-6 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 rounded-md bg-emerald-600 px-5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {guardando ? 'Guardando...' : `Guardar ${notasPendientes.length} notas`}
           </button>
