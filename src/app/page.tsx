@@ -129,10 +129,14 @@ export default function HomeInstitucional() {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             aria-label="Ir al inicio"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#142037] bg-white">
-              <span className="font-mono text-[11px] font-medium">AD</span>
-            </span>
-            <span className="font-mono text-[13px] font-medium uppercase tracking-[0.18em]">ADSP</span>
+            <Image
+              src="/logo_adsp.png"
+              alt="AD Soluciones Profesionales"
+              width={142}
+              height={44}
+              className="h-11 w-auto object-contain"
+              priority
+            />
           </button>
 
           <div className="hidden gap-10 font-mono text-[12px] uppercase tracking-[0.14em] text-[#5b6472] md:flex">
