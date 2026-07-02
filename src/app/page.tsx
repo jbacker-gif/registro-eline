@@ -174,10 +174,28 @@ export default function HomeInstitucional() {
         tipo: 'exito',
       })
     } catch (error) {
-      const detalle = error instanceof Error ? error.message : ''
+      const authError = error as {
+        message?: string
+        name?: string
+        status?: number
+        code?: string
+        cause?: { message?: string }
+      }
+      const detalle = authError.message || String(error || '')
       const detalleNormalizado = detalle.toLowerCase()
+      const diagnostico = [
+        authError.name ? `tipo: ${authError.name}` : null,
+        typeof authError.status === 'number' ? `status: ${authError.status}` : null,
+        authError.code ? `codigo: ${authError.code}` : null,
+        authError.cause?.message ? `causa: ${authError.cause.message}` : null,
+      ].filter(Boolean).join(' | ')
 
-      if (detalleNormalizado.includes('not authorized')) {
+      if (authError.status === 0 || detalle === '0') {
+        setMensaje({
+          texto: 'Error de conexion con Supabase Auth. Revisa que NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY esten configuradas en Vercel para esta rama y vuelve a desplegar.',
+          tipo: 'error',
+        })
+      } else if (detalleNormalizado.includes('not authorized')) {
         setMensaje({
           texto: 'Supabase gratis solo envia correos a miembros del equipo del proyecto. Agrega ese correo al equipo o configura SMTP propio.',
           tipo: 'error',
@@ -194,7 +212,9 @@ export default function HomeInstitucional() {
         })
       } else {
         setMensaje({
-          texto: detalle || 'No pudimos enviar el enlace. Revisa la configuracion de correo en Supabase Auth.',
+          texto: diagnostico
+            ? `${detalle || 'No pudimos enviar el enlace.'} (${diagnostico})`
+            : detalle || 'No pudimos enviar el enlace. Revisa la configuracion de correo en Supabase Auth.',
           tipo: 'error',
         })
       }
