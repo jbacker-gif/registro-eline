@@ -160,13 +160,7 @@ export default function HomeInstitucional() {
     setMensaje({ texto: 'Enviando enlace de recuperacion...', tipo: 'info' })
 
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_VERCEL_URL
-      const baseUrl = siteUrl
-        ? siteUrl.startsWith('http')
-          ? siteUrl
-          : `https://${siteUrl}`
-        : window.location.origin
-      const redirectTo = `${baseUrl.replace(/\/$/, '')}/recuperar-contrasena`
+      const redirectTo = `${window.location.origin}/recuperar-contrasena`
       const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperacion, { redirectTo })
       if (error) throw error
       setMensaje({
