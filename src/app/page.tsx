@@ -157,14 +157,14 @@ export default function HomeInstitucional() {
   const manejarRecuperacion = async (e: React.FormEvent) => {
     e.preventDefault()
     setCargando(true)
-    setMensaje({ texto: 'Enviando enlace de recuperacion...', tipo: 'info' })
+    setMensaje({ texto: 'Enviando enlace de recuperación...', tipo: 'info' })
 
     try {
       const redirectTo = `${window.location.origin}/recuperar-contrasena`
       const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperacion, { redirectTo })
       if (error) throw error
       setMensaje({
-        texto: 'Si el correo pertenece a una cuenta activa, recibira un enlace para crear una nueva contrasena.',
+        texto: 'Si el correo pertenece a una cuenta activa, recibirá un enlace para crear una nueva contraseña.',
         tipo: 'exito',
       })
     } catch (error) {
@@ -186,34 +186,34 @@ export default function HomeInstitucional() {
 
       if (authError.status === 0 || detalle === '0') {
         setMensaje({
-          texto: 'Error de conexion con Supabase Auth. Revisa que NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY esten configuradas en Vercel para esta rama y vuelve a desplegar.',
+          texto: 'Error de conexión con Supabase Auth. Revisa que NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY estén configuradas en Vercel para esta rama y vuelve a desplegar.',
           tipo: 'error',
         })
       } else if (detalleNormalizado.includes('not authorized')) {
         setMensaje({
-          texto: 'Supabase gratis solo envia correos a miembros del equipo del proyecto. Agrega ese correo al equipo o configura SMTP propio.',
+          texto: 'Supabase gratis solo envía correos a miembros del equipo del proyecto. Agrega ese correo al equipo o configura SMTP propio.',
           tipo: 'error',
         })
       } else if (detalleNormalizado.includes('rate limit')) {
         setMensaje({
-          texto: 'Se alcanzo el limite de correos de Supabase gratis. Espera una hora o configura SMTP propio.',
+          texto: 'Se alcanzó el límite de correos de Supabase gratis. Espera una hora o configura SMTP propio.',
           tipo: 'error',
         })
       } else if (detalleNormalizado.includes('redirect')) {
         setMensaje({
-          texto: 'La URL de recuperacion no esta autorizada en Supabase. Agregala en Authentication > URL Configuration > Redirect URLs.',
+          texto: 'La URL de recuperación no está autorizada en Supabase. Agrégala en Authentication > URL Configuration > Redirect URLs.',
           tipo: 'error',
         })
       } else {
         setMensaje({
           texto: diagnostico
             ? `${detalle || 'No pudimos enviar el enlace.'} (${diagnostico})`
-            : detalle || 'No pudimos enviar el enlace. Revisa la configuracion de correo en Supabase Auth.',
+            : detalle || 'No pudimos enviar el enlace. Revisa la configuración de correo en Supabase Auth.',
           tipo: 'error',
         })
       }
 
-      console.error('Error enviando recuperacion de contrasena:', error)
+      console.error('Error enviando recuperación de contraseña:', error)
     } finally {
       setCargando(false)
     }
@@ -588,7 +588,7 @@ export default function HomeInstitucional() {
                   <span className="font-mono text-[10px]">EL</span>
                 </span>
                 <h2 className="font-serif text-xl font-medium">
-                  {modoAcceso === 'login' ? 'Acceso docente' : 'Recuperar contrasena'}
+                  {modoAcceso === 'login' ? 'Acceso docente' : 'Recuperar contraseña'}
                 </h2>
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">
                   {modoAcceso === 'login' ? 'Registro escolar digital' : 'Enlace seguro por correo'}
@@ -667,7 +667,7 @@ export default function HomeInstitucional() {
                 onClick={abrirRecuperacion}
                 className="w-full text-center font-mono text-[11px] uppercase tracking-[0.12em] text-[#5b6472] underline-offset-4 transition-colors hover:text-[#142037] hover:underline"
               >
-                Olvide mi contrasena
+                Olvidé mi contraseña
               </button>
             </form>
             ) : (
