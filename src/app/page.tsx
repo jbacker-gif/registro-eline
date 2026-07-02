@@ -481,10 +481,13 @@ export default function HomeInstitucional() {
       <footer className="bg-[#142037] text-[#f6f7f9]">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 px-6 py-16 md:flex-row md:items-end">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30">
-              <span className="font-mono text-[11px]">AD</span>
-            </span>
-            <span className="font-mono text-[13px] uppercase tracking-[0.18em]">ADSP</span>
+            <Image
+              src="/logo_footer_gris.png"
+              alt="AD Soluciones Profesionales"
+              width={320}
+              height={160}
+              className="h-20 w-auto object-contain"
+            />
           </div>
           <div className="text-left md:text-right">
             <p className="mb-2 font-mono text-[12px] text-white/70">Tel/WhatsApp (849) 629-7248 · info@adsp.com.do · @adsp_rd</p>
