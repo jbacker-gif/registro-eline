@@ -16,6 +16,7 @@ const asignaturas = [
 ]
 
 const accesos = [
+  { titulo: 'Registro Secundaria', descripcion: 'Modulo para 1ro a 6to con fichas, competencias e informe preliminar.', ruta: '/dashboard/registro-secundaria', iniciales: 'NS', sinContexto: true },
   { titulo: 'Carga masiva de notas', descripcion: 'Importación por periodo para todas las asignaturas.', ruta: '/dashboard/calificaciones-masivas', iniciales: 'CSV' },
   { titulo: 'Asistencia', descripcion: 'Registro mensual de presencia, ausencia, excusa y tardanza.', ruta: '/dashboard/asistencia', iniciales: 'AS' },
   { titulo: 'Estudiantes', descripcion: 'Ficha, estado y datos académicos de la sección.', ruta: '/dashboard/estudiantes', iniciales: 'ES' },
@@ -69,7 +70,11 @@ export default function Dashboard() {
     router.replace(`/dashboard?seccion_id=${nuevoId}`)
   }
 
-  const navegarConContexto = (rutaBase: string, extraParams = '') => {
+  const navegarConContexto = (rutaBase: string, extraParams = '', sinContexto = false) => {
+    if (sinContexto) {
+      router.push(rutaBase)
+      return
+    }
     if (!seccionActiva) {
       alert('Por favor, selecciona o crea una sección primero.')
       return
@@ -176,8 +181,8 @@ export default function Dashboard() {
               <button
                 key={acceso.ruta}
                 type="button"
-                onClick={() => navegarConContexto(acceso.ruta)}
-                disabled={secciones.length === 0}
+                onClick={() => navegarConContexto(acceso.ruta, '', Boolean((acceso as any).sinContexto))}
+                disabled={secciones.length === 0 && !(acceso as any).sinContexto}
                 className="rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-900 font-mono text-xs font-semibold text-white">{acceso.iniciales}</span>

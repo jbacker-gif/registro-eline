@@ -5,16 +5,37 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Image from 'next/image'
 
-const menuItems = [
-  { label: 'Inicio', ruta: '/dashboard', clave: 'dashboard', requiereSeccion: false, icono: 'home' },
-  { label: 'Asistencia', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
-  { label: 'Estudiantes', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
-  { label: 'Carga de notas', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload' },
-  { label: 'Resumen', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report' },
-  { label: 'Boletines', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'file' },
-  { label: 'Plantillas', ruta: '/dashboard/plantillas', clave: 'plantillas', requiereSeccion: false, icono: 'download' },
-  { label: 'Secciones', ruta: '/dashboard/secciones', clave: 'secciones', requiereSeccion: false, icono: 'layers' },
-  { label: 'Perfil', ruta: '/dashboard/perfil', clave: 'perfil', requiereSeccion: false, icono: 'user' },
+const menuGroups = [
+  {
+    titulo: 'Inicio',
+    items: [
+      { label: 'Dashboard', ruta: '/dashboard', clave: 'dashboard', requiereSeccion: false, icono: 'home' },
+    ],
+  },
+  {
+    titulo: 'Registro Escolar',
+    items: [
+      { label: 'Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
+      { label: 'Nivel Secundario', ruta: '/dashboard/registro-secundaria', clave: 'registro-secundaria', requiereSeccion: false, icono: 'layers' },
+      { label: 'Asistencia Primaria', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
+      { label: 'Notas Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload' },
+    ],
+  },
+  {
+    titulo: 'Reportes',
+    items: [
+      { label: 'Resumen Primaria', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report' },
+      { label: 'Boletines Primaria', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'file' },
+    ],
+  },
+  {
+    titulo: 'Configuracion',
+    items: [
+      { label: 'Secciones', ruta: '/dashboard/secciones', clave: 'secciones', requiereSeccion: false, icono: 'layers' },
+      { label: 'Plantillas', ruta: '/dashboard/plantillas', clave: 'plantillas', requiereSeccion: false, icono: 'download' },
+      { label: 'Perfil y centro', ruta: '/dashboard/perfil', clave: 'perfil', requiereSeccion: false, icono: 'user' },
+    ],
+  },
 ]
 
 function Icono({ tipo }: { tipo: string }) {
@@ -112,24 +133,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-5 mt-14 md:mt-0" aria-label="Navegación principal">
-          {menuItems.map((item) => {
-            const activo = pathname === item.ruta || (item.ruta !== '/dashboard' && pathname.includes(item.clave))
-            return (
-              <button
-                key={item.ruta}
-                onClick={() => navegarConContexto(item.ruta, item.requiereSeccion)}
-                className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-medium transition ${
-                  activo ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                }`}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4 shrink-0">
-                  <Icono tipo={item.icono} />
-                </svg>
-                <span className="truncate">{item.label}</span>
-              </button>
-            )
-          })}
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5 mt-14 md:mt-0" aria-label="Navegación principal">
+          {menuGroups.map((group) => (
+            <div key={group.titulo}>
+              <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-widest text-slate-400">{group.titulo}</p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const activo = pathname === item.ruta || (item.ruta !== '/dashboard' && pathname.includes(item.clave))
+                  return (
+                    <button
+                      key={item.ruta}
+                      onClick={() => navegarConContexto(item.ruta, item.requiereSeccion)}
+                      className={`flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition ${
+                        activo ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                      }`}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-4 w-4 shrink-0">
+                        <Icono tipo={item.icono} />
+                      </svg>
+                      <span className="min-w-0 flex-1 leading-5">{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-slate-100 p-3">

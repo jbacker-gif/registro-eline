@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+const gradosSecundariaPrimerCiclo = ['1ro', '2do', '3ro']
+const gradosSecundariaSegundoCiclo = ['4to', '5to', '6to']
+const modalidadesSegundoCiclo = ['Academica', 'Tecnico-Profesional', 'Artes']
+
 export default function MisSecciones() {
   const [secciones, setSecciones] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
@@ -10,6 +14,10 @@ export default function MisSecciones() {
   
   const [grado, setGrado] = useState('')
   const [identificador, setIdentificador] = useState('')
+  const [nivel, setNivel] = useState('Primaria')
+  const [nivelFiltro, setNivelFiltro] = useState<'Todos' | 'Primaria' | 'Secundario'>('Todos')
+  const [modalidad, setModalidad] = useState('')
+  const [salidaOptativa, setSalidaOptativa] = useState('')
   const [tanda, setTanda] = useState('Matutina') // NUEVO ESTADO PARA LA TANDA
   const [anoEscolar, setAnoEscolar] = useState('')
   const [seccionEditando, setSeccionEditando] = useState<any | null>(null)
@@ -52,6 +60,9 @@ export default function MisSecciones() {
   const limpiarFormulario = () => {
     setGrado('')
     setIdentificador('')
+    setNivel('Primaria')
+    setModalidad('')
+    setSalidaOptativa('')
     setTanda('Matutina')
     setAnoEscolar('')
     setSeccionEditando(null)
@@ -61,6 +72,9 @@ export default function MisSecciones() {
     setSeccionEditando(seccion)
     setGrado(seccion.grado || '')
     setIdentificador(seccion.identificador || '')
+    setNivel(seccion.nivel || 'Primaria')
+    setModalidad(seccion.modalidad || '')
+    setSalidaOptativa(seccion.salida_optativa || '')
     setTanda(seccion.tanda || 'Matutina')
     setAnoEscolar(seccion.ano_escolar || '')
     setMensaje({ texto: '', tipo: '' })
@@ -126,9 +140,19 @@ export default function MisSecciones() {
       const gradoNormalizado = grado.trim()
       const identificadorNormalizado = identificador.trim().toUpperCase()
       const tandaNormalizada = tanda || 'Matutina'
+      const esSecundaria = nivel === 'Secundario'
+      const esPrimerCicloSecundaria = esSecundaria && gradosSecundariaPrimerCiclo.includes(gradoNormalizado)
+      const esSegundoCicloSecundaria = esSecundaria && gradosSecundariaSegundoCiclo.includes(gradoNormalizado)
+      const modalidadNormalizada = modalidad.trim() || (esSegundoCicloSecundaria ? 'Academica' : '')
+
+      if (esSegundoCicloSecundaria && !modalidadesSegundoCiclo.includes(modalidadNormalizada)) {
+        setMensaje({ texto: 'Para 4to, 5to y 6to de Secundario selecciona Academica, Tecnico-Profesional o Artes.', tipo: 'error' })
+        return
+      }
 
       const existe = secciones.find(s =>
         s.id !== seccionEditando?.id &&
+        (s.nivel || 'Primaria') === nivel &&
         s.grado === gradoNormalizado &&
         String(s.identificador || '').trim().toUpperCase() === identificadorNormalizado &&
         (s.tanda || 'Matutina') === tandaNormalizada &&
@@ -144,12 +168,21 @@ export default function MisSecciones() {
         identificador: identificadorNormalizado,
         tanda: tandaNormalizada,
         ano_escolar: anoNormalizado.valor,
+        nivel,
+        modalidad: esSegundoCicloSecundaria ? modalidadNormalizada : null,
+        salida_optativa: esSegundoCicloSecundaria ? salidaOptativa.trim() || null : null,
       }
       const { error } = seccionEditando
         ? await supabase.from('secciones').update(payload).eq('id', seccionEditando.id).eq('user_id', userId)
         : await supabase.from('secciones').insert([{ ...payload, user_id: userId }])
 
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505') {
+          setMensaje({ texto: 'Ya existe una seccion igual para ese mismo nivel, tanda y ano escolar.', tipo: 'error' })
+          return
+        }
+        throw error
+      }
 
       setMensaje({ texto: seccionEditando ? 'Seccion actualizada con exito.' : 'Seccion creada con exito.', tipo: 'exito' })
       limpiarFormulario()
@@ -181,12 +214,28 @@ export default function MisSecciones() {
 
   if (cargando) return <div className="p-10 text-center text-slate-500 font-medium">Cargando tus secciones... ⏳</div>
 
+  const seccionesFiltradas = nivelFiltro === 'Todos'
+    ? secciones
+    : secciones.filter(sec => (sec.nivel || 'Primaria') === nivelFiltro)
+
   return (
     <div className="p-6 md:p-10 max-w-6xl mx-auto bg-slate-50/50 min-h-full">
       
       <div className="mb-8">
-        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Mis Secciones Escolar</h1>
-        <p className="text-sm text-slate-500 mt-1">Administra los grados, aulas y tandas donde impartes docencia.</p>
+        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Configuracion de Secciones</h1>
+        <p className="text-sm text-slate-500 mt-1">Administra Primaria y Secundaria por separado para evitar mezclar registros.</p>
+        <div className="mt-5 inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          {(['Todos', 'Primaria', 'Secundario'] as const).map(opcion => (
+            <button
+              key={opcion}
+              type="button"
+              onClick={() => setNivelFiltro(opcion)}
+              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${nivelFiltro === opcion ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
+            >
+              {opcion}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -203,17 +252,48 @@ export default function MisSecciones() {
             
             <form onSubmit={agregarSeccion} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Grado</label>
-                <select required value={grado} onChange={(e) => setGrado(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium">
-                  <option value="">Seleccione un grado</option>
-                  <option value="1ro">1ro de Primaria</option>
-                  <option value="2do">2do de Primaria</option>
-                  <option value="3ro">3ro de Primaria</option>
-                  <option value="4to">4to de Primaria</option>
-                  <option value="5to">5to de Primaria</option>
-                  <option value="6to">6to de Primaria</option>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nivel</label>
+                <select required value={nivel} onChange={(e) => { setNivel(e.target.value); setGrado(''); setModalidad(''); setSalidaOptativa('') }} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium">
+                  <option value="Primaria">Primaria</option>
+                  <option value="Secundario">Secundario</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Grado</label>
+                <select required value={grado} onChange={(e) => { setGrado(e.target.value); if (!gradosSecundariaSegundoCiclo.includes(e.target.value)) { setModalidad(''); setSalidaOptativa('') } }} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium">
+                  <option value="">Seleccione un grado</option>
+                  {['1ro', '2do', '3ro', '4to', '5to', '6to'].map(item => (
+                    <option key={item} value={item}>{item} de {nivel}</option>
+                  ))}
+                </select>
+              </div>
+
+              {nivel === 'Secundario' && (
+                <>
+                  {gradosSecundariaPrimerCiclo.includes(grado) && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+                      Primer ciclo general: 1ro, 2do y 3ro no usan modalidad.
+                    </div>
+                  )}
+                  {gradosSecundariaSegundoCiclo.includes(grado) && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Modalidad</label>
+                      <select value={modalidad || 'Academica'} onChange={(e) => setModalidad(e.target.value)} className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium">
+                        <option value="Academica">Academica</option>
+                        <option value="Tecnico-Profesional">Tecnico-Profesional</option>
+                        <option value="Artes">Artes</option>
+                      </select>
+                    </div>
+                  )}
+                  {gradosSecundariaSegundoCiclo.includes(grado) && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salida optativa</label>
+                      <input type="text" value={salidaOptativa} onChange={(e) => setSalidaOptativa(e.target.value)} placeholder="Ej: Humanidades, Ciencias..." className="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-slate-700 font-medium"/>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sección (Letra)</label>
@@ -266,7 +346,7 @@ export default function MisSecciones() {
               <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
-                    <th className="p-5 font-bold">Grado</th>
+                    <th className="p-5 font-bold">Nivel / Grado</th>
                     <th className="p-5 font-bold text-center">Sección</th>
                     <th className="p-5 font-bold">Tanda</th>
                     <th className="p-5 font-bold">Año escolar</th>
@@ -274,7 +354,7 @@ export default function MisSecciones() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {secciones.length === 0 ? (
+                  {seccionesFiltradas.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-10 text-center text-slate-400 font-medium">
                         No has creado ninguna sección todavía.<br/>
@@ -282,9 +362,12 @@ export default function MisSecciones() {
                       </td>
                     </tr>
                   ) : (
-                    secciones.map((sec) => (
+                    seccionesFiltradas.map((sec) => (
                       <tr key={sec.id} className="hover:bg-slate-50/80 transition-colors group">
-                        <td className="p-5 font-bold text-slate-800">{sec.grado}</td>
+                        <td className="p-5 font-bold text-slate-800">
+                          {sec.nivel || 'Primaria'} - {sec.grado}
+                          {sec.salida_optativa && <span className="mt-1 block text-xs font-semibold text-slate-400">{sec.salida_optativa}</span>}
+                        </td>
                         <td className="p-5 text-center">
                           <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 font-black text-sm border border-indigo-100">
                             {sec.identificador}
