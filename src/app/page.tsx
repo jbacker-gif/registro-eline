@@ -124,9 +124,11 @@ export default function HomeInstitucional() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [emailRecuperacion, setEmailRecuperacion] = useState('')
   const [verPassword, setVerPassword] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [mostrarLogin, setMostrarLogin] = useState(false)
+  const [modoAcceso, setModoAcceso] = useState<'login' | 'recuperacion'>('login')
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
   const [contacto, setContacto] = useState({
     nombre: '',
@@ -150,6 +152,39 @@ export default function HomeInstitucional() {
       setMensaje({ texto: 'Credenciales incorrectas.', tipo: 'error' })
       setCargando(false)
     }
+  }
+
+  const manejarRecuperacion = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCargando(true)
+    setMensaje({ texto: 'Enviando enlace de recuperacion...', tipo: 'info' })
+
+    try {
+      const redirectTo = `${window.location.origin}/recuperar-contrasena`
+      const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperacion, { redirectTo })
+      if (error) throw error
+      setMensaje({
+        texto: 'Si el correo pertenece a una cuenta activa, recibira un enlace para crear una nueva contrasena.',
+        tipo: 'exito',
+      })
+    } catch {
+      setMensaje({ texto: 'No pudimos enviar el enlace. Intenta de nuevo en unos minutos.', tipo: 'error' })
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  const abrirLogin = () => {
+    setModoAcceso('login')
+    setMensaje({ texto: '', tipo: '' })
+    setMostrarLogin(true)
+  }
+
+  const abrirRecuperacion = () => {
+    setModoAcceso('recuperacion')
+    setEmailRecuperacion(email)
+    setPassword('')
+    setMensaje({ texto: '', tipo: '' })
   }
 
   const scrollToSection = (id: string) => {
@@ -204,7 +239,7 @@ export default function HomeInstitucional() {
           </div>
 
           <button
-            onClick={() => setMostrarLogin(true)}
+            onClick={abrirLogin}
             className="border border-[#142037] px-4 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] md:px-6 md:py-3 md:text-[14px] md:tracking-[0.1em]"
           >
             Acceso docente
@@ -237,7 +272,7 @@ export default function HomeInstitucional() {
 
             <div className="mx-auto flex max-w-xl flex-col justify-center gap-4 sm:flex-row">
               <button
-                onClick={() => setMostrarLogin(true)}
+                onClick={abrirLogin}
                 className="rounded-lg bg-[#ff9800] px-9 py-4 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#e68a00]"
               >
                 Acceso docente
@@ -507,11 +542,19 @@ export default function HomeInstitucional() {
                 <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-[#142037]">
                   <span className="font-mono text-[10px]">EL</span>
                 </span>
-                <h2 className="font-serif text-xl font-medium">Acceso docente</h2>
-                <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Registro escolar digital</p>
+                <h2 className="font-serif text-xl font-medium">
+                  {modoAcceso === 'login' ? 'Acceso docente' : 'Recuperar contrasena'}
+                </h2>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">
+                  {modoAcceso === 'login' ? 'Registro escolar digital' : 'Enlace seguro por correo'}
+                </p>
               </div>
               <button
-                onClick={() => setMostrarLogin(false)}
+                onClick={() => {
+                  setMostrarLogin(false)
+                  setModoAcceso('login')
+                  setMensaje({ texto: '', tipo: '' })
+                }}
                 className="font-mono text-lg text-[#5b6472] transition-colors hover:text-[#142037]"
                 aria-label="Cerrar acceso docente"
               >
@@ -519,6 +562,7 @@ export default function HomeInstitucional() {
               </button>
             </div>
 
+            {modoAcceso === 'login' ? (
             <form className="space-y-5 px-7 py-7" onSubmit={manejarLogin}>
               <div>
                 <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Email institucional</label>
@@ -572,7 +616,60 @@ export default function HomeInstitucional() {
               >
                 {cargando ? 'Cargando...' : 'Entrar al registro'}
               </button>
+
+              <button
+                type="button"
+                onClick={abrirRecuperacion}
+                className="w-full text-center font-mono text-[11px] uppercase tracking-[0.12em] text-[#5b6472] underline-offset-4 transition-colors hover:text-[#142037] hover:underline"
+              >
+                Olvide mi contrasena
+              </button>
             </form>
+            ) : (
+            <form className="space-y-5 px-7 py-7" onSubmit={manejarRecuperacion}>
+              <div>
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Email institucional</label>
+                <input
+                  type="email"
+                  required
+                  value={emailRecuperacion}
+                  onChange={(e) => setEmailRecuperacion(e.target.value)}
+                  className="w-full border border-[#e3e5ea] bg-transparent px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                  placeholder="usuario@adsp.com.do"
+                  disabled={cargando}
+                />
+              </div>
+
+              {mensaje.texto && (
+                <div className={`border px-4 py-3 text-[12px] font-medium ${
+                  mensaje.tipo === 'error'
+                    ? 'border-red-200 bg-red-50 text-red-700'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                }`}>
+                  {mensaje.texto}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={cargando}
+                className="w-full bg-[#142037] py-3.5 font-mono text-[12px] uppercase tracking-[0.14em] text-[#f6f7f9] transition-colors hover:bg-[#26344f] disabled:cursor-not-allowed disabled:bg-[#5b6472]"
+              >
+                {cargando ? 'Enviando...' : 'Enviar enlace'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setModoAcceso('login')
+                  setMensaje({ texto: '', tipo: '' })
+                }}
+                className="w-full text-center font-mono text-[11px] uppercase tracking-[0.12em] text-[#5b6472] underline-offset-4 transition-colors hover:text-[#142037] hover:underline"
+              >
+                Volver al acceso
+              </button>
+            </form>
+            )}
           </div>
         </div>
       )}
