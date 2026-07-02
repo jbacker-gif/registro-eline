@@ -55,13 +55,6 @@ const valores = [
   },
 ]
 
-const modulosRegistro = [
-  'Asistencia',
-  'Calificaciones',
-  'Boletines',
-  'Plantillas',
-]
-
 const funcionesRegistro = [
   'Registro de asistencia mensual',
   'Carga y resumen de calificaciones',
@@ -92,6 +85,41 @@ const preguntas = [
   },
 ]
 
+const canalesContacto = [
+  {
+    titulo: 'WhatsApp',
+    valor: '(849) 629-7248',
+    href: 'https://wa.me/18496297248',
+  },
+  {
+    titulo: 'Correo electrónico',
+    valor: 'info@adsp.com.do',
+    href: 'mailto:info@adsp.com.do',
+  },
+  {
+    titulo: 'Dirección',
+    valor: 'Dr. Dolores Alfonseca, #5, Distrito Nacional, Ciudad Universitaria',
+    href: null,
+  },
+  {
+    titulo: 'Redes sociales',
+    valor: '@adsp_rd',
+    href: 'https://www.instagram.com/adsp_rd',
+  },
+]
+
+const serviciosContacto = [
+  'Impresiones y copias',
+  'Encuadernación',
+  'Diagramación',
+  'Asesoría de proyectos',
+  'Análisis de datos',
+  'Formato de tesis',
+  'Corrección de plagio',
+  'ELINE Registro Escolar',
+  'Otro servicio',
+]
+
 export default function HomeInstitucional() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -100,6 +128,13 @@ export default function HomeInstitucional() {
   const [cargando, setCargando] = useState(false)
   const [mostrarLogin, setMostrarLogin] = useState(false)
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
+  const [contacto, setContacto] = useState({
+    nombre: '',
+    correo: '',
+    telefono: '',
+    servicio: serviciosContacto[0],
+    detalle: '',
+  })
 
   const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,13 +152,34 @@ export default function HomeInstitucional() {
     }
   }
 
-  const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  const abrirWhatsApp = () => window.open('https://wa.me/18496297248', '_blank', 'noopener,noreferrer')
+  const scrollToSection = (id: string) => {
+    const section = document.getElementById(id)
+    if (!section) return
+
+    const navOffset = window.innerWidth >= 768 ? 140 : 104
+    const top = section.getBoundingClientRect().top + window.scrollY - navOffset
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+
+  const manejarContacto = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const texto = [
+      'Hola ADSP, deseo solicitar información.',
+      `Nombre: ${contacto.nombre}`,
+      `Correo: ${contacto.correo}`,
+      `Teléfono: ${contacto.telefono || 'No indicado'}`,
+      `Servicio: ${contacto.servicio}`,
+      `Detalle: ${contacto.detalle}`,
+    ].join('\n')
+
+    window.open(`https://wa.me/18496297248?text=${encodeURIComponent(texto)}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="min-h-screen bg-[#f6f7f9] text-[#142037] selection:bg-[#efd9a8]">
       <nav className="fixed z-50 w-full border-b border-[#e3e5ea] bg-[#f6f7f9]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-[104px] max-w-6xl items-center justify-between px-5 md:h-[140px] md:px-6">
           <button
             className="flex items-center gap-3"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -132,23 +188,24 @@ export default function HomeInstitucional() {
             <Image
               src="/logo_adsp.png"
               alt="AD Soluciones Profesionales"
-              width={142}
-              height={44}
-              className="h-11 w-auto object-contain"
+              width={387}
+              height={120}
+              className="h-[84px] w-auto object-contain md:h-[120px]"
               priority
             />
           </button>
 
-          <div className="hidden gap-10 font-mono text-[12px] uppercase tracking-[0.14em] text-[#5b6472] md:flex">
+          <div className="hidden gap-6 font-mono text-[14px] font-medium uppercase tracking-[0.12em] text-[#5b6472] md:flex">
             <button onClick={() => scrollToSection('nosotros')} className="transition-colors hover:text-[#142037]">Nosotros</button>
             <button onClick={() => scrollToSection('servicios')} className="transition-colors hover:text-[#142037]">Servicios</button>
-            <button onClick={() => scrollToSection('registro')} className="transition-colors hover:text-[#142037]">Registro</button>
-            <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-[#142037]">Preguntas</button>
+            <button onClick={() => scrollToSection('registro')} className="transition-colors hover:text-[#142037]">Eline</button>
+            <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-[#142037]">Preguntas Frecuentes</button>
+            <button onClick={() => scrollToSection('contacto')} className="transition-colors hover:text-[#142037]">Contacto</button>
           </div>
 
           <button
             onClick={() => setMostrarLogin(true)}
-            className="border border-[#142037] px-5 py-2 font-mono text-[12px] uppercase tracking-[0.12em] transition-colors hover:bg-[#142037] hover:text-[#f6f7f9]"
+            className="border border-[#142037] px-4 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] md:px-6 md:py-3 md:text-[14px] md:tracking-[0.1em]"
           >
             Acceso docente
           </button>
@@ -156,76 +213,41 @@ export default function HomeInstitucional() {
       </nav>
 
       <main>
-        <section className="px-6 pb-24 pt-40 lg:pb-32 lg:pt-48">
-          <div className="mx-auto grid max-w-6xl items-start gap-16 lg:grid-cols-[1.05fr_0.95fr]">
-            <div>
-              <div className="mb-6 flex items-center gap-3">
-                <span className="h-px w-8 bg-[#b8862e]" />
-                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">
-                  AD Soluciones Profesionales
+        <section className="flex min-h-[78vh] items-center justify-center bg-[linear-gradient(135deg,#0056b3_0%,#00a8cc_100%)] px-6 pb-24 pt-44 text-center text-white md:pt-56 lg:pt-64">
+          <div className="mx-auto w-full max-w-[900px]">
+            <span className="mb-5 block font-mono text-[14px] font-bold uppercase tracking-[0.22em] text-[#ffc107]">
+              AD Soluciones Profesionales
+            </span>
+
+            <h1 className="mx-auto mb-6 max-w-3xl text-4xl font-black leading-[1.1] tracking-tight md:text-5xl">
+              Estudia, enseña y gestiona con mayor eficiencia y menos estrés.
+            </h1>
+
+            <p className="mx-auto mb-10 max-w-3xl text-lg font-light leading-relaxed text-[#e0f2f1] md:text-xl">
+              Brindamos soporte profesional y servicios académicos para estudiantes e instituciones. Para los docentes, presentamos <strong className="font-bold text-white">ELINE</strong>: el sistema definitivo que organiza tus plantillas escolares y reportes de notas sin complicaciones.
+            </p>
+
+            <div className="mb-11 flex flex-wrap justify-center gap-4">
+              {['Cálculo Automático', 'Control de Asistencia', 'Generación de Boletines'].map((item) => (
+                <span key={item} className="rounded-full border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
+                  {item}
                 </span>
-              </div>
-              <h1 className="mb-7 max-w-xl font-serif text-[2.75rem] font-medium leading-[1.12] tracking-tight md:text-[3.4rem]">
-                Servicios académicos y registro escolar, con el mismo estándar profesional.
-              </h1>
-              <p className="mb-10 max-w-md text-[15px] leading-relaxed text-[#5b6472]">
-                ADSP acompaña a docentes, estudiantes e instituciones con soporte académico, producción de documentos y herramientas digitales para la gestión escolar.
-              </p>
-              <div className="flex flex-wrap items-center gap-6">
-                <button
-                  onClick={() => scrollToSection('servicios')}
-                  className="bg-[#142037] px-7 py-3.5 text-[13px] font-medium text-[#f6f7f9] transition-colors hover:bg-[#26344f]"
-                >
-                  Ver servicios
-                </button>
-                <button
-                  onClick={abrirWhatsApp}
-                  className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.12em] text-[#5b6472] transition-colors hover:text-[#142037]"
-                >
-                  WhatsApp <span aria-hidden="true">↗</span>
-                </button>
-              </div>
+              ))}
             </div>
 
-            <div className="relative">
-              <div className="absolute -right-3 -top-5 z-10 flex h-[88px] w-[88px] -rotate-[12deg] items-center justify-center rounded-full border border-[#b8862e] text-center text-[#5c4419]">
-                <span className="font-mono text-[8px] uppercase leading-[1.3] tracking-[0.08em]">
-                  Documento<br />verificado<br />ELINE
-                </span>
-              </div>
-
-              <div className="border border-[#e3e5ea] bg-white">
-                <div className="flex items-center justify-between border-b border-[#e3e5ea] px-6 py-4">
-                  <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5b6472]">Panel docente</p>
-                    <p className="font-serif text-lg font-medium">Registro escolar digital</p>
-                  </div>
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#142037]">
-                    <span className="font-mono text-[10px]">EL</span>
-                  </span>
-                </div>
-
-                <div className="divide-y divide-[#e3e5ea]">
-                  {modulosRegistro.map((item, index) => (
-                    <div key={item} className="flex items-center justify-between px-6 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-[10px] text-[#5b6472]">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="text-[13px]">{item}</span>
-                      </div>
-                      <span className="font-mono text-[11px] text-[#5c4419]">OK</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-[#e3e5ea] px-6 py-4">
-                  <button
-                    onClick={() => setMostrarLogin(true)}
-                    className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.12em] text-[#5c4419] transition-colors hover:text-[#142037]"
-                  >
-                    Acceder al panel <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              </div>
+            <div className="mx-auto flex max-w-xl flex-col justify-center gap-4 sm:flex-row">
+              <button
+                onClick={() => setMostrarLogin(true)}
+                className="rounded-lg bg-[#ff9800] px-9 py-4 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#e68a00]"
+              >
+                Acceso docente
+              </button>
+              <button
+                onClick={() => scrollToSection('servicios')}
+                className="rounded-lg border-2 border-white px-9 py-4 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+              >
+                Ver servicios
+              </button>
             </div>
           </div>
         </section>
@@ -250,23 +272,23 @@ export default function HomeInstitucional() {
           </div>
         </section>
 
-        <section id="servicios" className="px-6 py-24">
+        <section id="servicios" className="border-y border-[#e3e5ea] bg-white px-6 py-24">
           <div className="mx-auto max-w-6xl">
             <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
                 <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">Servicios ADSP</p>
                 <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">
-                  Soluciones para estudiantes, docentes e instituciones.
+                  Soluciones integrales para estudiantes, docentes e instituciones.
                 </h2>
               </div>
               <p className="max-w-sm text-[14px] leading-relaxed text-[#5b6472]">
-                Cada servicio se trabaja con enfoque profesional, presentación limpia y orientación práctica para tus entregas académicas.
+                Desarrollamos cada servicio con un enfoque estrictamente profesional, garantizando presentaciones impecables y una orientación práctica para asegurar el éxito de tus entregas académicas.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 border-l border-t border-[#e3e5ea] sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 border-l border-t border-[#e3e5ea] bg-[#f6f7f9] sm:grid-cols-2 lg:grid-cols-4">
               {servicios.map((servicio, index) => (
-                <article key={servicio.titulo} className="border-b border-r border-[#e3e5ea] px-6 py-7 transition-colors hover:bg-white">
+                <article key={servicio.titulo} className="border-b border-r border-[#e3e5ea] bg-white px-6 py-7 transition-colors hover:bg-[#f6f7f9]">
                   <p className="mb-5 font-mono text-[11px] text-[#5b6472]">{String(index + 1).padStart(2, '0')}</p>
                   <h3 className="mb-2 font-serif text-[16px] font-medium">{servicio.titulo}</h3>
                   <p className="text-[13px] leading-relaxed text-[#5b6472]">{servicio.descripcion}</p>
@@ -276,47 +298,182 @@ export default function HomeInstitucional() {
           </div>
         </section>
 
-        <section id="registro" className="border-y border-[#e3e5ea] bg-white px-6 py-24">
+        <section id="registro" className="bg-[#101b31] px-6 py-24 text-white">
           <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div>
-              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">Aplicación destacada</p>
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#ffc107]">Aplicación destacada</p>
               <div className="mb-5 flex items-center gap-4">
-                <Image src="/logo.png" alt="Logo del registro escolar" width={54} height={54} className="object-contain" />
-                <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">Panel para maestros</h2>
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white">
+                  <Image src="/logo.png" alt="Logo del registro escolar" width={54} height={54} className="object-contain" />
+                </span>
+                <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">ELINE para maestros</h2>
               </div>
-              <p className="text-[15px] leading-relaxed text-[#5b6472]">
+              <p className="max-w-md text-[15px] leading-relaxed text-white/72">
                 Herramienta de ADSP para registrar datos escolares, consultar información por sección y mantener organizado el proceso académico.
               </p>
             </div>
 
-            <div className="divide-y divide-[#e3e5ea] border border-[#e3e5ea]">
+            <div className="grid gap-3">
               {funcionesRegistro.map((item, index) => (
-                <div key={item} className="flex items-center gap-4 px-6 py-4">
-                  <span className="font-mono text-[10px] text-[#5b6472]">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="text-[14px]">{item}</span>
+                <div key={item} className="flex items-center gap-4 border border-white/12 bg-white px-6 py-4 text-[#142037] shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+                  <span className="font-mono text-[10px] text-[#5c4419]">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="text-[14px] font-semibold">{item}</span>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="faq" className="px-6 py-24">
-          <div className="mx-auto max-w-3xl">
-            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">Preguntas frecuentes</p>
-            <h2 className="mb-12 font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">
-              Dudas comunes sobre el acceso docente
-            </h2>
-            <div className="divide-y divide-[#e3e5ea] border-y border-[#e3e5ea]">
-              {preguntas.map((item) => (
-                <details key={item.pregunta} className="group px-1 py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between text-[14px] font-medium">
-                    {item.pregunta}
-                    <span className="font-mono text-[12px] text-[#5b6472] transition-transform group-open:rotate-180">⌄</span>
+        <section id="faq" className="border-y border-[#dfe6ec] bg-[#f4f8fb] px-6 py-24">
+          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+            <div className="lg:sticky lg:top-40">
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#007f99]">Preguntas frecuentes</p>
+              <h2 className="mb-5 font-serif text-3xl font-medium leading-snug text-[#142037] md:text-[2.25rem]">
+                Respuestas claras antes de solicitar un servicio.
+              </h2>
+              <p className="max-w-md text-[15px] leading-relaxed text-[#5b6472]">
+                Reunimos las dudas más comunes sobre el acceso docente, los servicios académicos y el acompañamiento de ADSP para que puedas avanzar con confianza.
+              </p>
+              <div className="mt-8 border-l-2 border-[#00a8cc] bg-white px-5 py-4 shadow-[0_18px_45px_rgba(20,32,55,0.08)]">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#007f99]">Soporte directo</p>
+                <p className="mt-2 text-[14px] leading-relaxed text-[#142037]">
+                  Si tu caso necesita revisión personalizada, puedes escribirnos desde el formulario de contacto.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {preguntas.map((item, index) => (
+                <details key={item.pregunta} className="group border border-[#dfe6ec] bg-white shadow-[0_18px_45px_rgba(20,32,55,0.07)] transition-colors open:border-[#00a8cc]">
+                  <summary className="grid cursor-pointer list-none grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-5 text-left">
+                    <span className="font-mono text-[11px] font-semibold text-[#007f99]">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="text-[15px] font-semibold leading-snug text-[#142037]">{item.pregunta}</span>
+                    <span className="flex h-8 w-8 items-center justify-center border border-[#dfe6ec] font-mono text-[18px] leading-none text-[#007f99] transition-colors group-open:border-[#00a8cc] group-open:bg-[#00a8cc] group-open:text-white">
+                      <span className="group-open:hidden">+</span>
+                      <span className="hidden group-open:block">-</span>
+                    </span>
                   </summary>
-                  <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-[#5b6472]">{item.respuesta}</p>
+                  <div className="px-5 pb-6 pl-[4.25rem]">
+                    <p className="max-w-2xl border-t border-[#eef2f5] pt-4 text-[14px] leading-relaxed text-[#5b6472]">{item.respuesta}</p>
+                  </div>
                 </details>
               ))}
+
+              <div className="mt-2 flex flex-col justify-between gap-4 border border-[#c8e9ef] bg-[#e8f8fb] px-5 py-5 sm:flex-row sm:items-center">
+                <p className="text-[14px] font-medium text-[#142037]">¿Tienes otra pregunta o necesitas cotizar un servicio?</p>
+                <button
+                  onClick={() => scrollToSection('contacto')}
+                  className="border border-[#142037] px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[#142037] transition-colors hover:bg-[#142037] hover:text-white"
+                >
+                  Ir a contacto
+                </button>
+              </div>
             </div>
+          </div>
+        </section>
+        <section id="contacto" className="border-t border-[#e3e5ea] bg-white px-6 py-24">
+          <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.85fr_1.15fr]">
+            <div>
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">Contacto y solicitudes</p>
+              <h2 className="mb-5 font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">
+                Hablemos de tu proyecto académico, institucional o escolar.
+              </h2>
+              <p className="mb-10 max-w-md text-[15px] leading-relaxed text-[#5b6472]">
+                Escríbenos para cotizar servicios, solicitar orientación, coordinar trabajos académicos o recibir asistencia sobre ELINE Registro Escolar.
+              </p>
+
+              <div className="grid border-l border-t border-[#e3e5ea] sm:grid-cols-2">
+                {canalesContacto.map((canal) => (
+                  <div key={canal.titulo} className="border-b border-r border-[#e3e5ea] p-5">
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5c4419]">{canal.titulo}</p>
+                    {canal.href ? (
+                      <a href={canal.href} target="_blank" rel="noreferrer" className="text-[14px] font-semibold text-[#142037] underline-offset-4 hover:underline">
+                        {canal.valor}
+                      </a>
+                    ) : (
+                      <p className="text-[14px] font-semibold text-[#142037]">{canal.valor}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={manejarContacto} className="border border-[#e3e5ea] bg-[#f6f7f9] p-6 md:p-8">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Nombre</label>
+                  <input
+                    required
+                    value={contacto.nombre}
+                    onChange={(e) => setContacto({ ...contacto, nombre: e.target.value })}
+                    className="w-full border border-[#e3e5ea] bg-white px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                    placeholder="Tu nombre"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Teléfono</label>
+                  <input
+                    value={contacto.telefono}
+                    onChange={(e) => setContacto({ ...contacto, telefono: e.target.value })}
+                    className="w-full border border-[#e3e5ea] bg-white px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                    placeholder="809 / 829 / 849"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Correo</label>
+                  <input
+                    type="email"
+                    required
+                    value={contacto.correo}
+                    onChange={(e) => setContacto({ ...contacto, correo: e.target.value })}
+                    className="w-full border border-[#e3e5ea] bg-white px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Servicio</label>
+                  <select
+                    value={contacto.servicio}
+                    onChange={(e) => setContacto({ ...contacto, servicio: e.target.value })}
+                    className="w-full border border-[#e3e5ea] bg-white px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                  >
+                    {serviciosContacto.map((servicio) => (
+                      <option key={servicio} value={servicio}>{servicio}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#5b6472]">Mensaje</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={contacto.detalle}
+                  onChange={(e) => setContacto({ ...contacto, detalle: e.target.value })}
+                  className="w-full resize-none border border-[#e3e5ea] bg-white px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#142037]"
+                  placeholder="Cuéntanos qué necesitas, fecha estimada, cantidad de documentos o tipo de asistencia."
+                />
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="submit"
+                  className="bg-[#142037] px-7 py-3.5 font-mono text-[12px] font-medium uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#26344f]"
+                >
+                  Enviar por WhatsApp
+                </button>
+                <a
+                  href="mailto:info@adsp.com.do"
+                  className="border border-[#142037] px-7 py-3.5 text-center font-mono text-[12px] font-medium uppercase tracking-[0.12em] text-[#142037] transition-colors hover:bg-white"
+                >
+                  Escribir por correo
+                </a>
+              </div>
+            </form>
           </div>
         </section>
       </main>
@@ -330,10 +487,10 @@ export default function HomeInstitucional() {
             <span className="font-mono text-[13px] uppercase tracking-[0.18em]">ADSP</span>
           </div>
           <div className="text-left md:text-right">
-            <p className="mb-2 font-mono text-[12px] text-white/70">WhatsApp (849) 629-7248 · @adsp_rd</p>
+            <p className="mb-2 font-mono text-[12px] text-white/70">Tel/WhatsApp (849) 629-7248 · info@adsp.com.do · @adsp_rd</p>
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">Desarrollado por AD Soluciones Profesionales</p>
             <p className="mt-1 font-mono text-[10px] text-white/30">
-              &copy; {new Date().getFullYear()} ADSP S.R.L. Santo Domingo, República Dominicana.
+              &copy; {new Date().getFullYear()} ADSP S.R.L. Dr. Dolores Alfonseca, #5, Distrito Nacional, Ciudad Universitaria.
             </p>
           </div>
         </div>
