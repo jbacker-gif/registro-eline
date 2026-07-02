@@ -160,15 +160,46 @@ export default function HomeInstitucional() {
     setMensaje({ texto: 'Enviando enlace de recuperacion...', tipo: 'info' })
 
     try {
-      const redirectTo = `${window.location.origin}/recuperar-contrasena`
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_VERCEL_URL
+      const baseUrl = siteUrl
+        ? siteUrl.startsWith('http')
+          ? siteUrl
+          : `https://${siteUrl}`
+        : window.location.origin
+      const redirectTo = `${baseUrl.replace(/\/$/, '')}/recuperar-contrasena`
       const { error } = await supabase.auth.resetPasswordForEmail(emailRecuperacion, { redirectTo })
       if (error) throw error
       setMensaje({
         texto: 'Si el correo pertenece a una cuenta activa, recibira un enlace para crear una nueva contrasena.',
         tipo: 'exito',
       })
-    } catch {
-      setMensaje({ texto: 'No pudimos enviar el enlace. Intenta de nuevo en unos minutos.', tipo: 'error' })
+    } catch (error) {
+      const detalle = error instanceof Error ? error.message : ''
+      const detalleNormalizado = detalle.toLowerCase()
+
+      if (detalleNormalizado.includes('not authorized')) {
+        setMensaje({
+          texto: 'Supabase gratis solo envia correos a miembros del equipo del proyecto. Agrega ese correo al equipo o configura SMTP propio.',
+          tipo: 'error',
+        })
+      } else if (detalleNormalizado.includes('rate limit')) {
+        setMensaje({
+          texto: 'Se alcanzo el limite de correos de Supabase gratis. Espera una hora o configura SMTP propio.',
+          tipo: 'error',
+        })
+      } else if (detalleNormalizado.includes('redirect')) {
+        setMensaje({
+          texto: 'La URL de recuperacion no esta autorizada en Supabase. Agregala en Authentication > URL Configuration > Redirect URLs.',
+          tipo: 'error',
+        })
+      } else {
+        setMensaje({
+          texto: detalle || 'No pudimos enviar el enlace. Revisa la configuracion de correo en Supabase Auth.',
+          tipo: 'error',
+        })
+      }
+
+      console.error('Error enviando recuperacion de contrasena:', error)
     } finally {
       setCargando(false)
     }
