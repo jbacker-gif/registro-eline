@@ -5,7 +5,16 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Image from 'next/image'
 
-const menuGroups = [
+type MenuItem = {
+  label: string
+  ruta: string
+  clave: string
+  requiereSeccion: boolean
+  icono: string
+  nivel?: 'Primaria' | 'Secundario'
+}
+
+const menuGroups: { titulo: string; items: MenuItem[] }[] = [
   {
     titulo: 'Inicio',
     items: [
@@ -15,17 +24,21 @@ const menuGroups = [
   {
     titulo: 'Registro Escolar',
     items: [
-      { label: 'Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users' },
-      { label: 'Nivel Secundario', ruta: '/dashboard/registro-secundaria', clave: 'registro-secundaria', requiereSeccion: false, icono: 'layers' },
-      { label: 'Asistencia Primaria', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar' },
-      { label: 'Notas Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload' },
+      { label: 'Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users', nivel: 'Primaria' },
+      { label: 'Asistencia Primaria', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Primaria' },
+      { label: 'Notas Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Primaria' },
+      { label: 'Nivel Secundario', ruta: '/dashboard/secundaria/estudiantes', clave: 'secundaria/estudiantes', requiereSeccion: true, icono: 'layers', nivel: 'Secundario' },
+      { label: 'Asistencia Secundaria', ruta: '/dashboard/secundaria/asistencia', clave: 'secundaria/asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Secundario' },
+      { label: 'Notas Secundaria', ruta: '/dashboard/secundaria/calificaciones-masivas', clave: 'secundaria/calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Secundario' },
     ],
   },
   {
     titulo: 'Reportes',
     items: [
-      { label: 'Resumen Primaria', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report' },
-      { label: 'Boletines Primaria', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'file' },
+      { label: 'Resumen Primaria', ruta: '/dashboard/resumen', clave: 'resumen', requiereSeccion: true, icono: 'report', nivel: 'Primaria' },
+      { label: 'Boletines Primaria', ruta: '/dashboard/boletines', clave: 'boletines', requiereSeccion: true, icono: 'file', nivel: 'Primaria' },
+      { label: 'Reporte Secundaria', ruta: '/dashboard/secundaria/resumen', clave: 'secundaria/resumen', requiereSeccion: true, icono: 'report', nivel: 'Secundario' },
+      { label: 'Boletines Secundaria', ruta: '/dashboard/secundaria/boletines', clave: 'secundaria/boletines', requiereSeccion: true, icono: 'file', nivel: 'Secundario' },
     ],
   },
   {
@@ -72,21 +85,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const cerrarSesion = async () => {
     await supabase.auth.signOut()
     localStorage.removeItem('ultimaSeccionActiva')
+    localStorage.removeItem('ultimaSeccionPrimaria')
+    localStorage.removeItem('ultimaSeccionSecundaria')
     router.push('/')
   }
 
-  const navegarConContexto = (ruta: string, requiereSeccion = false) => {
+  const navegarConContexto = (item: MenuItem) => {
     const params = new URLSearchParams(window.location.search)
-    const seccionId = params.get('seccion_id') || localStorage.getItem('ultimaSeccionActiva')
+    const seccionId = item.nivel === 'Primaria'
+      ? localStorage.getItem('ultimaSeccionPrimaria') || localStorage.getItem('ultimaSeccionActiva') || params.get('seccion_id')
+      : item.nivel === 'Secundario'
+        ? localStorage.getItem('ultimaSeccionSecundaria') || params.get('seccion_id')
+        : params.get('seccion_id')
 
-    if (requiereSeccion && !seccionId) {
-      alert('Primero selecciona una sección en el panel principal.')
+    if (item.requiereSeccion && !seccionId) {
+      alert(`Primero selecciona una seccion de ${item.nivel || 'Primaria'} en el Dashboard.`)
       router.push('/dashboard')
       setMenuAbierto(false)
       return
     }
 
-    router.push(requiereSeccion && seccionId ? `${ruta}?seccion_id=${seccionId}` : ruta)
+    router.push(item.requiereSeccion && seccionId ? `${item.ruta}?seccion_id=${seccionId}&nivel=${item.nivel || 'Primaria'}` : item.ruta)
     setMenuAbierto(false)
   }
 
@@ -143,7 +162,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   return (
                     <button
                       key={item.ruta}
-                      onClick={() => navegarConContexto(item.ruta, item.requiereSeccion)}
+                      onClick={() => navegarConContexto(item)}
                       className={`flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition ${
                         activo ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
                       }`}

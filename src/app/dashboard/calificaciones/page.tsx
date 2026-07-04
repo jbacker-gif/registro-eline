@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { esSeccionPrimaria, etiquetaSeccion } from '../../../lib/registroEscolar'
 
 export default function MatrizCalificaciones() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
@@ -42,6 +43,10 @@ export default function MatrizCalificaciones() {
       const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).eq('user_id', session.user.id).single()
       if (!secData) {
         setMensaje({ texto: 'No tienes permisos para acceder a esta sección.', tipo: 'error' })
+        return
+      }
+      if (!esSeccionPrimaria(secData)) {
+        setMensaje({ texto: 'Esta pantalla es solo para Primaria. Usa Registro Escolar - Nivel Secundario para esta seccion.', tipo: 'error' })
         return
       }
       setInfoSeccion(secData)
@@ -188,8 +193,6 @@ export default function MatrizCalificaciones() {
     try {
       const { data: asig } = await supabase.from('asignaturas').select('id').eq('nombre', materiaNombre).single()
       
-      await supabase.from('calificaciones').delete().eq('seccion_id', seccionId).eq('asignatura_id', asig?.id).eq('user_id', userId)
-
       const nuevasNotas: any[] = []
       estudiantes.forEach(est => {
         if (est.estado === 'Retirado') return 
@@ -200,7 +203,13 @@ export default function MatrizCalificaciones() {
             if (valor !== '') {
               nuevasNotas.push({
                 estudiante_id: est.id, seccion_id: seccionId, user_id: userId, asignatura_id: asig?.id,
-                periodo: periodo, competencia: comp, nota: Number(valor)
+                periodo: periodo, competencia: comp, nota: Number(valor),
+                nivel: 'Primaria',
+                ano_escolar: infoSeccion?.ano_escolar || null,
+                tipo_registro: 'primaria_competencias',
+                es_recuperacion_pedagogica: comp.includes('_RP'),
+                grupo_recuperacion: comp.includes('_RP') ? periodo : null,
+                metadata: { grado: infoSeccion?.grado, asignatura: materiaNombre }
               })
             }
           })
@@ -208,7 +217,7 @@ export default function MatrizCalificaciones() {
       })
 
       if (nuevasNotas.length > 0) {
-        const { error } = await supabase.from('calificaciones').insert(nuevasNotas)
+        const { error } = await supabase.from('calificaciones').upsert(nuevasNotas, { onConflict: 'estudiante_id,seccion_id,asignatura_id,periodo,competencia' })
         if (error) throw error
       }
       setMensaje({ texto: '✅ ¡Notas guardadas con éxito!', tipo: 'exito' })
@@ -229,7 +238,7 @@ export default function MatrizCalificaciones() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">{tituloVisible}</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">Registro: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
+            <p className="text-sm text-slate-500 font-medium mt-1">Registro Primaria: {etiquetaSeccion(infoSeccion)}</p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
             {seccionId && (

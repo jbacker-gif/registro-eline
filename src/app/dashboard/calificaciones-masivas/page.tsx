@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { CsvRow, getCsvValue, readCsvFile } from '../../../lib/csv'
+import { esSeccionPrimaria, etiquetaSeccion } from '../../../lib/registroEscolar'
 
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
 
@@ -27,6 +28,12 @@ type NotaPendiente = {
   periodo: Periodo
   competencia: string
   nota: number
+  nivel?: string
+  ano_escolar?: string | null
+  tipo_registro?: string
+  es_recuperacion_pedagogica?: boolean
+  grupo_recuperacion?: string | null
+  metadata?: Record<string, unknown>
 }
 
 type VistaPrevia = {
@@ -162,6 +169,10 @@ export default function CalificacionesMasivas() {
         return
       }
 
+      if (!esSeccionPrimaria(secData)) {
+        setMensaje({ texto: 'Esta carga masiva es solo para Primaria. Usa Registro Escolar - Nivel Secundario para esa seccion.', tipo: 'error' })
+        return
+      }
       setInfoSeccion(secData)
       setEstudiantes((listaEstudiantes || []) as Estudiante[])
       setAsignaturas((listaAsignaturas || []) as Asignatura[])
@@ -253,6 +264,12 @@ export default function CalificacionesMasivas() {
             periodo,
             competencia: datosColumna.competencia,
             nota,
+            nivel: 'Primaria',
+            ano_escolar: infoSeccion?.ano_escolar || null,
+            tipo_registro: 'primaria_carga_masiva',
+            es_recuperacion_pedagogica: datosColumna.competencia.includes('_RP'),
+            grupo_recuperacion: datosColumna.competencia.includes('_RP') ? periodo : null,
+            metadata: { grado: infoSeccion?.grado, asignatura: asignatura.nombre },
           })
           asignaturasSet.add(asignatura.id)
           if (nuevaVista.length < 40) {
@@ -292,17 +309,9 @@ export default function CalificacionesMasivas() {
     setGuardando(true)
     setMensaje({ texto: 'Guardando calificaciones masivas...', tipo: 'info' })
     try {
-      const { error: deleteError } = await supabase
+      const { error: insertError } = await supabase
         .from('calificaciones')
-        .delete()
-        .eq('seccion_id', seccionId)
-        .eq('user_id', userId)
-        .eq('periodo', periodo)
-        .in('asignatura_id', asignaturasIncluidas)
-
-      if (deleteError) throw deleteError
-
-      const { error: insertError } = await supabase.from('calificaciones').insert(notasPendientes)
+        .upsert(notasPendientes, { onConflict: 'estudiante_id,seccion_id,asignatura_id,periodo,competencia' })
       if (insertError) throw insertError
 
       setMensaje({ texto: `Calificaciones guardadas: ${notasPendientes.length} notas del período ${periodo}.`, tipo: 'exito' })
@@ -335,7 +344,7 @@ export default function CalificacionesMasivas() {
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Calificaciones</p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Carga masiva de notas</h1>
               <p className="mt-2 text-sm text-slate-500">
-                {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}
+                {etiquetaSeccion(infoSeccion)}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-[150px_1fr_1fr]">

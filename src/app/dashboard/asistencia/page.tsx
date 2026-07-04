@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { getCsvValue, readCsvFile } from '../../../lib/csv'
+import { esSeccionPrimaria, etiquetaSeccion } from '../../../lib/registroEscolar'
 
 export default function Asistencia() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
@@ -61,6 +62,10 @@ export default function Asistencia() {
       const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).eq('user_id', session.user.id).single()
       if (!secData) {
         setMensaje({ texto: 'No tienes permisos para acceder a esta sección.', tipo: 'error' })
+        return
+      }
+      if (!esSeccionPrimaria(secData)) {
+        setMensaje({ texto: 'Esta pantalla es solo para asistencia de Primaria. Usa el modulo de Secundaria para esa seccion.', tipo: 'error' })
         return
       }
       setInfoSeccion(secData)
@@ -302,7 +307,7 @@ export default function Asistencia() {
           <div className="flex items-center gap-6">
             <div>
               <h1 className="text-2xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
-              <p className="text-sm text-slate-500 font-medium mt-1">Sección: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
+              <p className="text-sm text-slate-500 font-medium mt-1">Seccion Primaria: {etiquetaSeccion(infoSeccion)}</p>
             </div>
             <div className="bg-white border-2 border-blue-600 rounded-2xl p-3 shadow-sm flex flex-col items-center min-w-[100px]">
                <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Días Laborables</span>

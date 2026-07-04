@@ -3,6 +3,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { getCsvValue, readCsvFile } from '../../../lib/csv'
+import {
+  calcularEdad,
+  esSeccionPrimaria,
+  estadoEstudiante,
+  etiquetaSeccion,
+  inicialesEstudiante,
+  matriculaEstudiante,
+  promedioMostrable,
+  telefonoTutor,
+  tutorPrincipal,
+} from '../../../lib/registroEscolar'
 
 export default function MisEstudiantes() {
   const [estudiantes, setEstudiantes] = useState<any[]>([])
@@ -14,6 +25,9 @@ export default function MisEstudiantes() {
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [docenteTitular, setDocenteTitular] = useState('Docente titular')
+  const [centroEducativo, setCentroEducativo] = useState('Centro educativo')
 
   const archivoInputRef = useRef<HTMLInputElement>(null)
   // Referencia para controlar el scroll interno de esta página
@@ -57,6 +71,28 @@ export default function MisEstudiantes() {
   const parentescoViveOpciones = ['Madre', 'Padre', 'Abuelo/a', 'Tio/a', 'Hermano/a', 'Tutor/a', 'Otro']
   const responsableParentescoOpciones = ['Padre', 'Madre', 'Tutor/a']
   const responsableNivelOpciones = ['Sin escolaridad', 'Primaria incompleta', 'Primaria completa', 'Secundaria incompleta', 'Secundaria completa', 'Superior incompleto', 'Superior completo', 'Desconocido']
+
+  const estudiantesFiltrados = estudiantes.filter(estudiante => {
+    const texto = [
+      estudiante.nombre_completo,
+      estudiante.nombres,
+      estudiante.apellidos,
+      matriculaEstudiante(estudiante),
+      tutorPrincipal(estudiante),
+    ].join(' ')
+    return texto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(
+      busqueda.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    )
+  })
+
+  const etiquetaEstado = (estudiante: any) => {
+    const estado = estadoEstudiante(estudiante)
+    const normalizado = estado.toLowerCase()
+    if (normalizado.includes('retir') || normalizado.includes('inactiv')) return 'bg-red-50 text-red-700 border-red-100'
+    if (normalizado.includes('pend')) return 'bg-amber-50 text-amber-700 border-amber-100'
+    if (normalizado.includes('traslad') || normalizado.includes('transfer')) return 'bg-blue-50 text-blue-700 border-blue-100'
+    return 'bg-emerald-50 text-emerald-700 border-emerald-100'
+  }
 
   const soloDigitos = (valor: string) => valor.replace(/\D/g, '')
 
@@ -104,7 +140,29 @@ export default function MisEstudiantes() {
       setUserId(session.user.id)
 
       const { data: secData } = await supabase.from('secciones').select('*').eq('id', secId).eq('user_id', session.user.id).single()
-      if (secData) setInfoSeccion(secData)
+      if (secData) {
+        setInfoSeccion(secData)
+        if (!esSeccionPrimaria(secData)) {
+          setMensaje({ texto: 'La seccion seleccionada pertenece a Secundaria. Usa el modulo de Nivel Secundario.', tipo: 'error' })
+          setCargando(false)
+          return
+        }
+      }
+
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('nombre_completo, colegio_id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      if (perfil?.nombre_completo) setDocenteTitular(perfil.nombre_completo)
+      if (perfil?.colegio_id) {
+        const { data: colegio } = await supabase
+          .from('colegios')
+          .select('nombre, codigo_centro')
+          .eq('id', perfil.colegio_id)
+          .maybeSingle()
+        if (colegio?.nombre) setCentroEducativo(colegio.codigo_centro ? `${colegio.nombre} - ${colegio.codigo_centro}` : colegio.nombre)
+      }
 
       cargarEstudiantes(secId, session.user.id)
     } catch (error) {
@@ -118,23 +176,43 @@ export default function MisEstudiantes() {
       if (error) throw error
       const idsEstudiantes = (data || []).map(est => est.id)
       let responsablesPorEstudiante = new Map<string, any>()
+      let promediosPorEstudiante = new Map<string, number>()
 
       if (idsEstudiantes.length > 0) {
-        const { data: responsables, error: responsablesError } = await supabase
+        const [{ data: responsables, error: responsablesError }, { data: calificaciones, error: calificacionesError }] = await Promise.all([
+          supabase
           .from('responsables_estudiante')
           .select('*')
           .in('estudiante_id', idsEstudiantes)
           .eq('user_id', maestroId)
-          .eq('es_principal', true)
+          .eq('es_principal', true),
+          supabase
+            .from('calificaciones')
+            .select('estudiante_id, nota')
+            .in('estudiante_id', idsEstudiantes)
+            .eq('seccion_id', secId)
+            .eq('user_id', maestroId),
+        ])
 
         if (!responsablesError) {
           responsablesPorEstudiante = new Map((responsables || []).map(resp => [resp.estudiante_id, resp]))
+        }
+        if (!calificacionesError) {
+          const acumulado = new Map<string, { total: number; cantidad: number }>()
+          ;(calificaciones || []).forEach((calificacion: any) => {
+            const nota = Number(calificacion.nota)
+            if (!Number.isFinite(nota)) return
+            const actual = acumulado.get(calificacion.estudiante_id) || { total: 0, cantidad: 0 }
+            acumulado.set(calificacion.estudiante_id, { total: actual.total + nota, cantidad: actual.cantidad + 1 })
+          })
+          promediosPorEstudiante = new Map(Array.from(acumulado.entries()).map(([id, valor]) => [id, Math.round(valor.total / valor.cantidad)]))
         }
       }
 
       setEstudiantes((data || []).map(est => ({
         ...est,
         responsable_principal: responsablesPorEstudiante.get(est.id) || null,
+        promedio_estudiante: promediosPorEstudiante.get(est.id) ?? null,
       })))
       
       if (!idEditando) {
@@ -603,7 +681,48 @@ export default function MisEstudiantes() {
       <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
         
         {/* ENCABEZADO Y BOTÓN IMPORTAR */}
-        <div className="mb-6 md:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="mb-6 rounded-2xl border border-sky-100 bg-white p-5 shadow-sm md:p-7">
+          <div className="flex flex-col gap-5 border-b-2 border-sky-800 pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+                {centroEducativo} - Ciclo {infoSeccion?.ano_escolar || 'vigente'}
+              </p>
+              <h1 className="mt-2 font-serif text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                {infoSeccion ? `${infoSeccion.grado} de Primaria - Seccion ${infoSeccion.identificador} - Listado de Estudiantes` : 'Listado de Estudiantes de Primaria'}
+              </h1>
+            </div>
+            <div className="text-left text-sm font-semibold leading-6 text-slate-600 lg:text-right">
+              Profesor(a) titular: <span className="font-black text-slate-950">{docenteTitular}</span><br />
+              {estudiantes.length} alumnos matriculados
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+              <input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por nombre, apellido, matricula o tutor..."
+                className="min-h-11 flex-1 rounded-lg border border-sky-200 bg-sky-50/40 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              />
+              <div className="flex flex-wrap gap-2">
+                <input type="file" accept=".csv" ref={archivoInputRef} onChange={manejarImportacionCSV} className="hidden" />
+                <button onClick={abrirNuevoEstudiante} className="rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-800">
+                  Nuevo
+                </button>
+                <button onClick={() => archivoInputRef.current?.click()} className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                  Importar CSV
+                </button>
+                <a href="/plantillas/plantilla_estudiantes.csv" download className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+                  Plantilla
+                </a>
+              </div>
+            </div>
+            <p className="text-sm font-bold text-slate-600"><span className="text-blue-700">{estudiantesFiltrados.length}</span> de {estudiantes.length} estudiantes</p>
+          </div>
+        </div>
+
+        <div className="hidden">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">Registro de Estudiantes</h1>
             <p className="text-sm text-slate-500 mt-1">
@@ -872,6 +991,81 @@ export default function MisEstudiantes() {
               TABLA (min-w-0 permite overflow-x-auto)
               ======================================================== */}
           <div className="xl:col-span-12 min-w-0">
+            <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[980px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-sky-50 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                      <th className="p-4 font-black">Estudiante</th>
+                      <th className="p-4 font-black">Matricula</th>
+                      <th className="p-4 font-black">Estado</th>
+                      <th className="p-4 font-black">Promedio</th>
+                      <th className="p-4 font-black">Tutor / Contacto</th>
+                      <th className="p-4 text-right font-black">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {estudiantes.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center font-semibold text-slate-400">
+                          No hay estudiantes registrados.
+                          <span className="mt-1 block text-sm font-normal">Agrega uno o importa tu archivo CSV.</span>
+                        </td>
+                      </tr>
+                    ) : estudiantesFiltrados.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center font-semibold text-slate-400">No se encontraron estudiantes con ese criterio de busqueda.</td>
+                      </tr>
+                    ) : (
+                      estudiantesFiltrados.map((est) => (
+                        <tr key={est.id} className="group text-sm transition-colors hover:bg-blue-50/35">
+                          <td className="p-4">
+                            <button onClick={() => cargarParaEditar(est)} className="flex items-center gap-3 text-left">
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-800 text-xs font-black text-white">{inicialesEstudiante(est.nombre_completo)}</span>
+                              <span>
+                                <span className="block font-serif text-lg font-black leading-tight text-slate-950">{est.nombre_completo}</span>
+                                <span className="block text-xs font-semibold text-slate-500">
+                                  {calcularEdad(est.fecha_nacimiento) !== null ? `${calcularEdad(est.fecha_nacimiento)} anos` : 'Edad pendiente'} - No. {est.numero_orden || '-'} - {est.sexo === 'F' ? 'Femenino' : est.sexo === 'M' ? 'Masculino' : 'Sexo pendiente'}
+                                </span>
+                              </span>
+                            </button>
+                          </td>
+                          <td className="p-4 font-mono text-sm font-semibold text-slate-700">{matriculaEstudiante(est)}</td>
+                          <td className="p-4">
+                            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${etiquetaEstado(est)}`}>{estadoEstudiante(est)}</span>
+                          </td>
+                          <td className="p-4 text-lg font-black text-slate-950">{promedioMostrable(est) ?? '-'}</td>
+                          <td className="p-4 font-semibold text-slate-700">
+                            {tutorPrincipal(est)}
+                            {telefonoTutor(est) ? <span className="block text-xs text-slate-500">{telefonoTutor(est)}</span> : null}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => cargarParaEditar(est)} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-100" title="Editar">
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => cambiarEstadoEstudiante(est.id, est.nombre_completo, est.estado || 'Activo')}
+                                className={`rounded-lg px-3 py-2 text-xs font-black transition ${est.estado === 'Retirado' ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'}`}
+                                title={est.estado === 'Retirado' ? 'Reactivar Alumno' : 'Retirar Alumno'}
+                              >
+                                {est.estado === 'Retirado' ? 'Reactivar' : 'Retirar'}
+                              </button>
+                              <button onClick={() => eliminarEstudiante(est.id, est.nombre_completo)} className="rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-100" title="Eliminar">
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden">
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden w-full">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[900px]">

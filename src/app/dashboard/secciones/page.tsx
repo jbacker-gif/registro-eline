@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { etiquetaSeccion } from '../../../lib/registroEscolar'
 
 const gradosSecundariaPrimerCiclo = ['1ro', '2do', '3ro']
 const gradosSecundariaSegundoCiclo = ['4to', '5to', '6to']
@@ -25,6 +26,12 @@ export default function MisSecciones() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const nivelUrl = params.get('nivel')
+    if (nivelUrl === 'Primaria' || nivelUrl === 'Secundario') {
+      setNivelFiltro(nivelUrl)
+      setNivel(nivelUrl)
+    }
     obtenerSesion()
   }, [])
 
@@ -365,7 +372,7 @@ export default function MisSecciones() {
                     seccionesFiltradas.map((sec) => (
                       <tr key={sec.id} className="hover:bg-slate-50/80 transition-colors group">
                         <td className="p-5 font-bold text-slate-800">
-                          {sec.nivel || 'Primaria'} - {sec.grado}
+                          {etiquetaSeccion(sec)}
                           {sec.salida_optativa && <span className="mt-1 block text-xs font-semibold text-slate-400">{sec.salida_optativa}</span>}
                         </td>
                         <td className="p-5 text-center">

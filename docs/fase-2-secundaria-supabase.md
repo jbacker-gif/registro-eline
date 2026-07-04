@@ -124,3 +124,24 @@ Migracion aplicada en Supabase:
 - Persistir automaticamente `secundaria_informes_preliminares` desde la UI.
 - Validar historicos de `secciones.modalidad` cuando se decida normalizar datos antiguos de primer ciclo.
 - Revisar si se debe retirar o migrar la tabla antigua `asistencias`, que existe pero no se usa en el modulo principal.
+- Backfill opcional de `calificaciones.nivel` y `calificaciones.ano_escolar` para registros antiguos, sin hacerlo automaticamente para evitar modificar historicos sin revision.
+
+## Actualizacion de redisenio
+
+- Se agregaron columnas aditivas a `calificaciones`: `nivel`, `ano_escolar`, `tipo_registro`, `es_recuperacion_pedagogica`, `grupo_recuperacion` y `metadata`.
+- Se creo `asignaturas_nivel_config` con 8 materias de Primaria y 9 de Secundaria.
+- Se creo `secundaria_registro_formatos` con 54 formatos: 6 grados x 9 asignaturas.
+- La migracion aplicada fue `20260703141547 redesign_dashboard_school_context`.
+
+## Actualizacion de boletines de Secundaria
+
+- No se creo migracion nueva para esta intervencion.
+- No se realizaron acciones destructivas.
+- El flujo visible de boletines reutiliza `calificaciones`.
+- Las filas del boletin se guardan con:
+  - `nivel = Secundario`
+  - `tipo_registro = secundaria_boletin_calificaciones`
+  - `competencia = BOLETIN`
+  - `periodo = P1 | P2 | P3 | P4`
+  - `metadata` para PC, C.F., completiva, extraordinaria, evaluacion especial, situacion final, situacion del estudiante, condicion final y observaciones.
+- La tabla `secundaria_informes_preliminares` queda documentada como soporte anterior no activo en la UI.

@@ -6,11 +6,10 @@
 - Acceso en la navegacion lateral como `Nivel Secundario`, separado dentro de `Registro Escolar`.
 - Acceso rapido en el dashboard principal sin exigir una seccion primaria activa.
 - Listado de registros secundarios por seccion.
-- Filtros por ano escolar, grado, ciclo/modalidad, resultado y busqueda.
+- Busqueda de estudiantes por nombre, identificacion o tutor.
 - Formulario de creacion y edicion con datos generales, academicos, familiares, salud y observaciones.
-- Evaluacion por cuatro periodos (`P1` a `P4`) y siete competencias especificas por asignatura.
-- Evaluacion conectada al catalogo real `secundaria_competencias_catalogo` en Supabase.
-- Vista preliminar imprimible del informe de evaluacion.
+- Entrada de calificaciones basada en boletines oficiales: P1, P2, P3, P4, PC, C.F., completiva, extraordinaria, evaluacion especial y situacion final por asignatura.
+- Vista imprimible de `Boletin de Calificaciones`.
 - Demo visual con estudiantes de 1ro, 3ro y 6to de secundaria.
 - Extension de `Secciones` para crear registros de nivel `Primario` o `Secundario`.
 - Migraciones para reutilizar tablas existentes, agregar campos secundarios y crear soporte real en Supabase.
@@ -51,30 +50,46 @@ Campos agregados:
 - `estudiantes.resultado_final`
 - `estudiantes.observaciones_academicas`
 
-Tablas nuevas:
+Tablas nuevas existentes de la fase anterior:
 
 - `secundaria_competencias_catalogo`
-- `secundaria_informes_preliminares`
+- `secundaria_informes_preliminares` (queda fuera del flujo visible actual)
 
 ## Documentos revisados
 
-Se extrajo texto de los 12 PDF suministrados:
+Se extrajo texto de los PDF suministrados inicialmente y luego se cambio la referencia activa a boletines:
 
 - `1er-informe de evaluacion.pdf` a `6to-informe de evaluacion.pdf`
 - `Registro 1er-grado.pdf` a `Registro 6to-grado.pdf`
+- `Boletin 1er.pdf` a `Boletin 6to.pdf`
 
 ## Decisiones funcionales
 
 - Secundaria se construyo como continuidad del modulo de primaria.
-- Las calificaciones secundarias reutilizan `calificaciones`, usando competencias `C1` a `C7`.
+- Las calificaciones secundarias reutilizan `calificaciones`, usando `competencia = BOLETIN` para el nuevo flujo visible.
 - El primer ciclo secundario no se guarda como modalidad; se muestra como ciclo general.
 - Las modalidades se reservan para segundo ciclo: `Academica`, `Tecnico-Profesional` y `Artes`.
-- El informe preliminar prioriza datos, tabla de asignaturas, calificacion final y firmas; queda pendiente superponer datos sobre plantillas oficiales.
+- El boletin prioriza datos generales, tabla de calificaciones, asistencia, situacion final, condicion, observaciones y firmas.
 
 ## Falta para completar
 
-- Persistir desde UI los informes preliminares en `secundaria_informes_preliminares`.
-- Ajustar reportes sobre imagen/PDF oficial por grado.
-- Completar recuperacion pedagogica `RP` por pares de periodos.
+- Convertir los PDF oficiales de boletines secundarios a JPG y superponer datos sobre esas imagenes como en Primaria.
+- Persistir observaciones/situacion/condicion aunque no haya notas por asignatura.
 - Agregar carga masiva secundaria.
 - Validar con usuarios docentes y administrativos.
+
+## Actualizacion de redisenio
+
+- Se agrego `src/lib/registroEscolar.ts` para unificar etiquetas de nivel, grado, seccion, ciclo y modalidad.
+- El Dashboard general separa Primaria y Secundaria en resumenes, accesos y materias.
+- Secundaria usa su modulo propio para materias y registro; ya no depende de la matriz primaria.
+- La vista visible de Secundaria cambia a `Boletin de Calificaciones` con P1-P4.
+- Se agrego la migracion `supabase/migrations/202607030001_redesign_dashboard_school_context.sql`.
+
+## Actualizacion de boletines
+
+- El flujo visible de Secundaria ya no usa `Informe de Evaluacion`.
+- Las acciones principales son `Calificaciones` y `Boletin`.
+- 1ro-3ro se muestran como Primer Ciclo; 4to-6to como Segundo Ciclo.
+- La salida optativa solo aparece para 4to, 5to y 6to.
+- Detalle completo en `docs/fase-2-secundaria-boletines.md`.
