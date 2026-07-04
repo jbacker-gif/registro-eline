@@ -14,7 +14,7 @@ import {
 const accesosPrimaria = [
   { titulo: 'Estudiantes', descripcion: 'Ficha y datos academicos de la seccion primaria activa.', ruta: '/dashboard/estudiantes', iniciales: 'ES' },
   { titulo: 'Asistencia', descripcion: 'Registro mensual de presencia, ausencia, excusa y tardanza.', ruta: '/dashboard/asistencia', iniciales: 'AS' },
-  { titulo: 'Notas', descripcion: 'Carga masiva y matriz de calificaciones de Primaria.', ruta: '/dashboard/calificaciones-masivas', iniciales: 'NO' },
+  { titulo: 'Calificaciones', descripcion: 'Carga masiva y matriz de calificaciones de Primaria.', ruta: '/dashboard/calificaciones-masivas', iniciales: 'CA' },
   { titulo: 'Reporte', descripcion: 'Resumen de asistencia anual y sabana de calificaciones.', ruta: '/dashboard/resumen', iniciales: 'RE' },
   { titulo: 'Boletines', descripcion: 'Generar boletines finales por estudiantes o secciones.', ruta: '/dashboard/boletines', iniciales: 'BO' },
 ]
@@ -22,7 +22,7 @@ const accesosPrimaria = [
 const accesosSecundaria = [
   { titulo: 'Estudiantes', descripcion: 'Listado y ficha de estudiantes de la seccion secundaria activa.', ruta: '/dashboard/secundaria/estudiantes', iniciales: 'ES' },
   { titulo: 'Asistencia', descripcion: 'Resumen y control de asistencia para alimentar el boletin.', ruta: '/dashboard/secundaria/asistencia', iniciales: 'AS' },
-  { titulo: 'Notas', descripcion: 'Entrada P1-P4 para el boletin de calificaciones.', ruta: '/dashboard/secundaria/calificaciones-masivas', iniciales: 'NO' },
+  { titulo: 'Calificaciones', descripcion: 'Entrada P1-P4 para el boletin de calificaciones.', ruta: '/dashboard/secundaria/calificaciones-masivas', iniciales: 'CA' },
   { titulo: 'Reporte', descripcion: 'Resumen academico y asistencia anual de Secundaria.', ruta: '/dashboard/secundaria/resumen', iniciales: 'RE' },
   { titulo: 'Boletines', descripcion: 'Boletin de calificaciones imprimible de Secundaria.', ruta: '/dashboard/secundaria/boletines', iniciales: 'BO' },
 ]
@@ -286,7 +286,7 @@ export default function Dashboard() {
               <p className="mt-1 text-sm text-slate-500">Usa la seccion secundaria activa y abre el formato del boletin oficial con P1, P2, P3 y P4.</p>
             </div>
             <button onClick={() => navegarSecundaria('/dashboard/secundaria/calificaciones-masivas')} disabled={!seccionSecundariaActiva} className="h-10 rounded-md bg-emerald-700 px-4 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
-              Abrir notas
+              Abrir calificaciones
             </button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

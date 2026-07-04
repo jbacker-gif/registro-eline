@@ -26,10 +26,10 @@ const menuGroups: { titulo: string; items: MenuItem[] }[] = [
     items: [
       { label: 'Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users', nivel: 'Primaria' },
       { label: 'Asistencia Primaria', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Primaria' },
-      { label: 'Notas Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Primaria' },
+      { label: 'Calificaciones Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Primaria' },
       { label: 'Nivel Secundario', ruta: '/dashboard/secundaria/estudiantes', clave: 'secundaria/estudiantes', requiereSeccion: true, icono: 'layers', nivel: 'Secundario' },
       { label: 'Asistencia Secundaria', ruta: '/dashboard/secundaria/asistencia', clave: 'secundaria/asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Secundario' },
-      { label: 'Notas Secundaria', ruta: '/dashboard/secundaria/calificaciones-masivas', clave: 'secundaria/calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Secundario' },
+      { label: 'Calificaciones Secundaria', ruta: '/dashboard/secundaria/calificaciones-masivas', clave: 'secundaria/calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Secundario' },
     ],
   },
   {

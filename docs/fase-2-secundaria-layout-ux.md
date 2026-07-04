@@ -17,7 +17,7 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
   - `Nivel Primario`
   - `Nivel Secundario`
   - `Asistencia Primaria`
-  - `Notas Primaria`
+  - `Calificaciones Primaria`
 - Los reportes actuales se etiquetan como Primaria para no confundirlos con el informe preliminar de Secundaria.
 - `/dashboard/secciones` ahora tiene filtro visual por `Todos`, `Primaria` y `Secundario`.
 - El formulario de secciones incluye nivel educativo; para 1ro-3ro muestra `Primer ciclo general` y para 4to-6to habilita modalidades `Academica`, `Tecnico-Profesional` y `Artes`.
@@ -53,7 +53,7 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
 - Se eliminaron las tarjetas `Pendientes Primaria` y `Pendientes Secundaria` del resumen superior porque solo contaban estudiantes con resultado `Pendiente` y no abrian una cola de trabajo accionable.
 - El resumen superior queda enfocado en volumen real: estudiantes y secciones por nivel.
 - El encabezado ahora tiene dos selectores separados: `Seccion activa para Primaria` y `Seccion activa para Secundaria`.
-- El modulo secundario replica la estructura de Primaria con cuatro accesos: `Estudiantes`, `Asistencia`, `Notas` y `Reportes`.
+- El modulo secundario replica la estructura de Primaria con cuatro accesos: `Estudiantes`, `Asistencia`, `Calificaciones` y `Reportes`.
 - Debajo de la entrada de calificaciones de Primaria se agrego la entrada de calificaciones de Secundaria con materias propias del nivel.
 
 ## Actualizacion de modulo de estudiantes
@@ -72,7 +72,7 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
 - El modulo de Nivel Primario ahora queda organizado en cinco accesos principales:
   - `Estudiantes`: ficha y datos academicos de la seccion.
   - `Asistencia`: registro mensual de asistencia, ausencia, excusa y tardanza.
-  - `Notas`: carga masiva y matriz de calificaciones de Primaria.
+  - `Calificaciones`: carga masiva y matriz de calificaciones de Primaria.
   - `Reporte`: resumen anual de asistencia y sabana de calificaciones.
   - `Boletines`: generacion de boletines finales por estudiante o seccion.
 - `Reporte` apunta a `/dashboard/resumen`.
@@ -80,7 +80,7 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
 
 ## Actualizacion de paginas del modulo Secundario
 
-- El modulo de Nivel Secundario queda alineado con Primaria en cinco accesos principales: `Estudiantes`, `Asistencia`, `Notas`, `Reporte` y `Boletines`.
+- El modulo de Nivel Secundario queda alineado con Primaria en cinco accesos principales: `Estudiantes`, `Asistencia`, `Calificaciones`, `Reporte` y `Boletines`.
 - Se crearon rutas propias para Secundaria:
   - `/dashboard/secundaria/estudiantes`
   - `/dashboard/secundaria/asistencia`
@@ -97,3 +97,11 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
 - Usa identidad visual de Secundaria con acentos teal/slate/cyan/violet para diferenciarla de Primaria.
 - Permite importacion masiva CSV con la misma logica matricial: una fila por fecha y columnas por numero de orden.
 - El guardado usa busqueda + actualizacion/insercion para evitar borrados destructivos; las celdas vacias no eliminan registros historicos existentes en esta etapa.
+
+## Actualizacion de calificaciones masivas secundaria
+
+- `/dashboard/secundaria/calificaciones-masivas` ahora es una pagina propia, no una redireccion al modulo general.
+- Reutiliza la logica de importacion CSV de Primaria, pero valida que la seccion sea de `Secundario`.
+- La carga se adapta al boletin secundario: columnas `p1`, `p2`, `p3`, `p4` por asignatura activa o columnas `asignatura_p1`, `asignatura_p2`, etc. para varias asignaturas.
+- Guarda en `calificaciones` con `nivel=Secundario` y `tipo_registro=secundaria_boletin_calificaciones`.
+- La interfaz muestra tarjetas de asignaturas propias de Secundaria y marca si alguna falta en el catalogo de asignaturas.
