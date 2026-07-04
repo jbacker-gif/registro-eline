@@ -9,6 +9,7 @@ import {
   esSeccionPrimaria,
   esSeccionSecundaria,
   etiquetaSeccion,
+  slugAsignatura,
 } from '../../lib/registroEscolar'
 
 const accesosPrimaria = [
@@ -129,6 +130,14 @@ export default function Dashboard() {
     }
     const materiaParam = materia ? `&materia=${encodeURIComponent(materia)}` : ''
     router.push(`${rutaBase}?seccion_id=${seccionSecundariaActiva}&nivel=Secundario${materiaParam}`)
+  }
+
+  const navegarAsignaturaSecundaria = (materia: string) => {
+    if (!seccionSecundariaActiva) {
+      alert('Primero selecciona o crea una seccion de Secundaria.')
+      return
+    }
+    router.push(`/dashboard/secundaria/asignaturas/${slugAsignatura(materia)}?seccion_id=${seccionSecundariaActiva}&nivel=Secundario`)
   }
 
   const tarjetaResumen = [
@@ -294,7 +303,7 @@ export default function Dashboard() {
               <button
                 key={materia}
                 type="button"
-                onClick={() => navegarSecundaria('/dashboard/secundaria/calificaciones-masivas', materia)}
+                onClick={() => navegarAsignaturaSecundaria(materia)}
                 disabled={!seccionSecundariaActiva}
                 className="group flex min-h-20 items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
               >

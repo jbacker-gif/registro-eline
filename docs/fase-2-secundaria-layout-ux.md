@@ -105,3 +105,11 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
 - La carga se adapta al boletin secundario: columnas `p1`, `p2`, `p3`, `p4` por asignatura activa o columnas `asignatura_p1`, `asignatura_p2`, etc. para varias asignaturas.
 - Guarda en `calificaciones` con `nivel=Secundario` y `tipo_registro=secundaria_boletin_calificaciones`.
 - La interfaz muestra tarjetas de asignaturas propias de Secundaria y marca si alguna falta en el catalogo de asignaturas.
+
+## Actualizacion de paginas por asignatura secundaria
+
+- Las materias de Secundaria del Dashboard ahora abren paginas propias bajo `/dashboard/secundaria/asignaturas/[slug]`.
+- Cada pagina valida que la seccion activa pertenezca a `Secundario`.
+- Cada asignatura muestra una matriz editable con `P1`, `P2`, `P3`, `P4`, promedio, calificacion final, completiva, extraordinaria, especial y situacion.
+- El guardado reutiliza la tabla `calificaciones` con `nivel=Secundario`, `competencia=BOLETIN` y `tipo_registro=secundaria_boletin_calificaciones`.
+- La identidad visual usa acentos teal/slate para diferenciarse de las paginas de Primaria.

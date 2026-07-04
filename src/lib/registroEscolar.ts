@@ -28,6 +28,18 @@ export const asignaturasSecundaria = [
   'Formacion Integral Humana y Religiosa',
 ]
 
+export const slugAsignatura = (valor = '') =>
+  valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+export const asignaturaSecundariaDesdeSlug = (slug = '') =>
+  asignaturasSecundaria.find(asignatura => slugAsignatura(asignatura) === slug) || ''
+
 export const normalizarTexto = (valor = '') =>
   valor
     .normalize('NFD')
