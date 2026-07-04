@@ -89,3 +89,11 @@ Tambien `/dashboard/secciones` mostraba todos los grados juntos y podia hacer pe
   - `/dashboard/secundaria/boletines`
 - Estas rutas conservan el contexto de `seccion_id` secundaria activa y redirigen al modulo secundario existente con la vista correspondiente del boletin.
 - El menu lateral incluye accesos separados para Primaria y Secundaria en Registro Escolar y Reportes.
+
+## Actualizacion de asistencia secundaria
+
+- `/dashboard/secundaria/asistencia` ahora es una pagina propia, no solo una redireccion al boletin.
+- Replica la matriz mensual de Primaria con estados `P`, `A`, `E` y `T`.
+- Usa identidad visual de Secundaria con acentos teal/slate/cyan/violet para diferenciarla de Primaria.
+- Permite importacion masiva CSV con la misma logica matricial: una fila por fecha y columnas por numero de orden.
+- El guardado usa busqueda + actualizacion/insercion para evitar borrados destructivos; las celdas vacias no eliminan registros historicos existentes en esta etapa.
