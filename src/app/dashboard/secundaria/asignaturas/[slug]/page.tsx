@@ -6,14 +6,23 @@ import { supabase } from '../../../../../lib/supabase'
 import {
   asignaturaSecundariaDesdeSlug,
   asignaturasSecundaria,
-  esSegundoCicloSecundaria,
   esSeccionSecundaria,
   etiquetaSeccion,
   normalizarTexto,
   slugAsignatura,
 } from '../../../../../lib/registroEscolar'
-
-type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
+import {
+  CompetenciaSecundaria,
+  MatrizSecundaria,
+  PeriodoSecundaria,
+  calcularResultadoSecundaria,
+  competenciasSecundaria,
+  competenciasSecundaria30,
+  competenciasSecundaria70,
+  crearMatrizSecundariaVacia,
+  normalizarPeriodoSecundaria,
+  periodosSecundaria,
+} from '../../../../../lib/secundariaCalificaciones'
 
 type FilaEstudiante = {
   id: string
@@ -21,17 +30,14 @@ type FilaEstudiante = {
   sigerd_id?: string | null
   nombre: string
   estado: string
-  notas: Record<Periodo, string>
-  promedioCompetencias: string
-  finalArea: string
+  matriz: MatrizSecundaria
   completiva: string
   extraordinaria: string
   especial: string
   situacion: string
 }
 
-const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
-const situaciones = ['Aprobado', 'Reprobado', 'Pendiente']
+const situaciones = ['Aprobado', 'Reprobado', 'Pendiente', 'Completiva']
 
 const normalizarCatalogo = (valor = '') =>
   valor
@@ -41,11 +47,6 @@ const normalizarCatalogo = (valor = '') =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
-
-const promedio = (valores: string[]) => {
-  const numeros = valores.map(Number).filter(valor => Number.isFinite(valor) && valor > 0)
-  return numeros.length ? Math.round(numeros.reduce((total, valor) => total + valor, 0) / numeros.length) : ''
-}
 
 const validarCalificacion = (valor: string) => {
   if (valor === '') return true
@@ -69,10 +70,9 @@ export default function AsignaturaSecundariaPage() {
   const [asignaturaId, setAsignaturaId] = useState('')
   const [filas, setFilas] = useState<FilaEstudiante[]>([])
 
-  const esSegundoCiclo = esSegundoCicloSecundaria(infoSeccion?.grado)
   const asignaturasVisibles = useMemo(() => {
     const base = [...asignaturasSecundaria]
-    if (esSegundoCicloSecundaria(infoSeccion?.grado)) base.push(infoSeccion?.salida_optativa || 'Salida Optativa')
+    if (['4to', '5to', '6to'].includes(infoSeccion?.grado)) base.push(infoSeccion?.salida_optativa || 'Salida Optativa')
     return base
   }, [infoSeccion?.grado, infoSeccion?.salida_optativa])
 
@@ -128,13 +128,16 @@ export default function AsignaturaSecundariaPage() {
 
       const filasIniciales = (estudiantesData || []).map((estudiante: any) => {
         const notas = (calificaciones || []).filter((nota: any) => nota.estudiante_id === estudiante.id)
-        const notaPorPeriodo = (periodo: Periodo) => notas.find((nota: any) => nota.periodo === periodo && nota.competencia === 'BOLETIN')
+        const matriz = crearMatrizSecundariaVacia()
+        notas.forEach((nota: any) => {
+          const competencia = String(nota.competencia || '').toUpperCase() as CompetenciaSecundaria
+          if (!competenciasSecundaria.includes(competencia)) return
+          const periodo = normalizarPeriodoSecundaria(nota.periodo)
+          matriz[competencia][periodo] = nota.nota?.toString() || ''
+        })
         const primera = notas[0]
         const metadata = primera?.metadata || {}
-        const valoresPeriodo = periodos.reduce((acc, periodo) => {
-          acc[periodo] = notaPorPeriodo(periodo)?.nota?.toString() || ''
-          return acc
-        }, {} as Record<Periodo, string>)
+        const resultado = calcularResultadoSecundaria(matriz)
 
         return {
           id: estudiante.id,
@@ -142,13 +145,11 @@ export default function AsignaturaSecundariaPage() {
           sigerd_id: estudiante.sigerd_id,
           nombre: estudiante.nombre_completo,
           estado: estudiante.estado || 'Activo',
-          notas: valoresPeriodo,
-          promedioCompetencias: String(metadata.promedio_competencias || promedio(Object.values(valoresPeriodo)) || ''),
-          finalArea: String(metadata.final_area || promedio(Object.values(valoresPeriodo)) || ''),
+          matriz,
           completiva: String(metadata.calificacion_completiva || ''),
           extraordinaria: String(metadata.calificacion_extraordinaria || ''),
           especial: String(metadata.evaluacion_especial || ''),
-          situacion: String(metadata.situacion_asignatura || 'Pendiente'),
+          situacion: String(metadata.situacion_asignatura || resultado.situacion),
         }
       })
 
@@ -163,19 +164,25 @@ export default function AsignaturaSecundariaPage() {
   }
 
   const actualizarFila = (id: string, campo: string, valor: string) => {
-    if (periodos.includes(campo as Periodo) && !validarCalificacion(valor)) return
-    if (['promedioCompetencias', 'finalArea', 'completiva', 'extraordinaria', 'especial'].includes(campo) && !validarCalificacion(valor)) return
+    const [competencia, periodo] = campo.split('.') as [CompetenciaSecundaria, PeriodoSecundaria]
+    if (competencia && periodo && competenciasSecundaria.includes(competencia) && periodosSecundaria.includes(periodo) && !validarCalificacion(valor)) return
+    if (['completiva', 'extraordinaria', 'especial'].includes(campo) && !validarCalificacion(valor)) return
 
     setFilas(actuales => actuales.map(fila => {
       if (fila.id !== id) return fila
-      if (periodos.includes(campo as Periodo)) {
-        const nuevasNotas = { ...fila.notas, [campo]: valor }
-        const calculado = promedio(Object.values(nuevasNotas))
+      if (competencia && periodo && competenciasSecundaria.includes(competencia) && periodosSecundaria.includes(periodo)) {
+        const matriz = {
+          ...fila.matriz,
+          [competencia]: {
+            ...fila.matriz[competencia],
+            [periodo]: valor,
+          },
+        }
+        const resultado = calcularResultadoSecundaria(matriz)
         return {
           ...fila,
-          notas: nuevasNotas,
-          promedioCompetencias: fila.promedioCompetencias || String(calculado || ''),
-          finalArea: fila.finalArea || String(calculado || ''),
+          matriz,
+          situacion: fila.situacion === 'Completiva' ? fila.situacion : resultado.situacion,
         }
       }
       return { ...fila, [campo]: valor }
@@ -198,40 +205,44 @@ export default function AsignaturaSecundariaPage() {
     try {
       const registros = filas.flatMap(fila => {
         if (fila.estado === 'Retirado') return []
-        const promedioCalculado = fila.promedioCompetencias || String(promedio(Object.values(fila.notas)) || '')
-        const finalCalculado = fila.finalArea || promedioCalculado
-        return periodos.flatMap(periodo => {
-          const valor = fila.notas[periodo]
-          if (valor === '') return []
-          return {
-            estudiante_id: fila.id,
-            seccion_id: seccionId,
-            user_id: userId,
-            asignatura_id: asignaturaId,
-            periodo,
-            competencia: 'BOLETIN',
-            nota: Number(valor),
-            nivel: 'Secundario',
-            ano_escolar: infoSeccion?.ano_escolar || null,
-            tipo_registro: 'secundaria_boletin_calificaciones',
-            es_recuperacion_pedagogica: false,
-            grupo_recuperacion: null,
-            metadata: {
-              formato: 'boletin_secundaria',
-              asignatura: materiaNombre,
-              grado: infoSeccion?.grado,
-              ciclo: esSegundoCiclo ? 'Segundo ciclo' : 'Primer ciclo general',
-              modalidad: infoSeccion?.modalidad || null,
-              salida_optativa: infoSeccion?.salida_optativa || null,
-              promedio_competencias: promedioCalculado,
-              final_area: finalCalculado,
-              calificacion_completiva: fila.completiva,
-              calificacion_extraordinaria: fila.extraordinaria,
-              evaluacion_especial: fila.especial,
-              situacion_asignatura: fila.situacion,
-            },
-          }
-        })
+        const resultado = calcularResultadoSecundaria(fila.matriz)
+        return competenciasSecundaria.flatMap(competencia =>
+          periodosSecundaria.flatMap(periodo => {
+            const valor = fila.matriz[competencia][periodo]
+            if (valor === '') return []
+            return {
+              estudiante_id: fila.id,
+              seccion_id: seccionId,
+              user_id: userId,
+              asignatura_id: asignaturaId,
+              periodo,
+              competencia,
+              nota: Number(valor),
+              nivel: 'Secundario',
+              ano_escolar: infoSeccion?.ano_escolar || null,
+              tipo_registro: 'secundaria_boletin_calificaciones',
+              es_recuperacion_pedagogica: periodo.startsWith('RP'),
+              grupo_recuperacion: periodo.startsWith('RP') ? periodo : null,
+              metadata: {
+                formato: 'registro_secundaria_7_competencias',
+                asignatura: materiaNombre,
+                grado: infoSeccion?.grado,
+                ciclo: ['4to', '5to', '6to'].includes(infoSeccion?.grado) ? 'Segundo ciclo' : 'Primer ciclo general',
+                modalidad: infoSeccion?.modalidad || null,
+                salida_optativa: infoSeccion?.salida_optativa || null,
+                resultado_70: resultado.resultado70,
+                resultado_30: resultado.resultado30,
+                final_area: resultado.final,
+                suma_70: resultado.suma70,
+                suma_30: resultado.suma30,
+                calificacion_completiva: fila.completiva,
+                calificacion_extraordinaria: fila.extraordinaria,
+                evaluacion_especial: fila.especial,
+                situacion_asignatura: fila.situacion === 'Pendiente' ? resultado.situacion : fila.situacion,
+              },
+            }
+          })
+        )
       })
 
       if (registros.length > 0) {
@@ -261,6 +272,7 @@ export default function AsignaturaSecundariaPage() {
               <p className="text-xs font-black uppercase tracking-widest text-teal-700">Registro Escolar - Nivel Secundario</p>
               <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{materiaNombre || 'Asignatura secundaria'}</h1>
               <p className="mt-2 text-sm font-medium text-slate-500">{etiquetaSeccion(infoSeccion)}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-teal-700">7 competencias especificas: C1-C4 = 70%, C5-C7 = 30%</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <button
@@ -307,24 +319,39 @@ export default function AsignaturaSecundariaPage() {
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1720px] border-collapse text-left text-sm">
               <thead className="bg-slate-900 text-white">
                 <tr className="uppercase tracking-wider">
-                  <th className="w-16 border border-slate-700 p-3 text-center font-bold">No.</th>
-                  <th className="border border-slate-700 p-3 font-bold">Estudiante</th>
-                  {periodos.map(periodo => <th key={periodo} className="w-24 border border-slate-700 p-3 text-center font-bold">{periodo}</th>)}
-                  <th className="w-32 border border-slate-700 bg-teal-800 p-3 text-center font-bold">Promedio</th>
-                  <th className="w-32 border border-slate-700 bg-teal-800 p-3 text-center font-bold">Final</th>
-                  <th className="w-28 border border-slate-700 p-3 text-center font-bold">Completiva</th>
-                  <th className="w-28 border border-slate-700 p-3 text-center font-bold">Extraord.</th>
-                  <th className="w-28 border border-slate-700 p-3 text-center font-bold">Especial</th>
-                  <th className="w-36 border border-slate-700 p-3 text-center font-bold">Situacion</th>
+                  <th rowSpan={2} className="w-16 border border-slate-700 p-3 text-center font-bold">No.</th>
+                  <th rowSpan={2} className="w-64 border border-slate-700 p-3 font-bold">Estudiante</th>
+                  {competenciasSecundaria.map(competencia => (
+                    <th key={competencia} colSpan={periodosSecundaria.length} className={`border border-slate-700 p-3 text-center font-bold ${competenciasSecundaria70.includes(competencia) ? 'bg-teal-800' : 'bg-cyan-800'}`}>
+                      {competencia} {competenciasSecundaria70.includes(competencia) ? '70%' : '30%'}
+                    </th>
+                  ))}
+                  <th rowSpan={2} className="w-24 border border-slate-700 bg-teal-800 p-3 text-center font-bold">70%</th>
+                  <th rowSpan={2} className="w-24 border border-slate-700 bg-cyan-800 p-3 text-center font-bold">30%</th>
+                  <th rowSpan={2} className="w-28 border border-slate-700 bg-slate-700 p-3 text-center font-bold">Final</th>
+                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Completiva</th>
+                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Extraord.</th>
+                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Especial</th>
+                  <th rowSpan={2} className="w-36 border border-slate-700 p-3 text-center font-bold">Situacion</th>
+                </tr>
+                <tr className="bg-slate-800 uppercase tracking-wider">
+                  {competenciasSecundaria.flatMap(competencia =>
+                    periodosSecundaria.map(periodo => (
+                      <th key={`${competencia}-${periodo}`} className="w-20 border border-slate-700 p-2 text-center text-xs font-bold">
+                        {periodo === 'RP1' || periodo === 'RP2' ? 'RP' : periodo}
+                      </th>
+                    ))
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filas.map((fila, index) => {
                   const retirado = fila.estado === 'Retirado'
                   const fondo = retirado ? 'bg-slate-200 opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                  const resultado = calcularResultadoSecundaria(fila.matriz)
                   return (
                     <tr key={fila.id} className={fondo}>
                       <td className="border border-slate-200 p-2 text-center font-bold text-slate-500">{fila.numero}</td>
@@ -332,26 +359,25 @@ export default function AsignaturaSecundariaPage() {
                         {fila.nombre}
                         {retirado && <span className="ml-2 rounded bg-slate-300 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">Retirado</span>}
                       </td>
-                      {periodos.map(periodo => (
-                        <td key={periodo} className="border border-slate-200 p-1">
-                          <input
-                            data-secundaria-cell="true"
-                            type="number"
-                            value={fila.notas[periodo]}
-                            disabled={retirado}
-                            onChange={(event) => actualizarFila(fila.id, periodo, event.target.value)}
-                            onKeyDown={manejarEnter}
-                            className="h-10 w-full rounded-md border border-slate-200 bg-white text-center font-bold text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100"
-                            placeholder="-"
-                          />
-                        </td>
-                      ))}
-                      <td className="border border-slate-200 p-1">
-                        <input data-secundaria-cell="true" type="number" value={fila.promedioCompetencias} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'promedioCompetencias', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-teal-100 bg-teal-50 text-center font-bold text-teal-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
-                      </td>
-                      <td className="border border-slate-200 p-1">
-                        <input data-secundaria-cell="true" type="number" value={fila.finalArea} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'finalArea', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-teal-100 bg-teal-50 text-center font-bold text-teal-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
-                      </td>
+                      {competenciasSecundaria.flatMap(competencia =>
+                        periodosSecundaria.map(periodo => (
+                          <td key={`${competencia}-${periodo}`} className={`border border-slate-200 p-1 ${competenciasSecundaria30.includes(competencia) ? 'bg-cyan-50/30' : ''}`}>
+                            <input
+                              data-secundaria-cell="true"
+                              type="number"
+                              value={fila.matriz[competencia][periodo]}
+                              disabled={retirado}
+                              onChange={(event) => actualizarFila(fila.id, `${competencia}.${periodo}`, event.target.value)}
+                              onKeyDown={manejarEnter}
+                              className={`h-10 w-full rounded-md border text-center font-bold text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 ${periodo.startsWith('RP') ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}
+                              placeholder="-"
+                            />
+                          </td>
+                        ))
+                      )}
+                      <td className="border border-slate-200 bg-teal-50 p-2 text-center text-lg font-black text-teal-800">{resultado.resultado70 || '-'}</td>
+                      <td className="border border-slate-200 bg-cyan-50 p-2 text-center text-lg font-black text-cyan-800">{resultado.resultado30 || '-'}</td>
+                      <td className="border border-slate-200 bg-slate-100 p-2 text-center text-lg font-black text-slate-950">{resultado.final || '-'}</td>
                       <td className="border border-slate-200 p-1">
                         <input data-secundaria-cell="true" type="number" value={fila.completiva} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'completiva', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
                       </td>
@@ -375,7 +401,7 @@ export default function AsignaturaSecundariaPage() {
         </section>
 
         <div className="mt-5 rounded-lg border border-teal-100 bg-teal-50 p-4 text-sm font-medium text-teal-900">
-          Esta pantalla guarda la asignatura como boletin de Secundaria con periodos P1-P4, calificacion final y situacion en la asignatura.
+          Esta pantalla guarda la asignatura como boletin de Secundaria con 7 competencias especificas, periodos P1, P2, RP, P3, P4 y RP. El sistema calcula C1-C4 al 70%, C5-C7 al 30% y determina la situacion de la asignatura con minimo aprobatorio de 70 puntos.
         </div>
       </div>
     </div>

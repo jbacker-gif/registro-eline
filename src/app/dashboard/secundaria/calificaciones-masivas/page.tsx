@@ -10,8 +10,16 @@ import {
   etiquetaSeccion,
   normalizarTexto,
 } from '../../../../lib/registroEscolar'
-
-type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
+import {
+  CompetenciaSecundaria,
+  MatrizSecundaria,
+  PeriodoSecundaria,
+  calcularResultadoSecundaria,
+  competenciasSecundaria,
+  crearMatrizSecundariaVacia,
+  normalizarPeriodoSecundaria,
+  periodosSecundaria,
+} from '../../../../lib/secundariaCalificaciones'
 
 type Estudiante = {
   id: string
@@ -32,7 +40,7 @@ type NotaPendiente = {
   seccion_id: string
   user_id: string
   asignatura_id: string
-  periodo: Periodo
+  periodo: PeriodoSecundaria
   competencia: string
   nota: number
   nivel: string
@@ -47,9 +55,12 @@ type VistaPrevia = {
   estudiante: string
   numero: number
   asignatura: string
-  periodo: Periodo
+  competencia: string
+  periodo: PeriodoSecundaria
   nota: number
-  finalArea: string
+  resultado70: number
+  resultado30: number
+  finalArea: number
 }
 
 type ResumenImportacion = {
@@ -62,7 +73,6 @@ type ResumenImportacion = {
   asignaturaSinCatalogo: number
 }
 
-const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
 const columnasIdentidad = [
   'numero_orden',
   'numero_de_orden',
@@ -81,7 +91,7 @@ const columnasIdentidad = [
   'nombres',
   'apellidos',
 ]
-const columnasFinales = ['promedio_competencias', 'final_area', 'completiva', 'extraordinaria', 'especial', 'situacion']
+const columnasFinales = ['promedio_competencias', 'resultado_70', 'resultado_30', 'final_area', 'calificacion_final', 'completiva', 'extraordinaria', 'especial', 'situacion']
 const resumenVacio: ResumenImportacion = {
   aplicadas: 0,
   celdasVacias: 0,
@@ -108,20 +118,25 @@ const validarNota = (valor: string) => {
   return numero
 }
 
-const periodoDesdeCabecera = (columna: string) => {
-  const normalizada = normalizarCabecera(columna).toUpperCase()
-  return periodos.includes(normalizada as Periodo) ? normalizada as Periodo : null
-}
-
 const crearAlias = (nombre: string) => normalizarCabecera(nombre)
 
 const extraerColumnaSecundaria = (columna: string) => {
   const normalizada = normalizarCabecera(columna)
-  const match = normalizada.match(/^(.+)_(p[1-4])$/)
+  const competenciaDirecta = normalizada.match(/^(c[1-7])_(p1|p2|rp|rp1|p2_rp|p3|p4|rp2|p4_rp)$/)
+  if (competenciaDirecta) {
+    return {
+      asignaturaAlias: '',
+      competencia: competenciaDirecta[1].toUpperCase() as CompetenciaSecundaria,
+      periodo: normalizarPeriodoSecundaria(competenciaDirecta[2]),
+    }
+  }
+
+  const match = normalizada.match(/^(.+)_(c[1-7])_(p1|p2|rp|rp1|p2_rp|p3|p4|rp2|p4_rp)$/)
   if (!match) return null
   return {
     asignaturaAlias: match[1],
-    periodo: match[2].toUpperCase() as Periodo,
+    competencia: match[2].toUpperCase() as CompetenciaSecundaria,
+    periodo: normalizarPeriodoSecundaria(match[3]),
   }
 }
 
@@ -221,29 +236,36 @@ export default function CalificacionesMasivasSecundaria() {
     return asignaturasConCatalogo.find(item => item.alias === normalizada || normalizarCabecera(item.nombre) === normalizada) || null
   }
 
-  const crearMetadataFila = (row: CsvRow, asignatura: string) => ({
+  const crearMetadataFila = (row: CsvRow, asignatura: string, matriz: MatrizSecundaria) => {
+    const resultado = calcularResultadoSecundaria(matriz)
+    return {
     formato: 'boletin_secundaria',
     asignatura,
     grado: infoSeccion?.grado,
     ciclo: esSegundoCicloSecundaria(infoSeccion?.grado) ? 'Segundo ciclo' : 'Primer ciclo general',
     modalidad: infoSeccion?.modalidad || null,
     salida_optativa: infoSeccion?.salida_optativa || null,
-    promedio_competencias: getCsvValue(row, ['promedio_competencias', 'promedio', 'pc']),
-    final_area: getCsvValue(row, ['final_area', 'calificacion_final', 'cf']),
+    resultado_70: resultado.resultado70,
+    resultado_30: resultado.resultado30,
+    suma_70: resultado.suma70,
+    suma_30: resultado.suma30,
+    final_area: resultado.final,
     calificacion_completiva: getCsvValue(row, ['completiva', 'cc']),
     calificacion_extraordinaria: getCsvValue(row, ['extraordinaria', 'ce']),
     evaluacion_especial: getCsvValue(row, ['especial', 'evaluacion_especial']),
-    situacion_asignatura: getCsvValue(row, ['situacion', 'situacion_final']) || 'Pendiente',
-  })
+    situacion_asignatura: getCsvValue(row, ['situacion', 'situacion_final']) || resultado.situacion,
+  }}
 
   const agregarNota = (
     nuevasNotas: NotaPendiente[],
     nuevaVista: VistaPrevia[],
     estudiante: Estudiante,
     asignatura: { nombre: string; registro?: Asignatura },
-    periodo: Periodo,
+    competencia: CompetenciaSecundaria,
+    periodo: PeriodoSecundaria,
     nota: number,
     row: CsvRow,
+    matriz: MatrizSecundaria,
     resumenActual: ResumenImportacion,
   ) => {
     if (!seccionId || !userId || !asignatura.registro?.id) {
@@ -251,20 +273,20 @@ export default function CalificacionesMasivasSecundaria() {
       return
     }
 
-    const metadata = crearMetadataFila(row, asignatura.nombre)
+    const metadata = crearMetadataFila(row, asignatura.nombre, matriz)
     nuevasNotas.push({
       estudiante_id: estudiante.id,
       seccion_id: seccionId,
       user_id: userId,
       asignatura_id: asignatura.registro.id,
       periodo,
-      competencia: 'BOLETIN',
+      competencia,
       nota,
       nivel: 'Secundario',
       ano_escolar: infoSeccion?.ano_escolar || null,
       tipo_registro: 'secundaria_boletin_calificaciones',
-      es_recuperacion_pedagogica: false,
-      grupo_recuperacion: null,
+      es_recuperacion_pedagogica: periodo.startsWith('RP'),
+      grupo_recuperacion: periodo.startsWith('RP') ? periodo : null,
       metadata,
     })
 
@@ -273,9 +295,12 @@ export default function CalificacionesMasivasSecundaria() {
         estudiante: estudiante.nombre_completo,
         numero: estudiante.numero_orden,
         asignatura: asignatura.nombre,
+        competencia,
         periodo,
         nota,
-        finalArea: String(metadata.final_area || ''),
+        resultado70: Number(metadata.resultado_70 || 0),
+        resultado30: Number(metadata.resultado_30 || 0),
+        finalArea: Number(metadata.final_area || 0),
       })
     }
     resumenActual.aplicadas++
@@ -314,6 +339,14 @@ export default function CalificacionesMasivasSecundaria() {
           return
         }
 
+        const pendientesFila: {
+          asignatura: { nombre: string; registro?: Asignatura }
+          competencia: CompetenciaSecundaria
+          periodo: PeriodoSecundaria
+          nota: number
+        }[] = []
+        const matrices = new Map<string, MatrizSecundaria>()
+
         Object.entries(row).forEach(([columna, valor]) => {
           const columnaNormalizada = normalizarCabecera(columna)
           if (columnasIdentidad.includes(columnaNormalizada) || columnasFinales.includes(columnaNormalizada)) return
@@ -328,20 +361,26 @@ export default function CalificacionesMasivasSecundaria() {
             return
           }
 
-          const periodoDirecto = periodoDesdeCabecera(columnaNormalizada)
-          if (periodoDirecto && asignaturaSeleccionada) {
-            agregarNota(nuevasNotas, nuevaVista, estudiante, asignaturaSeleccionada, periodoDirecto, nota, row, nuevoResumen)
-            return
-          }
-
           const datosColumna = extraerColumnaSecundaria(columnaNormalizada)
-          const asignatura = datosColumna ? buscarAsignatura(datosColumna.asignaturaAlias) : null
+          const asignatura = datosColumna
+            ? datosColumna.asignaturaAlias
+              ? buscarAsignatura(datosColumna.asignaturaAlias)
+              : asignaturaSeleccionada
+            : null
           if (!datosColumna || !asignatura) {
             nuevoResumen.columnaInvalida++
             return
           }
 
-          agregarNota(nuevasNotas, nuevaVista, estudiante, asignatura, datosColumna.periodo, nota, row, nuevoResumen)
+          const matriz = matrices.get(asignatura.nombre) || crearMatrizSecundariaVacia()
+          matriz[datosColumna.competencia][datosColumna.periodo] = String(nota)
+          matrices.set(asignatura.nombre, matriz)
+          pendientesFila.push({ asignatura, competencia: datosColumna.competencia, periodo: datosColumna.periodo, nota })
+        })
+
+        pendientesFila.forEach(item => {
+          const matriz = matrices.get(item.asignatura.nombre) || crearMatrizSecundariaVacia()
+          agregarNota(nuevasNotas, nuevaVista, estudiante, item.asignatura, item.competencia, item.periodo, item.nota, row, matriz, nuevoResumen)
         })
       })
 
@@ -384,8 +423,8 @@ export default function CalificacionesMasivasSecundaria() {
   const descargarPlantilla = () => {
     const nombre = asignaturaActiva || asignaturasDelNivel[0]
     const filas = [
-      'numero_orden,sigerd_id,nombre_completo,p1,p2,p3,p4,promedio_competencias,final_area,completiva,extraordinaria,especial,situacion',
-      ...estudiantes.slice(0, 3).map(est => `${est.numero_orden},${est.sigerd_id || est.rne || ''},"${est.nombre_completo}",,,,,,,,,Pendiente`),
+      `numero_orden,sigerd_id,nombre_completo,${competenciasSecundaria.flatMap(comp => periodosSecundaria.map(periodo => `${comp.toLowerCase()}_${periodo.toLowerCase()}`)).join(',')},completiva,extraordinaria,especial,situacion`,
+      ...estudiantes.slice(0, 3).map(est => `${est.numero_orden},${est.sigerd_id || est.rne || ''},"${est.nombre_completo}",${competenciasSecundaria.flatMap(() => periodosSecundaria.map(() => '')).join(',')},,,,Pendiente`),
     ]
     const blob = new Blob([filas.join('\n')], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -485,12 +524,13 @@ export default function CalificacionesMasivasSecundaria() {
               <h2 className="text-sm font-semibold text-slate-950">Vista previa</h2>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[860px] border-collapse text-left text-sm">
                 <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3 font-semibold">No.</th>
                     <th className="px-4 py-3 font-semibold">Estudiante</th>
                     <th className="px-4 py-3 font-semibold">Asignatura</th>
+                    <th className="px-4 py-3 text-center font-semibold">Competencia</th>
                     <th className="px-4 py-3 text-center font-semibold">Periodo</th>
                     <th className="px-4 py-3 text-center font-semibold">Calificacion</th>
                     <th className="px-4 py-3 text-center font-semibold">Final</th>
@@ -499,13 +539,14 @@ export default function CalificacionesMasivasSecundaria() {
                 <tbody>
                   {vistaPrevia.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-sm font-medium text-slate-400">Sin matriz importada.</td>
+                      <td colSpan={7} className="p-8 text-center text-sm font-medium text-slate-400">Sin matriz importada.</td>
                     </tr>
                   ) : vistaPrevia.map((fila, index) => (
-                    <tr key={`${fila.numero}-${fila.asignatura}-${fila.periodo}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <tr key={`${fila.numero}-${fila.asignatura}-${fila.competencia}-${fila.periodo}-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                       <td className="border-t border-slate-100 px-4 py-3 font-semibold text-slate-500">{fila.numero}</td>
                       <td className="border-t border-slate-100 px-4 py-3 font-medium text-slate-900">{fila.estudiante}</td>
                       <td className="border-t border-slate-100 px-4 py-3 text-slate-600">{fila.asignatura}</td>
+                      <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-cyan-700">{fila.competencia}</td>
                       <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-teal-700">{fila.periodo}</td>
                       <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-slate-950">{fila.nota}</td>
                       <td className="border-t border-slate-100 px-4 py-3 text-center font-semibold text-slate-700">{fila.finalArea || '-'}</td>
@@ -519,9 +560,9 @@ export default function CalificacionesMasivasSecundaria() {
           <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-950">Formato de importacion</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <p>Por asignatura activa: <span className="font-mono text-xs text-slate-800">numero_orden, p1, p2, p3, p4</span></p>
-              <p>Varias asignaturas: <span className="font-mono text-xs text-slate-800">matematica_p1, matematica_p2</span></p>
-              <p>Opcionales: <span className="font-mono text-xs text-slate-800">final_area, completiva, extraordinaria, especial, situacion</span></p>
+              <p>Por asignatura activa: <span className="font-mono text-xs text-slate-800">numero_orden, c1_p1, c1_p2, c1_rp1, c1_p3, c1_p4, c1_rp2</span></p>
+              <p>Varias asignaturas: <span className="font-mono text-xs text-slate-800">matematica_c1_p1, matematica_c1_rp1</span></p>
+              <p>Opcionales: <span className="font-mono text-xs text-slate-800">completiva, extraordinaria, especial, situacion</span></p>
             </div>
             <div className="mt-5 rounded-md border border-teal-100 bg-teal-50 p-3 text-xs leading-5 text-teal-900">
               Las calificaciones guardan `nivel=Secundario` y formato `secundaria_boletin_calificaciones`, separado de Primaria.

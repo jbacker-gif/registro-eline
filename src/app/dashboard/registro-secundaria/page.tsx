@@ -16,6 +16,13 @@ import {
   telefonoTutor,
   tutorPrincipal,
 } from '../../../lib/registroEscolar'
+import {
+  CompetenciaSecundaria,
+  calcularResultadoSecundaria,
+  competenciasSecundaria,
+  crearMatrizSecundariaVacia,
+  normalizarPeriodoSecundaria,
+} from '../../../lib/secundariaCalificaciones'
 
 type Pestana = 'listado' | 'formulario' | 'calificaciones' | 'boletin'
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
@@ -31,6 +38,8 @@ type FilaBoletinSecundaria = {
   extraordinaria: string
   especial: string
   situacion: string
+  resultado70: string
+  resultado30: string
 }
 
 const periodos: Periodo[] = ['P1', 'P2', 'P3', 'P4']
@@ -64,6 +73,8 @@ const crearFilaBoletin = (asignatura: string): FilaBoletinSecundaria => ({
   extraordinaria: '',
   especial: '',
   situacion: 'Pendiente',
+  resultado70: '',
+  resultado30: '',
 })
 
 const crearFilasBoletin = (grado = '1ro', salidaOptativa = '') => {
@@ -272,19 +283,32 @@ export default function RegistroSecundaria() {
       .eq('tipo_registro', 'secundaria_boletin_calificaciones')
 
     const filas = crearFilasBoletin(grado, seccionActiva?.salida_optativa)
+    const porAsignatura = new Map<string, any[]>()
     ;(data || []).forEach((nota: any) => {
       const asignaturaNombre = nota.metadata?.asignatura || ''
+      if (!asignaturaNombre) return
+      porAsignatura.set(asignaturaNombre, [...(porAsignatura.get(asignaturaNombre) || []), nota])
+    })
+
+    porAsignatura.forEach((notas, asignaturaNombre) => {
       const fila = filas.find(item => normalizar(item.asignatura) === normalizar(asignaturaNombre))
       if (!fila) return
-      if (periodos.includes(nota.periodo as Periodo)) {
-        fila[nota.periodo as Periodo] = nota.nota === null || nota.nota === undefined ? '' : String(nota.nota)
-      }
-      fila.promedioCompetencias = nota.metadata?.promedio_competencias ? String(nota.metadata.promedio_competencias) : fila.promedioCompetencias
-      fila.finalArea = nota.metadata?.final_area ? String(nota.metadata.final_area) : fila.finalArea
-      fila.completiva = nota.metadata?.calificacion_completiva ? String(nota.metadata.calificacion_completiva) : fila.completiva
-      fila.extraordinaria = nota.metadata?.calificacion_extraordinaria ? String(nota.metadata.calificacion_extraordinaria) : fila.extraordinaria
-      fila.especial = nota.metadata?.evaluacion_especial ? String(nota.metadata.evaluacion_especial) : fila.especial
-      fila.situacion = nota.metadata?.situacion_final_asignatura || fila.situacion
+      const matriz = crearMatrizSecundariaVacia()
+      notas.forEach((nota: any) => {
+        const competencia = String(nota.competencia || '').toUpperCase() as CompetenciaSecundaria
+        if (competenciasSecundaria.includes(competencia)) matriz[competencia][normalizarPeriodoSecundaria(nota.periodo)] = String(nota.nota)
+        else if (periodos.includes(nota.periodo as Periodo)) fila[nota.periodo as Periodo] = nota.nota === null || nota.nota === undefined ? '' : String(nota.nota)
+      })
+      const primera = notas[0]
+      const resultado = calcularResultadoSecundaria(matriz)
+      fila.resultado70 = String(primera.metadata?.resultado_70 || resultado.resultado70 || '')
+      fila.resultado30 = String(primera.metadata?.resultado_30 || resultado.resultado30 || '')
+      fila.promedioCompetencias = fila.resultado70 && fila.resultado30 ? `${fila.resultado70} / ${fila.resultado30}` : fila.promedioCompetencias
+      fila.finalArea = String(primera.metadata?.final_area || resultado.final || fila.finalArea)
+      fila.completiva = primera.metadata?.calificacion_completiva ? String(primera.metadata.calificacion_completiva) : fila.completiva
+      fila.extraordinaria = primera.metadata?.calificacion_extraordinaria ? String(primera.metadata.calificacion_extraordinaria) : fila.extraordinaria
+      fila.especial = primera.metadata?.evaluacion_especial ? String(primera.metadata.evaluacion_especial) : fila.especial
+      fila.situacion = primera.metadata?.situacion_asignatura || resultado.situacion || fila.situacion
     })
     setFilasBoletin(filas)
     await cargarAsistenciaBoletin(estudianteId)
@@ -483,7 +507,7 @@ export default function RegistroSecundaria() {
                         <td className="p-4 text-right">
                           <button onClick={() => { setEstudianteActivo(estudiante); setPestana('listado') }} className="mr-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200">Ver</button>
                           <button onClick={() => editar(estudiante)} className="mr-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100">Editar</button>
-                          <button onClick={() => { setEstudianteActivo(estudiante); setPestana('calificaciones') }} className="mr-2 rounded-lg bg-teal-50 px-3 py-2 text-xs font-black text-teal-700 hover:bg-teal-100">Calificaciones</button>
+                          <button onClick={() => { window.location.href = `/dashboard/secundaria/asignaturas/lengua-espanola?seccion_id=${seccionId}&nivel=Secundario` }} className="mr-2 rounded-lg bg-teal-50 px-3 py-2 text-xs font-black text-teal-700 hover:bg-teal-100">Calificaciones</button>
                           <button onClick={() => { setEstudianteActivo(estudiante); setPestana('boletin') }} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-slate-700">Boletin</button>
                         </td>
                       </tr>
@@ -529,63 +553,35 @@ export default function RegistroSecundaria() {
         )}
 
         {pestana === 'calificaciones' && (
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div><h2 className="text-base font-black text-slate-900">Entrada de calificaciones del boletin</h2><p className="text-sm text-slate-500">{estudianteActivo?.nombre_completo || 'Selecciona un estudiante'} - Periodos P1, P2, P3 y P4 con minimo aprobatorio 70 puntos.</p></div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <select value={estudianteActivo?.id || ''} onChange={e => setEstudianteActivo(estudiantes.find(item => item.id === e.target.value) || null)} className="input-secundaria">{estudiantes.map(estudiante => <option key={estudiante.id} value={estudiante.id}>{estudiante.nombre_completo}</option>)}</select>
-                <button type="button" onClick={() => setPestana('listado')} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Volver</button>
+          <section className="rounded-lg border border-teal-100 bg-white p-5 shadow-sm">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-700">Calificaciones por asignatura</p>
+                <h2 className="mt-1 text-2xl font-black text-slate-950">Registro oficial de Secundaria</h2>
+                <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
+                  La entrada de calificaciones se realiza ahora en paginas propias por asignatura, con 7 competencias especificas, RP despues de P2 y P4, calculo 70% / 30% y minimo aprobatorio de 70 puntos.
+                </p>
               </div>
+              <button type="button" onClick={() => setPestana('listado')} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">Volver</button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px] border-collapse text-sm">
-                <thead className="bg-slate-900 text-white">
-                  <tr>
-                    <th className="border border-slate-700 p-3 text-left">Area curricular / asignatura</th>
-                    {periodos.map(periodo => <th key={periodo} className="border border-slate-700 p-3">{periodo}</th>)}
-                    <th className="border border-slate-700 p-3">PC</th>
-                    <th className="border border-slate-700 p-3">C.F.</th>
-                    <th className="border border-slate-700 p-3">C.E.C.</th>
-                    <th className="border border-slate-700 p-3">C.E. EX</th>
-                    <th className="border border-slate-700 p-3">C.E.</th>
-                    <th className="border border-slate-700 p-3">Situacion</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filasBoletin.map((fila, index) => (
-                    <tr key={fila.asignatura} className="odd:bg-white even:bg-slate-50">
-                      <td className="border border-slate-200 p-3 font-semibold text-slate-800">{fila.asignatura}</td>
-                      {periodos.map(periodo => (
-                        <td key={periodo} className="border border-slate-200 p-2">
-                          <input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={fila[periodo]}
-                            onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, [periodo]: e.target.value } : item))}
-                            className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100"
-                          />
-                        </td>
-                      ))}
-                      <td className="border border-slate-200 p-2"><input value={fila.promedioCompetencias || promedioPeriodosFila(fila) || ''} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, promedioCompetencias: e.target.value } : item))} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100" /></td>
-                      <td className="border border-slate-200 p-2"><input value={fila.finalArea || promedioPeriodosFila(fila) || ''} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, finalArea: e.target.value } : item))} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100" /></td>
-                      <td className="border border-slate-200 p-2"><input value={fila.completiva} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, completiva: e.target.value } : item))} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100" /></td>
-                      <td className="border border-slate-200 p-2"><input value={fila.extraordinaria} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, extraordinaria: e.target.value } : item))} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100" /></td>
-                      <td className="border border-slate-200 p-2"><input value={fila.especial} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, especial: e.target.value } : item))} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:ring-2 focus:ring-teal-100" /></td>
-                      <td className="border border-slate-200 p-2"><select value={fila.situacion} onChange={e => setFilasBoletin(actual => actual.map((item, itemIndex) => itemIndex === index ? { ...item, situacion: e.target.value } : item))} className="input-secundaria">{situacionesAsignatura.map(item => <option key={item}>{item}</option>)}</select></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {filasBoletin.map(fila => (
+                <button
+                  key={fila.asignatura}
+                  type="button"
+                  onClick={() => {
+                    const slug = normalizar(fila.asignatura).replace(/\s+/g, '-')
+                    window.location.href = `/dashboard/secundaria/asignaturas/${slug}?seccion_id=${seccionId}&nivel=Secundario`
+                  }}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
+                >
+                  <span className="text-sm font-black text-slate-950">{fila.asignatura}</span>
+                  <span className="mt-2 block text-xs font-semibold leading-5 text-slate-500">Abrir matriz C1-C7 con P1, P2, RP, P3, P4 y RP.</span>
+                </button>
+              ))}
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <Campo label="Situacion del/de la estudiante"><select value={situacionEstudiante} onChange={e => setSituacionEstudiante(e.target.value)} className="input-secundaria">{situacionEstudianteOpciones.map(item => <option key={item}>{item}</option>)}</select></Campo>
-              <Campo label="Condicion final"><input value={condicionFinal} onChange={e => setCondicionFinal(e.target.value)} className="input-secundaria" /></Campo>
-              <Campo label="Observaciones"><input value={observacionesBoletin} onChange={e => setObservacionesBoletin(e.target.value)} className="input-secundaria" /></Campo>
-            </div>
-            <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm font-bold text-slate-700">Calificacion final estimada: {promedioFinal ?? '-'} - {promedioFinal === null ? 'Pendiente' : promedioFinal >= 70 ? 'Promovido/a' : 'Repitente'}</p>
-              <button onClick={guardarNotas} className="rounded-md bg-teal-700 px-5 py-2 text-sm font-bold text-white hover:bg-teal-800">Guardar calificaciones</button>
+            <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+              La matriz anterior de P1-P4 simple quedo fuera del flujo visible porque no corresponde al Registro oficial de Secundaria.
             </div>
           </section>
         )}
@@ -624,7 +620,7 @@ export default function RegistroSecundaria() {
                     <tr>
                       <th className="border border-slate-700 p-2 text-left">Areas curriculares</th>
                       {periodos.map(periodo => <th key={periodo} className="border border-slate-700 p-2">{periodo}</th>)}
-                      <th className="border border-slate-700 p-2">PC</th>
+                      <th className="border border-slate-700 p-2">70% / 30%</th>
                       <th className="border border-slate-700 p-2">C.F.</th>
                       <th className="border border-slate-700 p-2">C.E.C.</th>
                       <th className="border border-slate-700 p-2">C.E. EX</th>

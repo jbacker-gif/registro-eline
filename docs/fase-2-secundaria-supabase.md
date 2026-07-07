@@ -141,7 +141,15 @@ Migracion aplicada en Supabase:
 - Las filas del boletin se guardan con:
   - `nivel = Secundario`
   - `tipo_registro = secundaria_boletin_calificaciones`
-  - `competencia = BOLETIN`
-  - `periodo = P1 | P2 | P3 | P4`
-  - `metadata` para PC, C.F., completiva, extraordinaria, evaluacion especial, situacion final, situacion del estudiante, condicion final y observaciones.
+  - `competencia = C1 | C2 | C3 | C4 | C5 | C6 | C7`
+  - `periodo = P1 | P2 | RP1 | P3 | P4 | RP2`
+  - `es_recuperacion_pedagogica = true` en RP1 y RP2
+  - `grupo_recuperacion = RP1 | RP2` cuando aplica
+  - `metadata` para resultado 70%, resultado 30%, suma 70%, suma 30%, C.F., completiva, extraordinaria, evaluacion especial, situacion final, situacion del estudiante, condicion final y observaciones.
 - La tabla `secundaria_informes_preliminares` queda documentada como soporte anterior no activo en la UI.
+
+## Correccion de calculo de calificaciones
+
+- Se reviso localmente el respaldo de esquema y `calificaciones.periodo` es `text`, por lo que no hizo falta una migracion para guardar `RP1` y `RP2`.
+- La restriccion unica existente `estudiante_id,seccion_id,asignatura_id,periodo,competencia` permite guardar cada competencia y periodo como una fila independiente.
+- No se agregaron columnas porque `metadata` ya cubre los resultados calculados de la matriz oficial.

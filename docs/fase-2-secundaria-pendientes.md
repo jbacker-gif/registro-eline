@@ -3,7 +3,7 @@
 ## Funcionales
 
 - Persistir datos demo reales por usuario si se desea una semilla de staging.
-- Calcular condicion final por asignatura y promocion global del grado.
+- Calcular promocion global del grado combinando calificaciones finales y asistencia.
 - Agregar filtros adicionales por tanda y salida optativa.
 - Integrar responsables secundarios multiples si el formato final lo requiere.
 - Persistir observaciones, situacion y condicion final aunque no existan calificaciones por asignatura.
@@ -17,7 +17,8 @@
 ## Validacion
 
 - Validar RNE, pasaporte o cedula segun reglas institucionales.
-- Validar que las calificaciones sean 0-100 y que la aprobacion minima sea 70.
+- Validar con usuarios reales la matriz de 7 competencias y RP por asignatura.
+- Revisar si la asistencia anual menor al 80% debe generar alerta, bloqueo o paso a completiva.
 - Validar campos obligatorios por grado y ciclo.
 - Verificar con usuarios reales la nomenclatura PC, C.F., C.E.C., C.E. EX y C.E. en la captura digital.
 
@@ -40,7 +41,8 @@
 - Revisar con usuarios si los selectores separados de Primaria y Secundaria evitan la confusion entre grados iguales.
 - Crear submodulos secundarios separados para asistencia, conducta y reportes oficiales.
 - Completar la pantalla propia de Asistencia secundaria; el acceso ya existe en el modulo, pero aun debe desarrollarse el formato funcional completo.
-- Mejorar la entrada de calificaciones secundaria con persistencia independiente de observaciones y condicion final.
+- Mejorar la persistencia independiente de observaciones y condicion final del boletin.
+- Agregar pruebas automatizadas del helper `secundariaCalificaciones` cuando el proyecto tenga suite de tests.
 
 ## Modulo de estudiantes
 
