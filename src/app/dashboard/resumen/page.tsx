@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
-type VistaResumen = 'asistencia' | 'sabana'
+type VistaResumen = 'asistencia' | 'sabana' | 'resumen-final'
 type EstadoAsistencia = 'P' | 'A' | 'E' | 'T'
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
 type Competencia = 'C1' | 'C2' | 'C3'
@@ -92,6 +92,7 @@ type AreaSabana = {
 
 type ResultadoArea = {
   area: AreaSabana
+  finalesCompetencia: Record<Competencia, number | null>
   finalArea: number | null
   recuperacionFinal: number | null
   recuperacionEspecial: number | null
@@ -297,10 +298,19 @@ const coincideAsignatura = (area: AreaSabana, asignatura: Asignatura) => {
 const buscarAsignaturasArea = (area: AreaSabana, asignaturas: Asignatura[]) =>
   asignaturas.filter(asignatura => coincideAsignatura(area, asignatura))
 
-const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificaciones: Calificacion[], estudianteId: string): ResultadoArea => {
+const crearResultadoAreaVacio = (area: AreaSabana): ResultadoArea => ({
+  area,
+  finalesCompetencia: { C1: null, C2: null, C3: null },
+  finalArea: null,
+  recuperacionFinal: null,
+  recuperacionEspecial: null,
+})
+
+const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificaciones: Calificacion[], estudianteId: string, grado?: string | null): ResultadoArea => {
   const asignaturasArea = buscarAsignaturasArea(area, asignaturas)
-  if (asignaturasArea.length === 0) return { area, finalArea: null, recuperacionFinal: null, recuperacionEspecial: null }
+  if (asignaturasArea.length === 0) return crearResultadoAreaVacio(area)
   const idsAsignaturasArea = new Set(asignaturasArea.map(asignatura => asignatura.id))
+  const esPrimerCicloPrimaria = grado === '1ro' || grado === '2do'
 
   const notasArea = calificaciones.filter(nota =>
     nota.estudiante_id === estudianteId && idsAsignaturasArea.has(nota.asignatura_id)
@@ -311,7 +321,7 @@ const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificacione
       .map(periodo => {
         const recuperada = notasArea.find(nota => nota.periodo === periodo && nota.competencia === `${competencia}_RP`)?.nota
         const ordinaria = notasArea.find(nota => nota.periodo === periodo && nota.competencia === competencia)?.nota
-        const valor = recuperada ?? ordinaria
+        const valor = esPrimerCicloPrimaria ? ordinaria : (recuperada ?? ordinaria)
         return valor === null || valor === undefined || valor === '' ? null : Number(valor)
       })
       .filter((nota): nota is number => typeof nota === 'number' && !Number.isNaN(nota))
@@ -323,6 +333,11 @@ const calcularArea = (area: AreaSabana, asignaturas: Asignatura[], calificacione
 
   return {
     area,
+    finalesCompetencia: {
+      C1: finalesCompetencia[0],
+      C2: finalesCompetencia[1],
+      C3: finalesCompetencia[2],
+    },
     finalArea: validas.length > 0 ? Math.round(validas.reduce((total, nota) => total + nota, 0) / validas.length) : null,
     recuperacionFinal: null,
     recuperacionEspecial: null,
@@ -541,6 +556,9 @@ export default function ResumenAnual() {
               <button onClick={() => setVista('sabana')} className={`rounded-md px-4 py-2 text-sm font-bold transition ${vista === 'sabana' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
                 Sabana
               </button>
+              <button onClick={() => setVista('resumen-final')} className={`rounded-md px-4 py-2 text-sm font-bold transition ${vista === 'resumen-final' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                Resumen final
+              </button>
             </div>
             <button onClick={() => window.print()} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
               Imprimir
@@ -561,8 +579,19 @@ export default function ResumenAnual() {
             diasTrabajadosPorMes={resumenAsistencia.diasTrabajadosPorMes}
             totalDiasTrabajados={resumenAsistencia.totalDiasTrabajados}
           />
-        ) : (
+        ) : vista === 'sabana' ? (
           <SabanaOficial
+            infoSeccion={infoSeccion}
+            infoColegio={infoColegio}
+            infoPerfil={infoPerfil}
+            estudiantesResumen={resumenAsistencia.estudiantesResumen}
+            areas={areasSabana}
+            asignaturas={asignaturas}
+            calificaciones={calificaciones}
+            rangoTexto={rango.texto}
+          />
+        ) : (
+          <ResumenFinalMaterias
             infoSeccion={infoSeccion}
             infoColegio={infoColegio}
             infoPerfil={infoPerfil}
@@ -899,7 +928,7 @@ function SabanaOficial({
             {Array.from({ length: Math.max(45, estudiantesResumen.length) }).map((_, index) => {
               const item = estudiantesResumen[index]
               const resultados = item
-                ? areas.map(area => calcularArea(area, asignaturas, calificaciones, item.estudiante.id))
+                ? areas.map(area => calcularArea(area, asignaturas, calificaciones, item.estudiante.id, infoSeccion?.grado))
                 : []
               const situacion = item && !esEstudianteRetirado(item.estudiante) ? obtenerSituacion(resultados) : ''
 
@@ -963,6 +992,120 @@ function SabanaAreaCeldas({
       <td className="text-center font-bold">{celda(finalArea)}</td>
       <td className="text-center">{celda(recuperacionFinal)}</td>
       {incluyeRecuperacionEspecial && <td className="text-center">{celda(recuperacionEspecial)}</td>}
+    </>
+  )
+}
+
+function ResumenFinalMaterias({
+  infoSeccion,
+  infoColegio,
+  infoPerfil,
+  estudiantesResumen,
+  areas,
+  asignaturas,
+  calificaciones,
+  rangoTexto,
+}: {
+  infoSeccion: Seccion | null
+  infoColegio: Colegio | null
+  infoPerfil: Perfil | null
+  estudiantesResumen: ResumenEstudiante[]
+  areas: AreaSabana[]
+  asignaturas: Asignatura[]
+  calificaciones: Calificacion[]
+  rangoTexto: string
+}) {
+  return (
+    <section className="official-sheet">
+      <div className="print-page overflow-x-auto">
+        <div className="mb-2 text-center font-bold text-slate-900">
+          <h2 className="text-base font-black uppercase">Resumen final de calificaciones por materia</h2>
+          <p className="mt-1 text-xs font-semibold text-slate-600">Competencias finales C1, C2, C3 y calificacion final</p>
+          <div className="mt-2 grid grid-cols-12 gap-2 text-left text-[11px]">
+            <p className="col-span-5">Centro educativo: <span className="font-semibold">{infoColegio?.nombre || '______________________________'}</span></p>
+            <p className="col-span-2">Regional: <span className="font-semibold">{infoColegio?.regional_educacion || '_____'}</span></p>
+            <p className="col-span-2">Distrito Educativo: <span className="font-semibold">{infoColegio?.distrito_educativo || '_____'}</span></p>
+            <p className="col-span-1">Grado: <span className="font-semibold">{infoSeccion?.grado || '____'}</span></p>
+            <p className="col-span-1">Seccion: <span className="font-semibold">{infoSeccion?.identificador || '____'}</span></p>
+            <p className="col-span-1">Ano: <span className="font-semibold">{rangoTexto}</span></p>
+          </div>
+        </div>
+
+        <table className="official-table min-w-[1800px]">
+          <thead>
+            <tr>
+              <th rowSpan={2} className="w-10">No.</th>
+              <th rowSpan={2} className="w-64">Nombre(s) y apellido(s)</th>
+              {areas.map(area => (
+                <th key={area.key} colSpan={4}>{area.nombre}</th>
+              ))}
+              <th rowSpan={2} className="w-28">Observaciones</th>
+            </tr>
+            <tr>
+              {areas.flatMap(area => [
+                <th key={`${area.key}-c1`}>C1</th>,
+                <th key={`${area.key}-c2`}>C2</th>,
+                <th key={`${area.key}-c3`}>C3</th>,
+                <th key={`${area.key}-final`}>Final</th>,
+              ])}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: Math.max(45, estudiantesResumen.length) }).map((_, index) => {
+              const item = estudiantesResumen[index]
+              const resultados = item
+                ? areas.map(area => calcularArea(area, asignaturas, calificaciones, item.estudiante.id, infoSeccion?.grado))
+                : []
+
+              return (
+                <tr key={item?.estudiante.id || index} className={item ? (index % 2 === 0 ? 'official-row-even' : 'official-row-odd') : 'official-row-empty'}>
+                  <td className="text-center font-bold">{item?.estudiante.numero_orden || index + 1}</td>
+                  <td className="font-semibold">{item ? obtenerNombreEstudiante(item.estudiante) : ''}</td>
+                  {areas.map((area, areaIndex) => {
+                    const resultado = resultados[areaIndex]
+                    return (
+                      <ResumenFinalAreaCeldas
+                        key={area.key}
+                        c1={resultado?.finalesCompetencia.C1 ?? ''}
+                        c2={resultado?.finalesCompetencia.C2 ?? ''}
+                        c3={resultado?.finalesCompetencia.C3 ?? ''}
+                        finalArea={resultado?.finalArea ?? ''}
+                      />
+                    )
+                  })}
+                  <td>{item && esEstudianteRetirado(item.estudiante) ? 'Retirado/a' : ''}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
+        <div className="mt-4 grid grid-cols-2 gap-8 text-xs font-semibold text-slate-800">
+          <p>Docente: {infoPerfil?.nombre_completo || infoPerfil?.full_name || '______________________________________________'}</p>
+          <p>Firma: ______________________________________________</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ResumenFinalAreaCeldas({
+  c1,
+  c2,
+  c3,
+  finalArea,
+}: {
+  c1: number | string
+  c2: number | string
+  c3: number | string
+  finalArea: number | string
+}) {
+  return (
+    <>
+      <td className="text-center">{celda(c1)}</td>
+      <td className="text-center">{celda(c2)}</td>
+      <td className="text-center">{celda(c3)}</td>
+      <td className="text-center font-bold">{celda(finalArea)}</td>
     </>
   )
 }
