@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900">
-      <div className="fixed left-0 top-0 z-50 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+      <div className="fixed left-0 top-0 z-[70] flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:hidden">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="ELINE" width={26} height={26} className="rounded-md object-contain" />
           <span className="text-sm font-semibold tracking-wide text-slate-900">ELINE</span>
@@ -169,10 +169,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </div>
 
-      {menuAbierto && <button className="fixed inset-0 z-40 bg-slate-950/25 md:hidden" onClick={() => setMenuAbierto(false)} aria-label="Cerrar menú" />}
+      {menuAbierto && <button className="fixed inset-0 z-[55] bg-slate-950/25 md:hidden" onClick={() => setMenuAbierto(false)} aria-label="Cerrar menú" />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-[60] flex w-72 max-w-[86vw] -translate-x-full flex-col border-r border-slate-200 bg-white shadow-xl transition-transform md:static md:w-64 md:max-w-none md:translate-x-0 md:shadow-none ${
           menuAbierto ? 'translate-x-0' : ''
         }`}
       >

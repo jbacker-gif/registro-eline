@@ -121,6 +121,18 @@ const serviciosContacto = [
   'Otro servicio',
 ]
 
+const enlacesNavegacion: (
+  | { label: string; tipo: 'seccion'; seccion: string }
+  | { label: string; tipo: 'link'; href: string }
+)[] = [
+  { label: 'Nosotros', tipo: 'seccion', seccion: 'nosotros' },
+  { label: 'Servicios', tipo: 'seccion', seccion: 'servicios' },
+  { label: 'Eline', tipo: 'seccion', seccion: 'registro' },
+  { label: 'Planes', tipo: 'link', href: '/suscripciones' },
+  { label: 'Preguntas Frecuentes', tipo: 'seccion', seccion: 'faq' },
+  { label: 'Contacto', tipo: 'seccion', seccion: 'contacto' },
+]
+
 export default function HomeInstitucional() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -128,6 +140,7 @@ export default function HomeInstitucional() {
   const [emailRecuperacion, setEmailRecuperacion] = useState('')
   const [verPassword, setVerPassword] = useState(false)
   const [cargando, setCargando] = useState(false)
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false)
   const [mostrarLogin, setMostrarLogin] = useState(false)
   const [modoAcceso, setModoAcceso] = useState<'login' | 'recuperacion'>('login')
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
@@ -221,6 +234,7 @@ export default function HomeInstitucional() {
   }
 
   const abrirLogin = () => {
+    setMenuMovilAbierto(false)
     setModoAcceso('login')
     setMensaje({ texto: '', tipo: '' })
     setMostrarLogin(true)
@@ -237,6 +251,7 @@ export default function HomeInstitucional() {
     const section = document.getElementById(id)
     if (!section) return
 
+    setMenuMovilAbierto(false)
     const navOffset = window.innerWidth >= 768 ? 140 : 104
     const top = section.getBoundingClientRect().top + window.scrollY - navOffset
     window.scrollTo({ top, behavior: 'smooth' })
@@ -260,10 +275,13 @@ export default function HomeInstitucional() {
   return (
     <div className="min-h-screen bg-[#f6f7f9] text-[#142037] selection:bg-[#efd9a8]">
       <nav className="fixed z-50 w-full border-b border-[#e3e5ea] bg-[#f6f7f9]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[104px] max-w-6xl items-center justify-between px-5 md:h-[140px] md:px-6">
+        <div className="mx-auto flex h-[104px] max-w-6xl items-center justify-between gap-3 px-5 md:h-[140px] md:px-6">
           <button
-            className="flex items-center gap-3"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex min-w-0 items-center gap-3"
+            onClick={() => {
+              setMenuMovilAbierto(false)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
             aria-label="Ir al inicio"
           >
             <Image
@@ -271,27 +289,75 @@ export default function HomeInstitucional() {
               alt="AD Soluciones Profesionales"
               width={387}
               height={120}
-              className="h-[84px] w-auto object-contain md:h-[120px]"
+              className="h-[78px] max-w-[210px] object-contain md:h-[120px] md:max-w-none"
               priority
             />
           </button>
 
           <div className="hidden gap-6 font-mono text-[14px] font-medium uppercase tracking-[0.12em] text-[#5b6472] md:flex">
-            <button onClick={() => scrollToSection('nosotros')} className="transition-colors hover:text-[#142037]">Nosotros</button>
-            <button onClick={() => scrollToSection('servicios')} className="transition-colors hover:text-[#142037]">Servicios</button>
-            <button onClick={() => scrollToSection('registro')} className="transition-colors hover:text-[#142037]">Eline</button>
-            <Link href="/suscripciones" className="transition-colors hover:text-[#142037]">Planes</Link>
-            <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-[#142037]">Preguntas Frecuentes</button>
-            <button onClick={() => scrollToSection('contacto')} className="transition-colors hover:text-[#142037]">Contacto</button>
+            {enlacesNavegacion.map((enlace) => enlace.tipo === 'link' ? (
+              <Link key={enlace.label} href={enlace.href} className="transition-colors hover:text-[#142037]">{enlace.label}</Link>
+            ) : (
+              <button key={enlace.label} onClick={() => scrollToSection(enlace.seccion)} className="transition-colors hover:text-[#142037]">{enlace.label}</button>
+            ))}
           </div>
 
           <button
             onClick={abrirLogin}
-            className="border border-[#142037] px-4 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] md:px-6 md:py-3 md:text-[14px] md:tracking-[0.1em]"
+            className="hidden border border-[#142037] px-6 py-3 font-mono text-[14px] font-medium uppercase transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] md:block"
           >
             Acceso docente
           </button>
+
+          <button
+            type="button"
+            onClick={() => setMenuMovilAbierto((abierto) => !abierto)}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center border border-[#142037] text-[#142037] transition-colors hover:bg-[#142037] hover:text-white md:hidden"
+            aria-label={menuMovilAbierto ? 'Cerrar menú principal' : 'Abrir menú principal'}
+            aria-expanded={menuMovilAbierto}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5" aria-hidden="true">
+              {menuMovilAbierto ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {menuMovilAbierto && (
+          <div className="border-t border-[#e3e5ea] bg-[#f6f7f9] px-5 pb-5 shadow-[0_18px_35px_rgba(20,32,55,0.14)] md:hidden">
+            <div className="grid gap-1 py-3 font-mono text-[13px] font-medium uppercase text-[#5b6472]">
+              {enlacesNavegacion.map((enlace) => enlace.tipo === 'link' ? (
+                <Link
+                  key={enlace.label}
+                  href={enlace.href}
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="border-b border-[#e3e5ea] px-1 py-3 transition-colors hover:text-[#142037]"
+                >
+                  {enlace.label}
+                </Link>
+              ) : (
+                <button
+                  key={enlace.label}
+                  type="button"
+                  onClick={() => scrollToSection(enlace.seccion)}
+                  className="border-b border-[#e3e5ea] px-1 py-3 text-left transition-colors hover:text-[#142037]"
+                >
+                  {enlace.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={abrirLogin}
+              className="mt-2 w-full bg-[#142037] px-5 py-3.5 font-mono text-[12px] font-medium uppercase text-white transition-colors hover:bg-[#26344f]"
+            >
+              Acceso docente
+            </button>
+          </div>
+        )}
       </nav>
 
       <main>
