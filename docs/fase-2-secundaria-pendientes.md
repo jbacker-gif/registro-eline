@@ -19,6 +19,7 @@
 - Validar RNE, pasaporte o cedula segun reglas institucionales.
 - Validar con usuarios reales la matriz de 7 competencias y RP por asignatura.
 - Revisar si la asistencia anual menor al 80% debe generar alerta, bloqueo o paso a completiva.
+- Validar en staging que cada centro use el nombre correcto de su salida optativa y que el respaldo `Salida Optativa` sea suficiente cuando no exista una asignatura especifica en catalogo.
 - Validar campos obligatorios por grado y ciclo.
 - Verificar con usuarios reales la nomenclatura PC, C.F., C.E.C., C.E. EX y C.E. en la captura digital.
 
@@ -49,4 +50,5 @@
 - Crear una vista de detalle dedicada para estudiante en lugar de depender solo del formulario/drawer.
 - Definir permisos por rol para mostrar u ocultar edicion y eliminacion.
 - Revisar si el promedio del listado debe salir de una tabla de cierre oficial o seguir calculandose desde `calificaciones`.
+- Validar con usuarios la plantilla `plantilla_estudiantes_secundaria.csv` y ajustar columnas institucionales que falten.
 - Limpiar el JSX antiguo oculto del listado de Primaria cuando se valide la nueva pantalla en uso real.

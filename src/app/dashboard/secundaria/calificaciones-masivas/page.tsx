@@ -5,6 +5,7 @@ import { supabase } from '../../../../lib/supabase'
 import { CsvRow, getCsvValue, readCsvFile } from '../../../../lib/csv'
 import {
   asignaturasSecundaria,
+  asignaturasSecundariaDeSeccion,
   esSegundoCicloSecundaria,
   esSeccionSecundaria,
   etiquetaSeccion,
@@ -156,15 +157,20 @@ export default function CalificacionesMasivasSecundaria() {
   const [resumen, setResumen] = useState<ResumenImportacion>(resumenVacio)
 
   const asignaturasDelNivel = useMemo(() => {
-    const base = [...asignaturasSecundaria]
-    if (esSegundoCicloSecundaria(infoSeccion?.grado)) base.push(infoSeccion?.salida_optativa || 'Salida Optativa')
-    return base
-  }, [infoSeccion?.grado, infoSeccion?.salida_optativa])
+    return asignaturasSecundariaDeSeccion(infoSeccion)
+  }, [infoSeccion])
 
   const asignaturasConCatalogo = useMemo(() => (
     asignaturasDelNivel.map(nombre => {
       const nombreNormalizado = normalizarCabecera(nombre)
+      const esOptativa = esSegundoCicloSecundaria(infoSeccion?.grado) && [
+        normalizarCabecera(infoSeccion?.salida_optativa || ''),
+        normalizarCabecera('Salida Optativa'),
+      ].includes(nombreNormalizado)
       const registro = asignaturasCatalogo.find(asignatura => normalizarCabecera(asignatura.nombre) === nombreNormalizado)
+        || (esOptativa
+          ? asignaturasCatalogo.find(asignatura => normalizarCabecera(asignatura.nombre) === normalizarCabecera('Salida Optativa'))
+          : undefined)
       return {
         nombre,
         alias: crearAlias(nombre),

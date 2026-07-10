@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { getCsvValue, readCsvFile } from '../../../lib/csv'
 import {
   asignaturasSecundaria,
   calcularEdad,
@@ -13,6 +14,7 @@ import {
   matriculaEstudiante,
   modalidadDeSeccion,
   promedioMostrable,
+  slugAsignatura,
   telefonoTutor,
   tutorPrincipal,
 } from '../../../lib/registroEscolar'
@@ -107,6 +109,7 @@ const asistenciaVacia = () =>
   }, {} as Record<Periodo, { asistencia: number; ausencia: number }>)
 
 export default function RegistroSecundaria() {
+  const archivoCsvRef = useRef<HTMLInputElement>(null)
   const [pestana, setPestana] = useState<Pestana>('listado')
   const [userId, setUserId] = useState('')
   const [secciones, setSecciones] = useState<any[]>([])
@@ -343,6 +346,195 @@ export default function RegistroSecundaria() {
     setPestana('formulario')
   }
 
+  const normalizarFechaCSV = (fechaDirecta: string, diaCsv = '', mesCsv = '', anoCsv = '') => {
+    const confirmarFechaValida = (valor: string) => {
+      const fecha = new Date(`${valor}T00:00:00`)
+      if (Number.isNaN(fecha.getTime())) return null
+      const [ano, mes, dia] = valor.split('-').map(Number)
+      if (fecha.getFullYear() !== ano || fecha.getMonth() + 1 !== mes || fecha.getDate() !== dia) return null
+      return valor
+    }
+    const fecha = fechaDirecta.trim()
+    if (fecha) {
+      const iso = fecha.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      if (iso) {
+        const [, ano, mes, dia] = iso
+        return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+      }
+      const local = fecha.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)
+      if (local) {
+        const [, primero, segundo, ano] = local
+        const primerNumero = Number(primero)
+        const segundoNumero = Number(segundo)
+        const dia = primerNumero > 12 ? primero : segundoNumero > 12 ? segundo : primero
+        const mes = primerNumero > 12 ? segundo : segundoNumero > 12 ? primero : segundo
+        return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+      }
+      return null
+    }
+    const dia = diaCsv.trim()
+    const mes = mesCsv.trim()
+    const ano = anoCsv.trim()
+    if (!dia && !mes && !ano) return null
+    if (!dia || !mes || !ano) return null
+    return confirmarFechaValida(`${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`)
+  }
+
+  const guardarResponsablePrincipal = async (estudianteId: string, responsable: any) => {
+    if (!userId) return
+    const nombre = String(responsable?.nombre_completo || '').trim()
+    if (!nombre) return
+    const datosResponsable = {
+      estudiante_id: estudianteId,
+      user_id: userId,
+      nombre_completo: nombre,
+      parentesco: responsable.parentesco?.trim() || null,
+      cedula: responsable.cedula?.trim() || null,
+      telefono: responsable.telefono?.trim() || null,
+      profesion_oficio: responsable.profesion_oficio?.trim() || null,
+      nivel_educativo: responsable.nivel_educativo?.trim() || null,
+      es_principal: true,
+      updated_at: new Date().toISOString(),
+    }
+    const { data: existente, error: buscarError } = await supabase
+      .from('responsables_estudiante')
+      .select('id')
+      .eq('estudiante_id', estudianteId)
+      .eq('user_id', userId)
+      .eq('es_principal', true)
+      .maybeSingle()
+    if (buscarError) throw buscarError
+    const { error } = existente
+      ? await supabase.from('responsables_estudiante').update(datosResponsable).eq('id', existente.id).eq('user_id', userId)
+      : await supabase.from('responsables_estudiante').insert([datosResponsable])
+    if (error) throw error
+  }
+
+  const manejarImportacionCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !seccionId || !userId) return
+    setMensaje('Procesando CSV de estudiantes de Secundaria...')
+    try {
+      const filas = await readCsvFile(file)
+      const requeridos = [
+        ['numero_orden', 'no_lista', 'numero', 'orden'],
+        ['nombres', 'nombre'],
+        ['apellidos', 'apellido'],
+      ]
+      const tieneColumnasBase = filas.length > 0 && requeridos.every(opciones =>
+        opciones.some(opcion => Object.prototype.hasOwnProperty.call(filas[0], opcion))
+      )
+      if (!tieneColumnasBase) {
+        setMensaje('La plantilla debe incluir numero_orden, nombres y apellidos.')
+        return
+      }
+
+      let filasIgnoradas = 0
+      let fechasInvalidas = 0
+      const datosCsv = filas.map(row => {
+        const numero = Number(getCsvValue(row, ['numero_orden', 'no_lista', 'numero', 'orden'])) || 0
+        const nombres = getCsvValue(row, ['nombres', 'nombre']).trim()
+        const apellidos = getCsvValue(row, ['apellidos', 'apellido']).trim()
+        const fechaDirecta = getCsvValue(row, ['fecha_nacimiento', 'nacimiento']).trim()
+        const dia = getCsvValue(row, ['dia_nacimiento', 'dia']).trim()
+        const mes = getCsvValue(row, ['mes_nacimiento', 'mes']).trim()
+        const ano = getCsvValue(row, ['ano_nacimiento', 'anio_nacimiento', 'ano', 'anio']).trim()
+        const fechaNacimiento = normalizarFechaCSV(fechaDirecta, dia, mes, ano)
+        if ((fechaDirecta || dia || mes || ano) && !fechaNacimiento) fechasInvalidas++
+        const tutor = getCsvValue(row, ['nombre_tutor', 'tutor', 'padre_madre_tutor']).trim()
+        const telefono = getCsvValue(row, ['telefono_contacto', 'telefono', 'celular']).trim()
+        const responsableNombre = getCsvValue(row, ['responsable_nombre', 'nombre_responsable']).trim() || tutor
+        const responsableTelefono = getCsvValue(row, ['responsable_telefono', 'telefono_responsable']).trim() || telefono
+        return {
+          estudiante: {
+            numero_orden: numero,
+            nombres,
+            apellidos,
+            nombre_completo: `${apellidos}, ${nombres}`,
+            sexo: getCsvValue(row, ['sexo']).trim().toUpperCase(),
+            nacionalidad: getCsvValue(row, ['nacionalidad']).trim() || 'Dominicana',
+            fecha_nacimiento: fechaNacimiento,
+            rne: getCsvValue(row, ['rne']).trim() || null,
+            cedula_pasaporte: getCsvValue(row, ['cedula_pasaporte', 'cedula', 'pasaporte']).trim() || null,
+            sigerd_id: getCsvValue(row, ['sigerd_id', 'id_sigerd', 'sigerd']).trim() || null,
+            correo_electronico: getCsvValue(row, ['correo_electronico', 'correo', 'email']).trim() || null,
+            condicion_inicial: getCsvValue(row, ['condicion_inicial']).trim() || 'Promovido',
+            resultado_final: getCsvValue(row, ['resultado_final']).trim() || 'Pendiente',
+            nombre_tutor: tutor,
+            telefono_contacto: telefono,
+            direccion_residencia: getCsvValue(row, ['direccion_residencia', 'direccion']).trim() || null,
+            enfermedades_alergias: getCsvValue(row, ['enfermedades_alergias', 'salud']).trim() || null,
+            medicamentos_usa: getCsvValue(row, ['medicamentos_usa', 'medicamentos']).trim() || null,
+            emergencia_nombre: getCsvValue(row, ['emergencia_nombre', 'contacto_emergencia']).trim() || null,
+            emergencia_telefono: getCsvValue(row, ['emergencia_telefono', 'telefono_emergencia']).trim() || null,
+            observaciones_academicas: getCsvValue(row, ['observaciones_academicas', 'observaciones']).trim() || null,
+            estado: getCsvValue(row, ['estado']).trim() || 'Activo',
+            seccion_id: seccionId,
+            user_id: userId,
+          },
+          responsable: {
+            nombre_completo: responsableNombre,
+            parentesco: getCsvValue(row, ['responsable_parentesco', 'parentesco_responsable']).trim(),
+            cedula: getCsvValue(row, ['responsable_cedula', 'cedula_responsable']).trim(),
+            telefono: responsableTelefono,
+            profesion_oficio: getCsvValue(row, ['responsable_profesion', 'responsable_oficio', 'profesion_oficio']).trim(),
+            nivel_educativo: getCsvValue(row, ['responsable_nivel_educativo', 'nivel_educativo_responsable']).trim(),
+          },
+        }
+      }).filter(item => {
+        const valido = item.estudiante.numero_orden > 0 && item.estudiante.nombres !== '' && item.estudiante.apellidos !== ''
+        if (!valido) filasIgnoradas++
+        return valido
+      })
+
+      if (datosCsv.length === 0) {
+        setMensaje('El archivo esta vacio o no contiene estudiantes validos.')
+        return
+      }
+
+      const { data: existentes, error: errorExistentes } = await supabase
+        .from('estudiantes')
+        .select('id, numero_orden, sigerd_id, rne')
+        .eq('seccion_id', seccionId)
+        .eq('user_id', userId)
+      if (errorExistentes) throw errorExistentes
+
+      const porSigerd = new Map((existentes || []).filter(est => est.sigerd_id).map(est => [String(est.sigerd_id).trim(), est]))
+      const porRne = new Map((existentes || []).filter(est => est.rne).map(est => [String(est.rne).trim(), est]))
+      const porNumero = new Map((existentes || []).map(est => [Number(est.numero_orden), est]))
+      let creados = 0
+      let actualizados = 0
+
+      for (const item of datosCsv) {
+        const existente = (item.estudiante.sigerd_id ? porSigerd.get(item.estudiante.sigerd_id) : undefined)
+          || (item.estudiante.rne ? porRne.get(item.estudiante.rne) : undefined)
+          || porNumero.get(item.estudiante.numero_orden)
+        if (existente) {
+          const { error } = await supabase.from('estudiantes').update(item.estudiante).eq('id', existente.id).eq('user_id', userId)
+          if (error) throw error
+          await guardarResponsablePrincipal(existente.id, item.responsable)
+          actualizados++
+        } else {
+          const { data: creado, error } = await supabase.from('estudiantes').insert([item.estudiante]).select('id, numero_orden, sigerd_id, rne').single()
+          if (error) throw error
+          if (creado?.id) await guardarResponsablePrincipal(creado.id, item.responsable)
+          if (creado?.sigerd_id) porSigerd.set(String(creado.sigerd_id).trim(), creado)
+          if (creado?.rne) porRne.set(String(creado.rne).trim(), creado)
+          if (creado) porNumero.set(Number(creado.numero_orden), creado)
+          creados++
+        }
+      }
+
+      await cargarEstudiantes(seccionId, userId)
+      setMensaje(`Importacion lista: ${creados} creados y ${actualizados} actualizados. Filas ignoradas: ${filasIgnoradas}. Fechas invalidas: ${fechasInvalidas}.`)
+      if (archivoCsvRef.current) archivoCsvRef.current.value = ''
+      setTimeout(() => setMensaje(''), 6000)
+    } catch (error) {
+      const detalle = error instanceof Error ? error.message : 'revisa la plantilla CSV.'
+      setMensaje(`No se pudo importar estudiantes de Secundaria: ${detalle}`)
+    }
+  }
+
   const guardarEstudiante = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!userId || !seccionId) return setMensaje('Selecciona una seccion secundaria antes de guardar.')
@@ -462,9 +654,18 @@ export default function RegistroSecundaria() {
               />
               <div className="flex flex-wrap items-center gap-2">
                 <p className="mr-2 text-sm font-bold text-slate-600"><span className="text-teal-700">{estudiantesFiltrados.length}</span> de {estudiantes.length} estudiantes</p>
+                <input type="file" accept=".csv" ref={archivoCsvRef} onChange={manejarImportacionCSV} className="hidden" />
                 <button onClick={nuevoRegistro} className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-teal-800">Crear registro</button>
+                <button onClick={() => archivoCsvRef.current?.click()} className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700">Importar CSV</button>
+                <a href="/plantillas/plantilla_estudiantes_secundaria.csv" download className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700">Plantilla</a>
               </div>
             </div>
+
+            {mensaje && (
+              <div className="mt-4 rounded-md border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">
+                {mensaje}
+              </div>
+            )}
 
             <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div className="overflow-x-auto">
@@ -570,8 +771,7 @@ export default function RegistroSecundaria() {
                   key={fila.asignatura}
                   type="button"
                   onClick={() => {
-                    const slug = normalizar(fila.asignatura).replace(/\s+/g, '-')
-                    window.location.href = `/dashboard/secundaria/asignaturas/${slug}?seccion_id=${seccionId}&nivel=Secundario`
+                    window.location.href = `/dashboard/secundaria/asignaturas/${slugAsignatura(fila.asignatura)}?seccion_id=${seccionId}&nivel=Secundario`
                   }}
                   className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
                 >

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
@@ -279,6 +280,7 @@ export default function HomeInstitucional() {
             <button onClick={() => scrollToSection('nosotros')} className="transition-colors hover:text-[#142037]">Nosotros</button>
             <button onClick={() => scrollToSection('servicios')} className="transition-colors hover:text-[#142037]">Servicios</button>
             <button onClick={() => scrollToSection('registro')} className="transition-colors hover:text-[#142037]">Eline</button>
+            <Link href="/suscripciones" className="transition-colors hover:text-[#142037]">Planes</Link>
             <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-[#142037]">Preguntas Frecuentes</button>
             <button onClick={() => scrollToSection('contacto')} className="transition-colors hover:text-[#142037]">Contacto</button>
           </div>
@@ -304,7 +306,7 @@ export default function HomeInstitucional() {
             </h1>
 
             <p className="mx-auto mb-10 max-w-3xl text-lg font-light leading-relaxed text-[#e0f2f1] md:text-xl">
-              Brindamos soporte profesional y servicios académicos para estudiantes e instituciones. Para los docentes, presentamos <strong className="font-bold text-white">ELINE</strong>: el sistema definitivo que organiza tus plantillas escolares y reportes de notas sin complicaciones.
+              Brindamos soporte profesional y servicios académicos para estudiantes e instituciones. Para los docentes, presentamos <strong className="font-bold text-white">ELINE</strong>: el sistema definitivo que organiza tus registros escolares y boletines de calificaciones sin complicaciones.
             </p>
 
             <div className="mb-11 flex flex-wrap justify-center gap-4">
@@ -328,6 +330,12 @@ export default function HomeInstitucional() {
               >
                 Ver servicios
               </button>
+              <Link
+                href="/suscripciones"
+                className="rounded-lg border-2 border-[#ffc107] px-9 py-4 text-base font-bold text-[#ffc107] transition hover:-translate-y-0.5 hover:bg-[#ffc107] hover:text-[#142037]"
+              >
+                Ver planes
+              </Link>
             </div>
           </div>
         </section>

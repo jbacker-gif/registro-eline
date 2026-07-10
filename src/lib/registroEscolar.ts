@@ -40,6 +40,15 @@ export const slugAsignatura = (valor = '') =>
 export const asignaturaSecundariaDesdeSlug = (slug = '') =>
   asignaturasSecundaria.find(asignatura => slugAsignatura(asignatura) === slug) || ''
 
+export const asignaturasSecundariaDeSeccion = (seccion: any) => {
+  const base = [...asignaturasSecundaria]
+  if (esSegundoCicloSecundaria(seccion?.grado)) base.push(seccion?.salida_optativa || 'Salida Optativa')
+  return base
+}
+
+export const asignaturaSecundariaDesdeSlugConSeccion = (slug = '', seccion: any) =>
+  asignaturasSecundariaDeSeccion(seccion).find(asignatura => slugAsignatura(asignatura) === slug) || ''
+
 export const normalizarTexto = (valor = '') =>
   valor
     .normalize('NFD')

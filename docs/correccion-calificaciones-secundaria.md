@@ -79,9 +79,22 @@ Se ajustaron:
 - `src/app/dashboard/secundaria/calificaciones-masivas/page.tsx`
 - `src/app/dashboard/registro-secundaria/page.tsx`
 
+## Ajuste visual de captura
+
+La matriz de asignaturas de Secundaria se reorganizo visualmente en dos pestanas:
+
+- Periodos 1 y 2: P1, P2 y RP.
+- Periodos 3 y 4: P3, P4 y RP.
+
+El cambio no altera la estructura guardada en Supabase ni la formula de calculo. Solo mejora la lectura para que el usuario distinga claramente cada periodo y su recuperacion pedagogica sin tener que bajar hasta el final de una tabla larga.
+
 ## Supabase
 
-No se creo migracion nueva y no se hizo ningun cambio destructivo.
+Se agrego una migracion aditiva para corregir el caso de asignatura optativa:
+
+- `supabase/migrations/202607060001_ensure_secondary_optional_subject.sql`
+
+La migracion asegura `Salida Optativa` en `asignaturas`, `asignaturas_nivel_config` y formatos base de segundo ciclo.
 
 Se reutilizo la tabla `calificaciones`, que ya permite `periodo text`, `competencia text`, `metadata`, `nivel`, `tipo_registro`, `es_recuperacion_pedagogica` y `grupo_recuperacion`.
 

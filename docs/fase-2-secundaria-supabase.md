@@ -153,3 +153,18 @@ Migracion aplicada en Supabase:
 - Se reviso localmente el respaldo de esquema y `calificaciones.periodo` es `text`, por lo que no hizo falta una migracion para guardar `RP1` y `RP2`.
 - La restriccion unica existente `estudiante_id,seccion_id,asignatura_id,periodo,competencia` permite guardar cada competencia y periodo como una fila independiente.
 - No se agregaron columnas porque `metadata` ya cubre los resultados calculados de la matriz oficial.
+
+## Correccion de salida optativa
+
+- Se creo la migracion local `supabase/migrations/202607060001_ensure_secondary_optional_subject.sql`.
+- La migracion asegura de forma idempotente la asignatura generica `Salida Optativa`.
+- Tambien agrega su configuracion en `asignaturas_nivel_config` para 4to a 6to de Secundaria.
+- Se agregan formatos base en `secundaria_registro_formatos` para las modalidades `Academica`, `Tecnico-Profesional` y `Artes`.
+- No se borraron datos ni se modificaron registros existentes.
+
+## Carga masiva de estudiantes de Secundaria
+
+- No se agregaron tablas ni columnas nuevas.
+- El importador reutiliza `estudiantes` y `responsables_estudiante`.
+- La actualizacion se resuelve por `sigerd_id`, `rne` o `numero_orden` dentro de la seccion activa.
+- La plantilla agregada es `public/plantillas/plantilla_estudiantes_secundaria.csv`.

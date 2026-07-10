@@ -24,10 +24,10 @@ const menuGroups: { titulo: string; items: MenuItem[] }[] = [
   {
     titulo: 'Registro Escolar',
     items: [
-      { label: 'Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users', nivel: 'Primaria' },
+      { label: 'Lista Nivel Primario', ruta: '/dashboard/estudiantes', clave: 'estudiantes', requiereSeccion: true, icono: 'users', nivel: 'Primaria' },
       { label: 'Asistencia Primaria', ruta: '/dashboard/asistencia', clave: 'asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Primaria' },
       { label: 'Calificaciones Primaria', ruta: '/dashboard/calificaciones-masivas', clave: 'calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Primaria' },
-      { label: 'Nivel Secundario', ruta: '/dashboard/secundaria/estudiantes', clave: 'secundaria/estudiantes', requiereSeccion: true, icono: 'layers', nivel: 'Secundario' },
+      { label: 'Lista Nivel Secundario', ruta: '/dashboard/secundaria/estudiantes', clave: 'secundaria/estudiantes', requiereSeccion: true, icono: 'layers', nivel: 'Secundario' },
       { label: 'Asistencia Secundaria', ruta: '/dashboard/secundaria/asistencia', clave: 'secundaria/asistencia', requiereSeccion: true, icono: 'calendar', nivel: 'Secundario' },
       { label: 'Calificaciones Secundaria', ruta: '/dashboard/secundaria/calificaciones-masivas', clave: 'secundaria/calificaciones-masivas', requiereSeccion: true, icono: 'upload', nivel: 'Secundario' },
     ],
@@ -49,6 +49,12 @@ const menuGroups: { titulo: string; items: MenuItem[] }[] = [
       { label: 'Perfil y centro', ruta: '/dashboard/perfil', clave: 'perfil', requiereSeccion: false, icono: 'user' },
     ],
   },
+  {
+    titulo: 'Administracion',
+    items: [
+      { label: 'Panel admin', ruta: '/dashboard/admin', clave: 'admin', requiereSeccion: false, icono: 'shield' },
+    ],
+  },
 ]
 
 function Icono({ tipo }: { tipo: string }) {
@@ -60,7 +66,15 @@ function Icono({ tipo }: { tipo: string }) {
   if (tipo === 'file') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 3h7l5 5v13H8a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4Zm7 0v6h5" />
   if (tipo === 'download') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v11m0 0 4-4m-4 4-4-4M5 19h14" />
   if (tipo === 'user') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 7.5a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 21a7.5 7.5 0 0 1 15 0" />
+  if (tipo === 'shield') return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3 5 6v5c0 4.5 2.9 8.5 7 10 4.1-1.5 7-5.5 7-10V6l-7-3Zm0 7v5m0 3h.01" />
   return <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
+}
+
+function fechaLocalISO() {
+  const hoy = new Date()
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0')
+  const dia = String(hoy.getDate()).padStart(2, '0')
+  return `${hoy.getFullYear()}-${mes}-${dia}`
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -76,6 +90,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.replace('/')
         return
       }
+
+      const appMetadata = session.user.app_metadata || {}
+      const rol = String(appMetadata.rol || appMetadata.role || '')
+      const esAdmin = rol === 'admin' || rol === 'super_admin'
+
+      if (!esAdmin) {
+        const { data: suscripcion, error } = await supabase
+          .from('suscripciones')
+          .select('activa, fecha_fin')
+          .or(`user_id.eq.${session.user.id},email.eq.${session.user.email || ''}`)
+          .maybeSingle()
+
+        const suscripcionVencida = Boolean(suscripcion?.fecha_fin && suscripcion.fecha_fin < fechaLocalISO())
+
+        if (!error && suscripcion && (suscripcion.activa === false || suscripcionVencida)) {
+          router.replace('/suscripciones')
+          return
+        }
+      }
+
       setValidandoSesion(false)
     }
 

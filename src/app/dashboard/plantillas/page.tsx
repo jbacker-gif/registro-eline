@@ -6,6 +6,12 @@ const plantillas = [
     columnas: 'numero_orden, nombres, apellidos, sexo, nacionalidad, fecha_nacimiento, sigerd_id, contacto, estado y datos del responsable.',
   },
   {
+    nombre: 'Estudiantes Secundaria',
+    descripcion: 'Alta y actualizacion de estudiantes del Nivel Secundario por seccion activa, con RNE, SIGERD, condicion y responsable principal.',
+    archivo: '/plantillas/plantilla_estudiantes_secundaria.csv',
+    columnas: 'numero_orden, nombres, apellidos, sexo, rne, sigerd_id, cedula_pasaporte, correo, tutor, condicion_inicial y resultado_final.',
+  },
+  {
     nombre: 'Calificaciones',
     descripcion: 'Matriz por período con una fila por estudiante y columnas por asignatura y competencia.',
     archivo: '/plantillas/plantilla_calificaciones.csv',

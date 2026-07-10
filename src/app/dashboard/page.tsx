@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import {
   asignaturasPrimaria,
-  asignaturasSecundaria,
+  asignaturasSecundariaDeSeccion,
   esSeccionPrimaria,
   esSeccionSecundaria,
   etiquetaSeccion,
@@ -40,6 +40,7 @@ export default function Dashboard() {
   const seccionesSecundaria = useMemo(() => secciones.filter(esSeccionSecundaria), [secciones])
   const seccionPrimariaSeleccionada = seccionesPrimaria.find(sec => sec.id === seccionPrimariaActiva)
   const seccionSecundariaSeleccionada = seccionesSecundaria.find(sec => sec.id === seccionSecundariaActiva)
+  const asignaturasSecundariaVisibles = useMemo(() => asignaturasSecundariaDeSeccion(seccionSecundariaSeleccionada), [seccionSecundariaSeleccionada])
 
   const estudiantesPrimaria = estudiantes.filter(est =>
     seccionesPrimaria.some(sec => sec.id === est.seccion_id)
@@ -299,7 +300,7 @@ export default function Dashboard() {
             </button>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {asignaturasSecundaria.map((materia, index) => (
+            {asignaturasSecundariaVisibles.map((materia, index) => (
               <button
                 key={materia}
                 type="button"

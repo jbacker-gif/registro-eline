@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '../../../../../lib/supabase'
 import {
   asignaturaSecundariaDesdeSlug,
-  asignaturasSecundaria,
+  asignaturaSecundariaDesdeSlugConSeccion,
+  asignaturasSecundariaDeSeccion,
+  esSegundoCicloSecundaria,
   esSeccionSecundaria,
   etiquetaSeccion,
   normalizarTexto,
@@ -38,6 +40,20 @@ type FilaEstudiante = {
 }
 
 const situaciones = ['Aprobado', 'Reprobado', 'Pendiente', 'Completiva']
+const bloquesPeriodos = [
+  {
+    titulo: 'Periodos 1 y 2',
+    descripcion: 'Captura P1, P2 y la recuperacion pedagogica correspondiente.',
+    periodos: ['P1', 'P2', 'RP1'] as PeriodoSecundaria[],
+    tono: 'teal',
+  },
+  {
+    titulo: 'Periodos 3 y 4',
+    descripcion: 'Captura P3, P4 y la recuperacion pedagogica correspondiente.',
+    periodos: ['P3', 'P4', 'RP2'] as PeriodoSecundaria[],
+    tono: 'cyan',
+  },
+]
 
 const normalizarCatalogo = (valor = '') =>
   valor
@@ -59,7 +75,6 @@ export default function AsignaturaSecundariaPage() {
   const params = useParams<{ slug: string }>()
   const contenedorRef = useRef<HTMLDivElement>(null)
   const slug = params?.slug || ''
-  const materiaNombre = asignaturaSecundariaDesdeSlug(slug)
 
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
@@ -67,14 +82,15 @@ export default function AsignaturaSecundariaPage() {
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
+  const [materiaNombre, setMateriaNombre] = useState(asignaturaSecundariaDesdeSlug(slug))
   const [asignaturaId, setAsignaturaId] = useState('')
   const [filas, setFilas] = useState<FilaEstudiante[]>([])
+  const [bloquePeriodoActivoIndex, setBloquePeriodoActivoIndex] = useState(0)
 
   const asignaturasVisibles = useMemo(() => {
-    const base = [...asignaturasSecundaria]
-    if (['4to', '5to', '6to'].includes(infoSeccion?.grado)) base.push(infoSeccion?.salida_optativa || 'Salida Optativa')
-    return base
-  }, [infoSeccion?.grado, infoSeccion?.salida_optativa])
+    return asignaturasSecundariaDeSeccion(infoSeccion)
+  }, [infoSeccion])
+  const bloquePeriodoActivo = bloquesPeriodos[bloquePeriodoActivoIndex] || bloquesPeriodos[0]
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
@@ -105,14 +121,23 @@ export default function AsignaturaSecundariaPage() {
         return
       }
 
-      if (!materiaNombre) {
+      const materiaResuelta = asignaturaSecundariaDesdeSlugConSeccion(slug, secData)
+      if (!materiaResuelta) {
         setMensaje({ texto: 'Asignatura secundaria no reconocida.', tipo: 'error' })
         return
       }
+      setMateriaNombre(materiaResuelta)
 
-      const asignatura = (asignaturasData || []).find(item => normalizarCatalogo(item.nombre) === normalizarCatalogo(materiaNombre))
+      const esOptativa = esSegundoCicloSecundaria(secData.grado) && [
+        normalizarCatalogo(secData.salida_optativa || ''),
+        normalizarCatalogo('Salida Optativa'),
+      ].includes(normalizarCatalogo(materiaResuelta))
+      const asignatura = (asignaturasData || []).find(item => normalizarCatalogo(item.nombre) === normalizarCatalogo(materiaResuelta))
+        || (esOptativa
+          ? (asignaturasData || []).find(item => normalizarCatalogo(item.nombre) === normalizarCatalogo('Salida Optativa'))
+          : null)
       if (!asignatura?.id) {
-        setMensaje({ texto: `La asignatura ${materiaNombre} no existe en el catalogo. Revisar Configuracion Academica.`, tipo: 'error' })
+        setMensaje({ texto: `La asignatura ${materiaResuelta} no existe en el catalogo. Revisar Configuracion Academica.`, tipo: 'error' })
         setInfoSeccion(secData)
         return
       }
@@ -317,86 +342,153 @@ export default function AsignaturaSecundariaPage() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1720px] border-collapse text-left text-sm">
-              <thead className="bg-slate-900 text-white">
-                <tr className="uppercase tracking-wider">
-                  <th rowSpan={2} className="w-16 border border-slate-700 p-3 text-center font-bold">No.</th>
-                  <th rowSpan={2} className="w-64 border border-slate-700 p-3 font-bold">Estudiante</th>
-                  {competenciasSecundaria.map(competencia => (
-                    <th key={competencia} colSpan={periodosSecundaria.length} className={`border border-slate-700 p-3 text-center font-bold ${competenciasSecundaria70.includes(competencia) ? 'bg-teal-800' : 'bg-cyan-800'}`}>
-                      {competencia} {competenciasSecundaria70.includes(competencia) ? '70%' : '30%'}
-                    </th>
-                  ))}
-                  <th rowSpan={2} className="w-24 border border-slate-700 bg-teal-800 p-3 text-center font-bold">70%</th>
-                  <th rowSpan={2} className="w-24 border border-slate-700 bg-cyan-800 p-3 text-center font-bold">30%</th>
-                  <th rowSpan={2} className="w-28 border border-slate-700 bg-slate-700 p-3 text-center font-bold">Final</th>
-                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Completiva</th>
-                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Extraord.</th>
-                  <th rowSpan={2} className="w-28 border border-slate-700 p-3 text-center font-bold">Especial</th>
-                  <th rowSpan={2} className="w-36 border border-slate-700 p-3 text-center font-bold">Situacion</th>
-                </tr>
-                <tr className="bg-slate-800 uppercase tracking-wider">
-                  {competenciasSecundaria.flatMap(competencia =>
-                    periodosSecundaria.map(periodo => (
-                      <th key={`${competencia}-${periodo}`} className="w-20 border border-slate-700 p-2 text-center text-xs font-bold">
-                        {periodo === 'RP1' || periodo === 'RP2' ? 'RP' : periodo}
-                      </th>
-                    ))
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map((fila, index) => {
-                  const retirado = fila.estado === 'Retirado'
-                  const fondo = retirado ? 'bg-slate-200 opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'
-                  const resultado = calcularResultadoSecundaria(fila.matriz)
-                  return (
-                    <tr key={fila.id} className={fondo}>
-                      <td className="border border-slate-200 p-2 text-center font-bold text-slate-500">{fila.numero}</td>
-                      <td className="border border-slate-200 p-2 font-semibold text-slate-900">
-                        {fila.nombre}
-                        {retirado && <span className="ml-2 rounded bg-slate-300 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">Retirado</span>}
-                      </td>
+        <section className="space-y-5">
+          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {bloquesPeriodos.map((bloque, index) => {
+                const activo = bloquePeriodoActivoIndex === index
+                return (
+                  <button
+                    key={bloque.titulo}
+                    type="button"
+                    onClick={() => setBloquePeriodoActivoIndex(index)}
+                    className={`rounded-md border px-4 py-3 text-left transition ${
+                      activo
+                        ? bloque.tono === 'teal'
+                          ? 'border-teal-300 bg-teal-50 text-teal-900'
+                          : 'border-cyan-300 bg-cyan-50 text-cyan-900'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white'
+                    }`}
+                  >
+                    <span className="block text-sm font-black uppercase tracking-wide">{bloque.titulo}</span>
+                    <span className="mt-1 block text-xs font-semibold">{bloque.descripcion}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+              {(() => {
+                const bloque = bloquePeriodoActivo
+                return (
+            <div>
+              <div className={`border-b px-4 py-3 ${bloque.tono === 'teal' ? 'border-teal-100 bg-teal-50' : 'border-cyan-100 bg-cyan-50'}`}>
+                <h2 className="text-sm font-black uppercase tracking-wide text-slate-950">{bloque.titulo}</h2>
+                <p className="mt-1 text-xs font-semibold text-slate-600">{bloque.descripcion}</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1160px] border-collapse text-left text-sm">
+                  <thead className="bg-slate-900 text-white">
+                    <tr className="uppercase tracking-wider">
+                      <th rowSpan={2} className="w-16 border border-slate-700 p-3 text-center font-bold">No.</th>
+                      <th rowSpan={2} className="w-64 border border-slate-700 p-3 font-bold">Estudiante</th>
+                      {competenciasSecundaria.map(competencia => (
+                        <th key={competencia} colSpan={bloque.periodos.length} className={`border border-slate-700 p-3 text-center font-bold ${competenciasSecundaria70.includes(competencia) ? 'bg-teal-800' : 'bg-cyan-800'}`}>
+                          {competencia} {competenciasSecundaria70.includes(competencia) ? '70%' : '30%'}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr className="bg-slate-800 uppercase tracking-wider">
                       {competenciasSecundaria.flatMap(competencia =>
-                        periodosSecundaria.map(periodo => (
-                          <td key={`${competencia}-${periodo}`} className={`border border-slate-200 p-1 ${competenciasSecundaria30.includes(competencia) ? 'bg-cyan-50/30' : ''}`}>
-                            <input
-                              data-secundaria-cell="true"
-                              type="number"
-                              value={fila.matriz[competencia][periodo]}
-                              disabled={retirado}
-                              onChange={(event) => actualizarFila(fila.id, `${competencia}.${periodo}`, event.target.value)}
-                              onKeyDown={manejarEnter}
-                              className={`h-10 w-full rounded-md border text-center font-bold text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 ${periodo.startsWith('RP') ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}
-                              placeholder="-"
-                            />
-                          </td>
+                        bloque.periodos.map(periodo => (
+                          <th key={`${bloque.titulo}-${competencia}-${periodo}`} className={`w-20 border border-slate-700 p-2 text-center text-xs font-bold ${periodo.startsWith('RP') ? 'bg-amber-700 text-white' : ''}`}>
+                            {periodo.startsWith('RP') ? 'RP' : periodo}
+                          </th>
                         ))
                       )}
-                      <td className="border border-slate-200 bg-teal-50 p-2 text-center text-lg font-black text-teal-800">{resultado.resultado70 || '-'}</td>
-                      <td className="border border-slate-200 bg-cyan-50 p-2 text-center text-lg font-black text-cyan-800">{resultado.resultado30 || '-'}</td>
-                      <td className="border border-slate-200 bg-slate-100 p-2 text-center text-lg font-black text-slate-950">{resultado.final || '-'}</td>
-                      <td className="border border-slate-200 p-1">
-                        <input data-secundaria-cell="true" type="number" value={fila.completiva} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'completiva', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
-                      </td>
-                      <td className="border border-slate-200 p-1">
-                        <input data-secundaria-cell="true" type="number" value={fila.extraordinaria} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'extraordinaria', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
-                      </td>
-                      <td className="border border-slate-200 p-1">
-                        <input data-secundaria-cell="true" type="number" value={fila.especial} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'especial', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
-                      </td>
-                      <td className="border border-slate-200 p-1">
-                        <select data-secundaria-cell="true" value={fila.situacion} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'situacion', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 bg-white px-2 text-xs font-bold text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100">
-                          {situaciones.map(situacion => <option key={situacion}>{situacion}</option>)}
-                        </select>
-                      </td>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {filas.map((fila, index) => {
+                      const retirado = fila.estado === 'Retirado'
+                      const fondo = retirado ? 'bg-slate-200 opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                      return (
+                        <tr key={`${bloque.titulo}-${fila.id}`} className={fondo}>
+                          <td className="border border-slate-200 p-2 text-center font-bold text-slate-500">{fila.numero}</td>
+                          <td className="border border-slate-200 p-2 font-semibold text-slate-900">
+                            {fila.nombre}
+                            {retirado && <span className="ml-2 rounded bg-slate-300 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">Retirado</span>}
+                          </td>
+                          {competenciasSecundaria.flatMap(competencia =>
+                            bloque.periodos.map(periodo => (
+                              <td key={`${bloque.titulo}-${competencia}-${periodo}`} className={`border border-slate-200 p-1 ${competenciasSecundaria30.includes(competencia) ? 'bg-cyan-50/40' : 'bg-teal-50/20'} ${periodo.startsWith('RP') ? 'bg-amber-50' : ''}`}>
+                                <input
+                                  data-secundaria-cell="true"
+                                  type="number"
+                                  value={fila.matriz[competencia][periodo]}
+                                  disabled={retirado}
+                                  onChange={(event) => actualizarFila(fila.id, `${competencia}.${periodo}`, event.target.value)}
+                                  onKeyDown={manejarEnter}
+                                  className={`h-10 w-full rounded-md border text-center font-bold text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 ${periodo.startsWith('RP') ? 'border-amber-300 bg-amber-50 ring-1 ring-amber-100' : 'border-slate-200 bg-white'}`}
+                                  placeholder="-"
+                                />
+                              </td>
+                            ))
+                          )}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+                )
+              })()}
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-950">Resultados y procesos finales</h2>
+              <p className="mt-1 text-xs font-semibold text-slate-600">Resumen calculado con todos los periodos y campos finales de la asignatura.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+                <thead className="bg-slate-900 text-white">
+                  <tr className="uppercase tracking-wider">
+                    <th className="w-16 border border-slate-700 p-3 text-center font-bold">No.</th>
+                    <th className="w-64 border border-slate-700 p-3 font-bold">Estudiante</th>
+                    <th className="w-24 border border-slate-700 bg-teal-800 p-3 text-center font-bold">70%</th>
+                    <th className="w-24 border border-slate-700 bg-cyan-800 p-3 text-center font-bold">30%</th>
+                    <th className="w-28 border border-slate-700 bg-slate-700 p-3 text-center font-bold">Final</th>
+                    <th className="w-28 border border-slate-700 p-3 text-center font-bold">Completiva</th>
+                    <th className="w-28 border border-slate-700 p-3 text-center font-bold">Extraord.</th>
+                    <th className="w-28 border border-slate-700 p-3 text-center font-bold">Especial</th>
+                    <th className="w-36 border border-slate-700 p-3 text-center font-bold">Situacion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.map((fila, index) => {
+                    const retirado = fila.estado === 'Retirado'
+                    const fondo = retirado ? 'bg-slate-200 opacity-60' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                    const resultado = calcularResultadoSecundaria(fila.matriz)
+                    return (
+                      <tr key={`resultados-${fila.id}`} className={fondo}>
+                        <td className="border border-slate-200 p-2 text-center font-bold text-slate-500">{fila.numero}</td>
+                        <td className="border border-slate-200 p-2 font-semibold text-slate-900">{fila.nombre}</td>
+                        <td className="border border-slate-200 bg-teal-50 p-2 text-center text-lg font-black text-teal-800">{resultado.resultado70 || '-'}</td>
+                        <td className="border border-slate-200 bg-cyan-50 p-2 text-center text-lg font-black text-cyan-800">{resultado.resultado30 || '-'}</td>
+                        <td className="border border-slate-200 bg-slate-100 p-2 text-center text-lg font-black text-slate-950">{resultado.final || '-'}</td>
+                        <td className="border border-slate-200 p-1">
+                          <input data-secundaria-cell="true" type="number" value={fila.completiva} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'completiva', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
+                        </td>
+                        <td className="border border-slate-200 p-1">
+                          <input data-secundaria-cell="true" type="number" value={fila.extraordinaria} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'extraordinaria', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
+                        </td>
+                        <td className="border border-slate-200 p-1">
+                          <input data-secundaria-cell="true" type="number" value={fila.especial} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'especial', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 text-center font-bold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100" />
+                        </td>
+                        <td className="border border-slate-200 p-1">
+                          <select data-secundaria-cell="true" value={fila.situacion} disabled={retirado} onChange={(event) => actualizarFila(fila.id, 'situacion', event.target.value)} onKeyDown={manejarEnter} className="h-10 w-full rounded-md border border-slate-200 bg-white px-2 text-xs font-bold text-slate-800 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100">
+                            {situaciones.map(situacion => <option key={situacion}>{situacion}</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
