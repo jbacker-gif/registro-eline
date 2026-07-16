@@ -315,7 +315,7 @@ export default function HomeInstitucional() {
               ))}
             </div>
 
-            <div className="mx-auto flex max-w-xl flex-col justify-center gap-4 sm:flex-row">
+            <div className="mx-auto flex max-w-3xl flex-col justify-center gap-4 sm:flex-row sm:flex-wrap">
               <button
                 onClick={abrirLogin}
                 className="rounded-lg bg-[#ff9800] px-9 py-4 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#e68a00]"
@@ -328,6 +328,14 @@ export default function HomeInstitucional() {
               >
                 Ver servicios
               </button>
+              <a
+                href="https://adsp-tienda-libros.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border-2 border-[#ffc107] bg-[#ffc107] px-9 py-4 text-base font-bold text-[#142037] transition hover:-translate-y-0.5 hover:bg-[#ffd04a]"
+              >
+                Visitar tienda
+              </a>
             </div>
           </div>
         </section>
