@@ -128,6 +128,7 @@ export default function HomeInstitucional() {
   const [verPassword, setVerPassword] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [mostrarLogin, setMostrarLogin] = useState(false)
+  const [mostrarMenuMovil, setMostrarMenuMovil] = useState(false)
   const [modoAcceso, setModoAcceso] = useState<'login' | 'recuperacion'>('login')
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' })
   const [contacto, setContacto] = useState({
@@ -220,6 +221,7 @@ export default function HomeInstitucional() {
   }
 
   const abrirLogin = () => {
+    setMostrarMenuMovil(false)
     setModoAcceso('login')
     setMensaje({ texto: '', tipo: '' })
     setMostrarLogin(true)
@@ -233,6 +235,7 @@ export default function HomeInstitucional() {
   }
 
   const scrollToSection = (id: string) => {
+    setMostrarMenuMovil(false)
     const section = document.getElementById(id)
     if (!section) return
 
@@ -270,7 +273,7 @@ export default function HomeInstitucional() {
               alt="AD Soluciones Profesionales"
               width={387}
               height={120}
-              className="h-[84px] w-auto object-contain md:h-[120px]"
+              className="h-[72px] w-[128px] object-contain md:h-[120px] md:w-auto"
               priority
             />
           </button>
@@ -283,13 +286,50 @@ export default function HomeInstitucional() {
             <button onClick={() => scrollToSection('contacto')} className="transition-colors hover:text-[#142037]">Contacto</button>
           </div>
 
-          <button
-            onClick={abrirLogin}
-            className="border border-[#142037] px-4 py-2.5 font-mono text-[12px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] md:px-6 md:py-3 md:text-[14px] md:tracking-[0.1em]"
-          >
-            Acceso docente
-          </button>
+          <div className="flex items-center gap-2 md:block">
+            <button
+              type="button"
+              onClick={() => setMostrarMenuMovil((abierto) => !abierto)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-[#142037] md:hidden"
+              aria-label={mostrarMenuMovil ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={mostrarMenuMovil}
+              aria-controls="menu-movil"
+            >
+              <span className="h-px w-[18px] bg-[#142037]" />
+              <span className="h-px w-[18px] bg-[#142037]" />
+              <span className="h-px w-[18px] bg-[#142037]" />
+            </button>
+
+            <button
+              onClick={abrirLogin}
+              className="border border-[#142037] px-3 py-2.5 font-mono text-[11px] font-medium uppercase transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] sm:px-4 sm:text-[12px] md:px-6 md:py-3 md:text-[14px]"
+            >
+              <span className="sm:hidden">Acceso</span>
+              <span className="hidden sm:inline">Acceso docente</span>
+            </button>
+          </div>
         </div>
+
+        {mostrarMenuMovil && (
+          <div id="menu-movil" className="border-t border-[#e3e5ea] bg-[#f6f7f9] px-5 py-5 shadow-[0_14px_28px_rgba(20,32,55,0.12)] md:hidden">
+            <div className="mx-auto grid max-w-6xl gap-px bg-[#d7dbe2] font-mono text-[13px] font-medium uppercase text-[#142037]">
+              <button onClick={() => scrollToSection('nosotros')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Nosotros</button>
+              <button onClick={() => scrollToSection('servicios')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Servicios</button>
+              <button onClick={() => scrollToSection('registro')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Eline</button>
+              <button onClick={() => scrollToSection('faq')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Preguntas frecuentes</button>
+              <button onClick={() => scrollToSection('contacto')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Contacto</button>
+              <a
+                href="https://adsp-tienda-libros.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#ffc107] px-4 py-3.5"
+                onClick={() => setMostrarMenuMovil(false)}
+              >
+                Tienda de libros
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       <main>
