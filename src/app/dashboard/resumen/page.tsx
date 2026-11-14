@@ -567,20 +567,37 @@ export default function ResumenAnual() {
               disabled={!infoSeccion || cargando || mensaje.tipo === 'error'}
               onClick={() => {
                 if (!infoSeccion) return
-                const alumnos = new Map(estudiantes.map(alumno => [alumno.id, alumno]))
-                const materias = new Map(asignaturas.map(materia => [materia.id, materia.nombre]))
+                const notasPorClave = new Map(calificaciones.map(nota => [
+                  JSON.stringify([nota.asignatura_id, nota.estudiante_id, nota.periodo, nota.competencia]),
+                  nota.nota,
+                ]))
+                const idsConNotas = new Set(calificaciones.map(nota => nota.asignatura_id))
+                const materias = asignaturas.filter(materia =>
+                  idsConNotas.has(materia.id) || areasSabana.some(area => coincideAsignatura(area, materia))
+                )
                 descargarRegistroExcel(
                   `Registro-${infoSeccion.grado}-${infoSeccion.identificador ?? ''}-${infoSeccion.ano_escolar ?? ''}`,
-                  [['N.º', 'Estudiante', 'Estado'], ...estudiantes.map(alumno => [
+                  [['N.º', 'Nombre y apellido', 'Estado'], ...estudiantes.map(alumno => [
                     alumno.numero_orden ?? null, obtenerNombreEstudiante(alumno), alumno.estado ?? '',
                   ])],
-                  [['N.º', 'Estudiante', 'Asignatura', 'Período', 'Competencia', 'Nota'], ...calificaciones.map(nota => {
-                    const alumno = alumnos.get(nota.estudiante_id)
-                    return [
-                      alumno?.numero_orden ?? null, alumno ? obtenerNombreEstudiante(alumno) : '',
-                      materias.get(nota.asignatura_id) ?? '', nota.periodo, nota.competencia, nota.nota ?? null,
-                    ]
-                  })],
+                  materias.map(materia => ({
+                    nombre: materia.nombre,
+                    filas: [
+                      ['N.º', 'Nombre y apellido', ...periodos.flatMap(periodo =>
+                        competencias.map((_, indice) => `${periodo} (${indice + 1})`)
+                      )],
+                      ...estudiantes.map(alumno => [
+                        alumno.numero_orden ?? null,
+                        obtenerNombreEstudiante(alumno),
+                        ...periodos.flatMap(periodo => competencias.map(competencia => {
+                          const nota = notasPorClave.get(JSON.stringify([materia.id, alumno.id, periodo, competencia]))
+                          if (nota == null || nota === '') return null
+                          const valor = Number(nota)
+                          return Number.isFinite(valor) ? valor : nota
+                        })),
+                      ]),
+                    ],
+                  })),
                 )
               }}
               className="rounded-lg bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
