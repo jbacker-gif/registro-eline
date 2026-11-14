@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+import { descargarRegistroExcel } from '../../../lib/registro-excel'
+
 type VistaResumen = 'asistencia' | 'sabana' | 'resumen-final'
 type EstadoAsistencia = 'P' | 'A' | 'E' | 'T'
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
@@ -560,6 +562,48 @@ export default function ResumenAnual() {
                 Resumen final
               </button>
             </div>
+            <button
+              type="button"
+              disabled={!infoSeccion || cargando || mensaje.tipo === 'error'}
+              onClick={() => {
+                if (!infoSeccion) return
+                const notasPorClave = new Map(calificaciones.map(nota => [
+                  JSON.stringify([nota.asignatura_id, nota.estudiante_id, nota.periodo, nota.competencia]),
+                  nota.nota,
+                ]))
+                const idsConNotas = new Set(calificaciones.map(nota => nota.asignatura_id))
+                const materias = asignaturas.filter(materia =>
+                  idsConNotas.has(materia.id) || areasSabana.some(area => coincideAsignatura(area, materia))
+                )
+                descargarRegistroExcel(
+                  `Registro-${infoSeccion.grado}-${infoSeccion.identificador ?? ''}-${infoSeccion.ano_escolar ?? ''}`,
+                  [['N.º', 'Nombre y apellido', 'Estado'], ...estudiantes.map(alumno => [
+                    alumno.numero_orden ?? null, obtenerNombreEstudiante(alumno), alumno.estado ?? '',
+                  ])],
+                  materias.map(materia => ({
+                    nombre: materia.nombre,
+                    filas: [
+                      ['N.º', 'Nombre y apellido', ...periodos.flatMap(periodo =>
+                        competencias.map((_, indice) => `${periodo} (${indice + 1})`)
+                      )],
+                      ...estudiantes.map(alumno => [
+                        alumno.numero_orden ?? null,
+                        obtenerNombreEstudiante(alumno),
+                        ...periodos.flatMap(periodo => competencias.map(competencia => {
+                          const nota = notasPorClave.get(JSON.stringify([materia.id, alumno.id, periodo, competencia]))
+                          if (nota == null || nota === '') return null
+                          const valor = Number(nota)
+                          return Number.isFinite(valor) ? valor : nota
+                        })),
+                      ]),
+                    ],
+                  })),
+                )
+              }}
+              className="rounded-lg bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              Descargar Excel
+            </button>
             <button onClick={() => window.print()} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
               Imprimir
             </button>

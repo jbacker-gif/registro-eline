@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { anoEscolarCerrado } from '../../../lib/ano-escolar'
 import { supabase } from '../../../lib/supabase'
 
 export default function MatrizCalificaciones() {
@@ -11,6 +12,7 @@ export default function MatrizCalificaciones() {
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
+  const anoCerrado = anoEscolarCerrado(infoSeccion?.ano_escolar)
   const [materiaNombre, setMateriaNombre] = useState('')
   const [tituloVisible, setTituloVisible] = useState('')
 
@@ -183,6 +185,7 @@ export default function MatrizCalificaciones() {
   }
 
   const guardarNotas = async () => {
+    if (anoCerrado) return
     if (!seccionId || !userId) return
     setMensaje({ texto: 'Guardando calificaciones...', tipo: 'info' })
     try {
@@ -229,6 +232,7 @@ export default function MatrizCalificaciones() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">{tituloVisible}</h1>
+              {anoCerrado && <p className="mt-1 text-sm font-semibold text-amber-800">Año escolar inactivo · Solo lectura</p>}
             <p className="text-sm text-slate-500 font-medium mt-1">Registro: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -238,7 +242,7 @@ export default function MatrizCalificaciones() {
               </a>
             )}
             {vista !== 'RESUMEN' && (
-              <button onClick={guardarNotas} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2">
+              <button disabled={anoCerrado} onClick={guardarNotas} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2">
                 Guardar Notas
               </button>
             )}
@@ -354,7 +358,7 @@ export default function MatrizCalificaciones() {
                                 <input 
                                   type="number" 
                                   value={est.notas[vista][comp]} 
-                                  disabled={esRetirado}
+                                  disabled={anoCerrado || esRetirado}
                                   onChange={(e) => manejarCambioNota(est.id, vista, comp, e.target.value)} 
                                   onKeyDown={manejarTeclaEnter} 
                                   className={`w-full h-full text-center p-2 outline-none font-bold transition-all focus:ring-2 focus:ring-inset focus:ring-blue-600 ${
@@ -371,7 +375,7 @@ export default function MatrizCalificaciones() {
                                   <input 
                                     type="number" 
                                     value={est.notas[vista][`${comp}_RP`]} 
-                                    disabled={deshabilitarRP}
+                                    disabled={anoCerrado || deshabilitarRP}
                                     onChange={(e) => manejarCambioNota(est.id, vista, `${comp}_RP`, e.target.value)} 
                                     onKeyDown={manejarTeclaEnter} 
                                     className={`w-full h-full text-center p-2 outline-none font-bold transition-all focus:ring-2 focus:ring-inset focus:ring-blue-600 ${

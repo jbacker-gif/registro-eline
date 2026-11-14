@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { anoEscolarCerrado } from '../../../lib/ano-escolar'
 import { supabase } from '../../../lib/supabase'
 import { CsvRow, getCsvValue, readCsvFile } from '../../../lib/csv'
 
@@ -108,6 +109,7 @@ export default function CalificacionesMasivas() {
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
+  const anoCerrado = anoEscolarCerrado(infoSeccion?.ano_escolar)
   const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
   const [asignaturas, setAsignaturas] = useState<Asignatura[]>([])
   const [notasPendientes, setNotasPendientes] = useState<NotaPendiente[]>([])
@@ -183,6 +185,7 @@ export default function CalificacionesMasivas() {
     asignaturasConAliases.find(item => item.aliases.has(alias))?.asignatura || null
 
   const importarCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (anoCerrado) return
     const file = e.target.files?.[0]
     if (!file || !seccionId || !userId) return
 
@@ -285,6 +288,7 @@ export default function CalificacionesMasivas() {
   }
 
   const guardarNotas = async () => {
+    if (anoCerrado) return
     if (!seccionId || !userId || notasPendientes.length === 0 || asignaturasIncluidas.length === 0) return
 
     if (!window.confirm(`¿Confirmas guardar ${notasPendientes.length} notas del período ${periodo}?`)) return
@@ -334,6 +338,7 @@ export default function CalificacionesMasivas() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Calificaciones</p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Carga masiva de notas</h1>
+              {anoCerrado && <p className="mt-1 text-sm font-semibold text-amber-800">Año escolar inactivo · Solo lectura</p>}
               <p className="mt-2 text-sm text-slate-500">
                 {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}
               </p>
@@ -358,7 +363,7 @@ export default function CalificacionesMasivas() {
               </a>
               <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarCSV} className="hidden" />
               <button
-                onClick={() => archivoCsvRef.current?.click()}
+                disabled={anoCerrado} onClick={() => archivoCsvRef.current?.click()}
                 className="h-10 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
               >
                 Importar matriz
@@ -435,14 +440,14 @@ export default function CalificacionesMasivas() {
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button
             onClick={limpiarImportacion}
-            disabled={notasPendientes.length === 0 || guardando}
+            disabled={anoCerrado || notasPendientes.length === 0 || guardando}
             className="h-10 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Limpiar
           </button>
           <button
             onClick={guardarNotas}
-            disabled={notasPendientes.length === 0 || guardando}
+            disabled={anoCerrado || notasPendientes.length === 0 || guardando}
             className="h-10 rounded-md bg-emerald-600 px-5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {guardando ? 'Guardando...' : `Guardar ${notasPendientes.length} notas`}
