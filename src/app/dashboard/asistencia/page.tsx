@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { anoEscolarCerrado } from '../../../lib/ano-escolar'
 import { supabase } from '../../../lib/supabase'
 import { getCsvValue, readCsvFile } from '../../../lib/csv'
 
@@ -11,6 +12,7 @@ export default function Asistencia() {
   const [seccionId, setSeccionId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [infoSeccion, setInfoSeccion] = useState<any>(null)
+  const anoCerrado = anoEscolarCerrado(infoSeccion?.ano_escolar)
 
   const fechaActual = new Date()
   const [mesActual, setMesActual] = useState(fechaActual.getMonth())
@@ -171,6 +173,7 @@ export default function Asistencia() {
   }
 
   const guardarRegistro = async () => {
+    if (anoCerrado) return
     if (!seccionId || !userId) return
     if (!window.confirm(`¿Confirmas guardar la asistencia de ${nombresMeses[mesActual]} ${anioActual}?`)) {
       return
@@ -215,6 +218,7 @@ export default function Asistencia() {
   }
 
   const importarAsistenciaCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (anoCerrado) return
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -302,6 +306,7 @@ export default function Asistencia() {
           <div className="flex items-center gap-6">
             <div>
               <h1 className="text-2xl font-black text-slate-800 tracking-tight">Control de Asistencia</h1>
+              {anoCerrado && <p className="mt-1 text-sm font-semibold text-amber-800">Año escolar inactivo · Solo lectura</p>}
               <p className="text-sm text-slate-500 font-medium mt-1">Sección: {infoSeccion?.grado} "{infoSeccion?.identificador}" {infoSeccion?.tanda ? `(${infoSeccion.tanda})` : ''}</p>
             </div>
             <div className="bg-white border-2 border-blue-600 rounded-2xl p-3 shadow-sm flex flex-col items-center min-w-[100px]">
@@ -337,10 +342,10 @@ export default function Asistencia() {
               </button>
             </div>
             <input type="file" accept=".csv" ref={archivoCsvRef} onChange={importarAsistenciaCSV} className="hidden" />
-            <button onClick={() => archivoCsvRef.current?.click()} className="bg-white border border-slate-200 text-slate-700 hover:text-blue-700 hover:border-blue-300 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm">
+            <button disabled={anoCerrado} onClick={() => archivoCsvRef.current?.click()} className="bg-white border border-slate-200 text-slate-700 hover:text-blue-700 hover:border-blue-300 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm">
               Importar matriz CSV
             </button>
-            <button onClick={guardarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all">💾 Guardar Mes</button>
+            <button disabled={anoCerrado} onClick={guardarRegistro} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all">💾 Guardar Mes</button>
           </div>
         </div>
 
@@ -382,7 +387,7 @@ export default function Asistencia() {
                         <div className="flex flex-col items-center">
                           <span className="text-[9px] font-bold opacity-80">{inicialesDias[new Date(anioActual, mesActual, dia).getDay()]}</span>
                           <span className="font-black text-sm">{dia}</span>
-                          <button onClick={() => alternarDiaBloqueado(dia)} className={`mt-1 text-[10px] transition-colors ${esBloqueado ? 'text-red-500 hover:text-red-400' : 'text-slate-400 hover:text-white'}`}>
+                          <button disabled={anoCerrado} onClick={() => alternarDiaBloqueado(dia)} className={`mt-1 text-[10px] transition-colors ${esBloqueado ? 'text-red-500 hover:text-red-400' : 'text-slate-400 hover:text-white'}`}>
                             {esBloqueado ? 'X' : 'Abrir'}
                           </button>
                         </div>
@@ -412,7 +417,7 @@ export default function Asistencia() {
                         const estaBloqueado = diasBloqueados.includes(fechaISO)
                         const estado = asistencia[`${est.id}_${fechaISO}`] || ''
                         return (
-                          <td key={dia} onClick={() => !estaBloqueado && !esRetirado && alternarAsistencia(est.id, dia)} className={`p-0 border-r border-slate-100 text-center cursor-pointer ${estaBloqueado || esRetirado ? 'bg-slate-200/50 pointer-events-none' : ''}`}>
+                          <td key={dia} onClick={() => !anoCerrado && !estaBloqueado && !esRetirado && alternarAsistencia(est.id, dia)} className={`p-0 border-r border-slate-100 text-center cursor-pointer ${estaBloqueado || esRetirado ? 'bg-slate-200/50 pointer-events-none' : ''}`}>
                             <div className={`w-full h-8 flex items-center justify-center font-bold text-xs border ${obtenerColorCelda(estado)}`}>
                               {estaBloqueado ? '-' : estado}
                             </div>
