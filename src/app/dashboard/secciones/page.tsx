@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { anoEscolarCerrado } from '../../../lib/ano-escolar'
 import { supabase } from '../../../lib/supabase'
 
 export default function MisSecciones() {
@@ -300,17 +301,17 @@ export default function MisSecciones() {
                             {sec.tanda || 'Matutina'}
                           </span>
                         </td>
-                        <td className="p-5 text-sm font-semibold text-slate-600">{sec.ano_escolar || 'Sin definir'}</td>
+                        <td className="p-5 text-sm font-semibold text-slate-600">{sec.ano_escolar || 'Sin definir'}{anoEscolarCerrado(sec.ano_escolar) && <span className="ml-2 text-amber-800">Inactivo</span>}</td>
                         <td className="p-5 text-center">
                           <button
-                            onClick={() => editarSeccion(sec)}
+                            disabled={anoEscolarCerrado(sec.ano_escolar)} onClick={() => editarSeccion(sec)}
                             className="mr-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition-all hover:bg-blue-100"
                             title="Editar seccion"
                           >
                             Editar
                           </button>
                           <button 
-                            onClick={() => eliminarSeccion(sec.id, `${sec.grado} ${sec.identificador} (${sec.tanda || 'Matutina'})`)} 
+                            disabled={anoEscolarCerrado(sec.ano_escolar)} onClick={() => eliminarSeccion(sec.id, `${sec.grado} ${sec.identificador} (${sec.tanda || 'Matutina'})`)} 
                             className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             title="Eliminar Sección"
                           >
