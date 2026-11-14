@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { anoEscolarCerrado } from '../../lib/ano-escolar'
 import { supabase } from '../../lib/supabase'
 
 const asignaturas = [
@@ -22,12 +23,50 @@ const accesos = [
   { titulo: 'Resumen', descripcion: 'Vista consolidada para revisión y cierre.', ruta: '/dashboard/resumen', iniciales: 'RE' },
 ]
 
+type Seccion = {
+  id: string
+  grado: string
+  identificador: string
+  tanda: string | null
+  ano_escolar: string | null
+}
+
+const normalizarBusqueda = (texto: string) =>
+  texto.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
 export default function Dashboard() {
   const router = useRouter()
-  const [secciones, setSecciones] = useState<any[]>([])
+  const [secciones, setSecciones] = useState<Seccion[]>([])
   const [seccionActiva, setSeccionActiva] = useState('')
   const [cargando, setCargando] = useState(true)
-  const seccionSeleccionada = secciones.find(sec => sec.id === seccionActiva)
+  const [busqueda, setBusqueda] = useState('')
+  const terminos = normalizarBusqueda(busqueda).trim().split(/\s+/).filter(Boolean)
+  const coincidencias = secciones.filter(sec => {
+    const texto = normalizarBusqueda([sec.grado, sec.identificador, sec.tanda, sec.ano_escolar].join(' '))
+    return terminos.every(termino => texto.includes(termino))
+  })
+  const vigentes = coincidencias.filter(sec => !anoEscolarCerrado(sec.ano_escolar))
+  const historicas = coincidencias.filter(sec => anoEscolarCerrado(sec.ano_escolar))
+
+  const botonesSecciones = (lista: Seccion[]) => (
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {lista.map(sec => (
+        <button
+          key={sec.id}
+          type="button"
+          aria-pressed={sec.id === seccionActiva}
+          onClick={() => manejarCambioSeccion(sec.id)}
+          className="min-w-0 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-slate-900 hover:border-blue-400 focus-visible:outline-2 focus-visible:outline-blue-600 aria-pressed:border-blue-700 aria-pressed:bg-blue-50"
+        >
+          <span className="block text-sm font-semibold">{sec.grado} {sec.identificador}</span>
+          <span className="mt-1 block text-xs text-slate-600">
+            {[sec.tanda, sec.ano_escolar].filter(Boolean).join(' · ')}
+          </span>
+          {sec.id === seccionActiva && <span className="mt-1 block text-xs font-semibold text-blue-800">Seleccionada</span>}
+        </button>
+      ))}
+    </div>
+  )
 
   useEffect(() => {
     cargarSeccionesDelMaestro()
@@ -51,10 +90,19 @@ export default function Dashboard() {
 
       if (data && data.length > 0) {
         const ultimaSeccion = localStorage.getItem('ultimaSeccionActiva')
-        const seccionExiste = data.find(s => s.id === ultimaSeccion)
-        const seccionInicial = seccionExiste ? ultimaSeccion! : data[0].id
-        setSeccionActiva(seccionInicial)
-        localStorage.setItem('ultimaSeccionActiva', seccionInicial)
+        const parametros = new URLSearchParams(window.location.search)
+        const solicitada = parametros.get('seccion_id')
+        const recordada = data.find(sec => sec.id === ultimaSeccion)
+        const vigente = data.find(sec => !anoEscolarCerrado(sec.ano_escolar))
+        const inicial = data.find(sec => sec.id === solicitada)
+          ?? (recordada && !anoEscolarCerrado(recordada.ano_escolar) ? recordada : vigente ?? recordada)
+          ?? data[0]
+        setSeccionActiva(inicial.id)
+        localStorage.setItem('ultimaSeccionActiva', inicial.id)
+        if (solicitada && solicitada !== inicial.id) {
+          parametros.set('seccion_id', inicial.id)
+          router.replace(`/dashboard?${parametros}`, { scroll: false })
+        }
       }
     } catch (error) {
       console.error(error)
@@ -66,7 +114,7 @@ export default function Dashboard() {
   const manejarCambioSeccion = (nuevoId: string) => {
     setSeccionActiva(nuevoId)
     localStorage.setItem('ultimaSeccionActiva', nuevoId)
-    router.replace(`/dashboard?seccion_id=${nuevoId}`)
+    router.replace(`/dashboard?seccion_id=${encodeURIComponent(nuevoId)}`, { scroll: false })
   }
 
   const navegarConContexto = (rutaBase: string, extraParams = '') => {
@@ -86,24 +134,7 @@ export default function Dashboard() {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Registro escolar</h1>
           </div>
 
-          {cargando ? (
-            <div className="h-10 w-56 animate-pulse rounded-md bg-slate-100" />
-          ) : secciones.length > 0 && (
-            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:min-w-72">
-              Sección activa
-              <select
-                value={seccionActiva}
-                onChange={(e) => manejarCambioSeccion(e.target.value)}
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold normal-case text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              >
-                {secciones.map(sec => (
-                  <option key={sec.id} value={sec.id}>
-                    {sec.grado} "{sec.identificador}" {sec.tanda ? `(${sec.tanda})` : ''} {sec.ano_escolar ? `- ${sec.ano_escolar}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+
         </div>
       </header>
 
@@ -122,20 +153,34 @@ export default function Dashboard() {
           </section>
         )}
 
-        <section className="mb-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ciclo escolar</p>
-            <p className="mt-2 text-xl font-semibold text-slate-950">{seccionSeleccionada?.ano_escolar || 'Sin definir'}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sección</p>
-            <p className="mt-2 text-xl font-semibold text-slate-950">{seccionSeleccionada ? `${seccionSeleccionada.grado} "${seccionSeleccionada.identificador}"` : 'No seleccionada'}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanda</p>
-            <p className="mt-2 text-xl font-semibold text-slate-950">{seccionSeleccionada?.tanda || 'Sin definir'}</p>
-          </div>
-        </section>
+        {cargando && <div aria-label="Cargando secciones" className="mb-8 h-24 animate-pulse rounded-lg bg-slate-200" />}
+        {secciones.length > 0 && (
+          <section className="mb-8 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-labelledby="selector-seccion">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 id="selector-seccion" className="text-lg font-semibold text-slate-950">Sección activa</h2>
+              {secciones.length > 3 && (
+                <input
+                  type="search"
+                  aria-label="Buscar sección"
+                  placeholder="Buscar grado, tanda o año"
+                  value={busqueda}
+                  onChange={event => setBusqueda(event.target.value)}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-blue-600 sm:w-64"
+                />
+              )}
+            </div>
+            {botonesSecciones(vigentes)}
+            {historicas.length > 0 && (
+              <details key={terminos.length > 0 ? 'busqueda' : 'lista'} open={terminos.length > 0 || historicas.some(sec => sec.id === seccionActiva)}>
+                <summary className="mt-3 cursor-pointer rounded px-1 py-2 text-sm font-semibold text-slate-700 focus-visible:outline-2 focus-visible:outline-blue-600">
+                  Años anteriores · Solo lectura
+                </summary>
+                {botonesSecciones(historicas)}
+              </details>
+            )}
+            {coincidencias.length === 0 && <p role="status" className="text-sm text-slate-600">No hay secciones que coincidan con la búsqueda.</p>}
+          </section>
+        )}
 
         <section className="mb-10">
           <div className="mb-4 flex items-end justify-between gap-4">
