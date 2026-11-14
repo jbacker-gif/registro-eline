@@ -5,7 +5,7 @@ const escapeXml = (value: string) => value
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 const worksheet = (rows: Cell[][]) =>
-  '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+  '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="9" customWidth="1"/><col min="2" max="2" width="38" customWidth="1"/><col min="3" max="17" width="14" customWidth="1"/></cols><sheetData>' +
   rows.map(row => '<row>' + row.map(value =>
     typeof value === 'number' && Number.isFinite(value)
       ? '<c><v>' + value + '</v></c>'
@@ -21,8 +21,19 @@ function crc32(bytes: Uint8Array) {
   return ~crc
 }
 
-export function descargarRegistroExcel(nombre: string, alumnos: Cell[][], notas: Cell[][]) {
-  const sheets = [['Estudiantes', alumnos], ['Notas', notas]] as const
+export function descargarRegistroExcel(nombre: string, alumnos: Cell[][], asignaturas: { nombre: string; filas: Cell[][] }[]) {
+  const nombres = new Set(['estudiantes'])
+  const sheets: [string, Cell[][]][] = [['Estudiantes', alumnos]]
+  for (const asignatura of asignaturas) {
+    const base = asignatura.nombre.replace(/[\\/:?*\[\]']/g, ' ').trim() || 'Asignatura'
+    let hoja = base.slice(0, 31)
+    for (let numero = 2; nombres.has(hoja.toLowerCase()); numero++) {
+      const sufijo = ' ' + numero
+      hoja = base.slice(0, 31 - sufijo.length) + sufijo
+    }
+    nombres.add(hoja.toLowerCase())
+    sheets.push([hoja, asignatura.filas])
+  }
   const ns = 'http://schemas.openxmlformats.org/'
   const office = ns + 'officeDocument/2006/relationships'
   const rels = (items: string) => '<Relationships xmlns="' + ns + 'package/2006/relationships">' + items + '</Relationships>'
@@ -36,7 +47,7 @@ export function descargarRegistroExcel(nombre: string, alumnos: Cell[][], notas:
         '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>'],
     ['_rels/.rels', rels(rel(1, 'officeDocument', 'xl/workbook.xml'))],
     ['xl/workbook.xml', '<workbook xmlns="' + ns + 'spreadsheetml/2006/main" xmlns:r="' + office + '"><sheets>' +
-      sheets.map(([name], i) => '<sheet name="' + name + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>'],
+      sheets.map(([name], i) => '<sheet name="' + escapeXml(name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>'],
     ['xl/_rels/workbook.xml.rels', rels(sheets.map((_, i) => rel(i + 1, 'worksheet', 'worksheets/sheet' + (i + 1) + '.xml')).join(''))],
     ...sheets.map(([, rows], i) => ['xl/worksheets/sheet' + (i + 1) + '.xml', worksheet(rows)]),
   ]
