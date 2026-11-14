@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+import { descargarRegistroExcel } from '../../../lib/registro-excel'
+
 type VistaResumen = 'asistencia' | 'sabana' | 'resumen-final'
 type EstadoAsistencia = 'P' | 'A' | 'E' | 'T'
 type Periodo = 'P1' | 'P2' | 'P3' | 'P4'
@@ -560,6 +562,31 @@ export default function ResumenAnual() {
                 Resumen final
               </button>
             </div>
+            <button
+              type="button"
+              disabled={!infoSeccion || cargando || mensaje.tipo === 'error'}
+              onClick={() => {
+                if (!infoSeccion) return
+                const alumnos = new Map(estudiantes.map(alumno => [alumno.id, alumno]))
+                const materias = new Map(asignaturas.map(materia => [materia.id, materia.nombre]))
+                descargarRegistroExcel(
+                  `Registro-${infoSeccion.grado}-${infoSeccion.identificador ?? ''}-${infoSeccion.ano_escolar ?? ''}`,
+                  [['N.º', 'Estudiante', 'Estado'], ...estudiantes.map(alumno => [
+                    alumno.numero_orden ?? null, obtenerNombreEstudiante(alumno), alumno.estado ?? '',
+                  ])],
+                  [['N.º', 'Estudiante', 'Asignatura', 'Período', 'Competencia', 'Nota'], ...calificaciones.map(nota => {
+                    const alumno = alumnos.get(nota.estudiante_id)
+                    return [
+                      alumno?.numero_orden ?? null, alumno ? obtenerNombreEstudiante(alumno) : '',
+                      materias.get(nota.asignatura_id) ?? '', nota.periodo, nota.competencia, nota.nota ?? null,
+                    ]
+                  })],
+                )
+              }}
+              className="rounded-lg bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              Descargar Excel
+            </button>
             <button onClick={() => window.print()} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
               Imprimir
             </button>
