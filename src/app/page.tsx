@@ -6,40 +6,32 @@ import CatalogoServicios from '../components/CatalogoServicios'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
-const servicios = [
+const gruposServicios = [
   {
-    titulo: 'Impresiones y copias',
-    descripcion: 'Material académico, documentos institucionales y trabajos listos para entregar con terminación profesional.',
+    id: 'academicos',
+    titulo: 'Servicios académicos',
+    descripcion: 'Apoyo para estudiantes, tesistas y maestrantes en la preparación de sus trabajos.',
+    servicios: ['Formato académico', 'Corrección de estilo', 'Revisión de originalidad y citación', 'Asesoría metodológica', 'Análisis de datos'],
+    accion: 'Cotizar apoyo académico',
   },
   {
-    titulo: 'Encuadernación',
-    descripcion: 'Presentación cuidada para tesis, monográficos, informes, manuales y documentos educativos.',
+    id: 'impresion',
+    titulo: 'Impresión y terminación',
+    descripcion: 'Impresión y acabados para trabajos académicos, materiales educativos y documentos.',
+    servicios: ['Impresión y copias', 'Encuadernación y empastado', 'Diagramación', 'Escaneo y digitalización'],
+    accion: 'Cotizar impresión o terminación',
   },
   {
-    titulo: 'Diagramación',
-    descripcion: 'Organización visual de proyectos, portadas, reportes y materiales impresos o digitales.',
-  },
-  {
-    titulo: 'Asesoría de proyectos',
-    descripcion: 'Acompañamiento para estructurar ideas, objetivos, metodologías y entregables académicos.',
-  },
-  {
-    titulo: 'Análisis de datos',
-    descripcion: 'Apoyo en organización, revisión e interpretación de datos para proyectos e investigaciones.',
-  },
-  {
-    titulo: 'Formato de tesis',
-    descripcion: 'Adecuación de trabajos, tesis y monográficos según normas de presentación académica.',
-  },
-  {
-    titulo: 'Corrección de plagio',
-    descripcion: 'Revisión, orientación y mejora de textos para fortalecer la originalidad del contenido.',
-  },
-  {
-    titulo: 'Registro Escolar Digital',
-    descripcion: 'Panel docente para asistencia, calificaciones, boletines, plantillas y resumen académico.',
+    id: 'instituciones',
+    titulo: 'Para instituciones',
+    descripcion: 'Atención a centros educativos, organizaciones y empresas según su volumen y necesidades.',
+    servicios: ['Impresión por volumen', 'Materiales institucionales', 'Evaluación de soluciones digitales'],
+    accion: 'Solicitar una reunión',
   },
 ]
+
+const enlaceWhatsApp = (consulta: string) =>
+  `https://wa.me/18496297248?text=${encodeURIComponent(`Hola ADSP, ${consulta}`)}`
 
 const valores = [
   {
@@ -110,13 +102,7 @@ const canalesContacto = [
 ]
 
 const serviciosContacto = [
-  'Impresiones y copias',
-  'Encuadernación',
-  'Diagramación',
-  'Asesoría de proyectos',
-  'Análisis de datos',
-  'Formato de tesis',
-  'Corrección de plagio',
+  ...gruposServicios.flatMap(({ servicios }) => servicios),
   'ELINE Registro Escolar',
   'Otro servicio',
 ]
@@ -240,7 +226,7 @@ export default function HomeInstitucional() {
     const section = document.getElementById(id)
     if (!section) return
 
-    const navOffset = window.innerWidth >= 768 ? 140 : 104
+    const navOffset = window.innerWidth >= 768 ? 96 : 80
     const top = section.getBoundingClientRect().top + window.scrollY - navOffset
     window.scrollTo({ top, behavior: 'smooth' })
   }
@@ -263,7 +249,7 @@ export default function HomeInstitucional() {
   return (
     <div className="min-h-screen bg-[#f6f7f9] text-[#142037] selection:bg-[#efd9a8]">
       <nav className="fixed z-50 w-full border-b border-[#e3e5ea] bg-[#f6f7f9]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[104px] max-w-6xl items-center justify-between px-5 md:h-[140px] md:px-6">
+        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 md:h-24 md:px-6">
           <button
             className="flex items-center gap-3"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -274,7 +260,7 @@ export default function HomeInstitucional() {
               alt="AD Soluciones Profesionales"
               width={387}
               height={120}
-              className="h-[72px] w-[128px] object-contain md:h-[120px] md:w-auto"
+              className="h-12 w-32 object-contain md:h-16 md:w-auto"
               priority
             />
           </button>
@@ -326,38 +312,82 @@ export default function HomeInstitucional() {
       </nav>
 
       <main>
-        <section className="bg-[#101b31] px-5 pb-16 pt-36 text-white md:px-6 md:pb-24 md:pt-52">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.3fr_1fr]">
+        <section className="bg-[#101b31] px-5 pb-16 pt-32 text-white sm:px-6 md:pb-20 md:pt-40">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.45fr_1fr] lg:gap-16">
             <div>
-              <h1 className="max-w-xl font-serif text-4xl leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                Impresión y apoyo académico
+              <h1 className="max-w-2xl font-serif text-4xl leading-[1.12] tracking-tight sm:text-5xl lg:text-6xl">
+                Servicios académicos, impresión y tecnología escolar
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-200 md:text-lg">
-                Consulta precios de impresión y encuadernación, o cotiza diagramación y asesoría para tu próximo trabajo.
+                ADSP apoya a estudiantes, docentes e instituciones con sus trabajos académicos, documentos impresos y registros escolares.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <button onClick={() => scrollToSection('catalogo')} className="rounded-lg bg-[#ffc107] px-5 py-3.5 font-bold text-[#142037] hover:bg-[#ffd04a]">
-                  Ver catálogo y precios
-                </button>
-                <a href="https://wa.me/18496297248?text=Hola%20ADSP%2C%20deseo%20solicitar%20una%20cotizaci%C3%B3n." target="_blank" rel="noopener noreferrer" className="rounded-lg border border-white/50 px-5 py-3.5 font-semibold hover:bg-white/10">
-                  Cotizar por WhatsApp
-                </a>
+                <button onClick={() => scrollToSection('servicios')} className="rounded-lg bg-[#ffc107] px-5 py-3.5 font-bold text-[#142037] hover:bg-[#ffd04a]">Explorar servicios</button>
+                <button onClick={() => scrollToSection('catalogo')} className="rounded-lg border border-white/50 px-5 py-3.5 font-semibold hover:bg-white/10">Ver precios</button>
               </div>
             </div>
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-6 sm:p-8">
-              <Image src="/logo.png" alt="" width={64} height={64} className="mb-5 rounded-lg bg-white p-2" />
-              <h2 className="font-serif text-3xl">ELINE para docentes</h2>
-              <p className="mt-3 leading-relaxed text-slate-200">
-                Gestiona asistencia, calificaciones y boletines en tu registro escolar digital.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3">
-                <button onClick={abrirLogin} className="rounded-lg bg-white px-4 py-2.5 font-bold text-[#142037] hover:bg-slate-100">
-                  Entrar a ELINE
+            <div className="divide-y divide-white/15 rounded-2xl border border-white/20 bg-white/5 px-5 sm:px-6">
+              {gruposServicios.map(({ id, titulo }) => (
+                <button key={id} onClick={() => scrollToSection(id)} className="flex w-full items-center justify-between gap-4 py-4 text-left font-semibold hover:text-[#ffc107]">
+                  {titulo}<span aria-hidden="true">↗</span>
                 </button>
-                <button onClick={() => scrollToSection('registro')} className="px-2 py-2.5 font-semibold underline underline-offset-4">
-                  Conocer ELINE
-                </button>
+              ))}
+              <button onClick={() => scrollToSection('registro')} className="flex w-full items-center justify-between gap-4 py-4 text-left font-semibold hover:text-[#ffc107]">
+                ELINE · Registro escolar digital<span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="servicios" className="bg-white px-5 py-16 sm:px-6 md:py-20">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="font-serif text-4xl tracking-tight text-[#142037] md:text-5xl">Servicios de ADSP</h2>
+            <div className="mt-8 grid gap-5 lg:grid-cols-3">
+              {gruposServicios.map(({ id, titulo, descripcion, servicios, accion }) => (
+                <article id={id} key={id} className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                  <h3 className="font-serif text-2xl text-[#142037]">{titulo}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{descripcion}</p>
+                  <ul className="my-5 space-y-2 text-sm font-medium text-slate-800">
+                    {servicios.map((servicio) => <li key={servicio} className="flex gap-2"><span aria-hidden="true" className="text-amber-700">•</span>{servicio}</li>)}
+                  </ul>
+                  <div className="mt-auto flex flex-wrap items-center gap-3 pt-2">
+                    <a href={enlaceWhatsApp(id === 'instituciones' ? 'quisiera coordinar una reunión para mi institución.' : `quisiera consultar por ${titulo.toLowerCase()}.`)} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#142037] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#263a5a]">{accion}</a>
+                    {id === 'impresion' && <button onClick={() => scrollToSection('catalogo')} className="px-2 py-2.5 text-sm font-semibold text-[#142037] underline underline-offset-4">Ver precios</button>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <CatalogoServicios />
+
+        <section id="registro" className="bg-[#101b31] px-6 py-24 text-white">
+          <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div>
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#ffc107]">Aplicación de ADSP</p>
+              <div className="mb-5 flex items-center gap-4">
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white">
+                  <Image src="/logo.png" alt="Logo del registro escolar" width={54} height={54} className="object-contain" />
+                </span>
+                <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">ELINE Registro Escolar</h2>
               </div>
+              <p className="max-w-md text-[15px] leading-relaxed text-white/72">
+                Nuestra aplicación para docentes reúne asistencia, calificaciones y boletines en un registro escolar digital.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-4">
+                <button onClick={abrirLogin} className="rounded-lg bg-white px-4 py-2.5 font-bold text-[#142037] hover:bg-slate-100">Entrar a ELINE</button>
+                <a href={enlaceWhatsApp("quisiera solicitar una demostración de ELINE.")} target="_blank" rel="noopener noreferrer" className="py-2.5 font-semibold underline underline-offset-4">Solicitar demostración</a>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {funcionesRegistro.map((item, index) => (
+                <div key={item} className="flex items-center gap-4 border border-white/12 bg-white px-6 py-4 text-[#142037] shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+                  <span className="font-mono text-[10px] text-[#5c4419]">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="text-[14px] font-semibold">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -376,60 +406,6 @@ export default function HomeInstitucional() {
                 <div key={valor.titulo} className="px-0 py-8 first:pl-0 md:px-10 md:py-0">
                   <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-[#5c4419]">{valor.titulo}</p>
                   <p className="text-[14px] leading-relaxed text-[#5b6472]">{valor.texto}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="servicios" className="border-y border-[#e3e5ea] bg-white px-6 py-24">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-              <div>
-                <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#5c4419]">Servicios ADSP</p>
-                <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">
-                  Soluciones integrales para estudiantes, docentes e instituciones.
-                </h2>
-              </div>
-              <p className="max-w-sm text-[14px] leading-relaxed text-[#5b6472]">
-                Desarrollamos cada servicio con un enfoque estrictamente profesional, garantizando presentaciones impecables y una orientación práctica para asegurar el éxito de tus entregas académicas.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 border-l border-t border-[#e3e5ea] bg-[#f6f7f9] sm:grid-cols-2 lg:grid-cols-4">
-              {servicios.map((servicio, index) => (
-                <article key={servicio.titulo} className="border-b border-r border-[#e3e5ea] bg-white px-6 py-7 transition-colors hover:bg-[#f6f7f9]">
-                  <p className="mb-5 font-mono text-[11px] text-[#5b6472]">{String(index + 1).padStart(2, '0')}</p>
-                  <h3 className="mb-2 font-serif text-[16px] font-medium">{servicio.titulo}</h3>
-                  <p className="text-[13px] leading-relaxed text-[#5b6472]">{servicio.descripcion}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <CatalogoServicios />
-
-        <section id="registro" className="bg-[#101b31] px-6 py-24 text-white">
-          <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-            <div>
-              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[#ffc107]">Aplicación destacada</p>
-              <div className="mb-5 flex items-center gap-4">
-                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white">
-                  <Image src="/logo.png" alt="Logo del registro escolar" width={54} height={54} className="object-contain" />
-                </span>
-                <h2 className="font-serif text-3xl font-medium leading-snug md:text-[2.25rem]">ELINE para maestros</h2>
-              </div>
-              <p className="max-w-md text-[15px] leading-relaxed text-white/72">
-                Herramienta de ADSP para registrar datos escolares, consultar información por sección y mantener organizado el proceso académico.
-              </p>
-            </div>
-
-            <div className="grid gap-3">
-              {funcionesRegistro.map((item, index) => (
-                <div key={item} className="flex items-center gap-4 border border-white/12 bg-white px-6 py-4 text-[#142037] shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-                  <span className="font-mono text-[10px] text-[#5c4419]">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="text-[14px] font-semibold">{item}</span>
                 </div>
               ))}
             </div>
