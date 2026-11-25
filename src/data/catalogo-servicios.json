@@ -1,0 +1,352 @@
+[
+  {
+    "codigo": "ADSP-001",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "8.5×11″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 3.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-002",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "8.5×11″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 15.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-003",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "8.5×14″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 10.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-004",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "8.5×14″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 20.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-005",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "11×17″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 15.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-006",
+    "categoria": "Impresión digital",
+    "servicio": "Papel bond",
+    "formato": "11×17″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 35.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-007",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "8.5×11″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 10.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-008",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "8.5×11″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 20.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-009",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "8.5×14″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 15.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-010",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "8.5×14″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 25.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-011",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "11×17″",
+    "variante": "Blanco y negro",
+    "unidad": "Página",
+    "precio": 30.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-012",
+    "categoria": "Impresión digital",
+    "servicio": "Papel satinado",
+    "formato": "11×17″",
+    "variante": "Color",
+    "unidad": "Página",
+    "precio": 45.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-013",
+    "categoria": "Impresión digital",
+    "servicio": "Opalina",
+    "formato": "8.5×11″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 25.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-014",
+    "categoria": "Impresión digital",
+    "servicio": "Opalina",
+    "formato": "11×17″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 55.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-015",
+    "categoria": "Impresión digital",
+    "servicio": "Cartonite",
+    "formato": "8.5×11″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 25.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-016",
+    "categoria": "Impresión digital",
+    "servicio": "Cartonite",
+    "formato": "8.5×14″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 35.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-017",
+    "categoria": "Impresión digital",
+    "servicio": "Cartonite",
+    "formato": "11×17″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 50.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-018",
+    "categoria": "Impresión digital",
+    "servicio": "Papel adhesivo",
+    "formato": "8.5×11″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 25.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-019",
+    "categoria": "Impresión digital",
+    "servicio": "Papel adhesivo",
+    "formato": "11×17″",
+    "variante": "",
+    "unidad": "Página",
+    "precio": 50.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-020",
+    "categoria": "Impresión fotográfica",
+    "servicio": "Papel fotográfico",
+    "formato": "11×17″",
+    "variante": "Brillo, desfilado",
+    "unidad": "Impresión",
+    "precio": 170.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-021",
+    "categoria": "Impresión fotográfica",
+    "servicio": "Papel fotográfico",
+    "formato": "12×18″",
+    "variante": "Brillo, desfilado",
+    "unidad": "Impresión",
+    "precio": 200.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-022",
+    "categoria": "Terminación",
+    "servicio": "Laminado mate",
+    "formato": "8.5×11″",
+    "variante": "Una cara",
+    "unidad": "Hoja",
+    "precio": 10.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-023",
+    "categoria": "Terminación",
+    "servicio": "Laminado mate",
+    "formato": "11×17″",
+    "variante": "Una cara",
+    "unidad": "Hoja",
+    "precio": 25.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-024",
+    "categoria": "Terminación",
+    "servicio": "Plastificación",
+    "formato": "8.5×11″",
+    "variante": "",
+    "unidad": "Hoja",
+    "precio": 35.0,
+    "nota": "La impresión se cobra aparte."
+  },
+  {
+    "codigo": "ADSP-025",
+    "categoria": "Terminación",
+    "servicio": "Plastificación",
+    "formato": "11×17″",
+    "variante": "",
+    "unidad": "Hoja",
+    "precio": 75.0,
+    "nota": "La impresión se cobra aparte."
+  },
+  {
+    "codigo": "ADSP-026",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "2–50 hojas",
+    "unidad": "Trabajo",
+    "precio": 50.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-027",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "51–100 hojas",
+    "unidad": "Trabajo",
+    "precio": 65.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-028",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "101–150 hojas",
+    "unidad": "Trabajo",
+    "precio": 85.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-029",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "151–200 hojas",
+    "unidad": "Trabajo",
+    "precio": 115.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-030",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "201–300 hojas",
+    "unidad": "Trabajo",
+    "precio": 170.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-031",
+    "categoria": "Terminación",
+    "servicio": "Encuadernación en espiral",
+    "formato": "8.5×11″",
+    "variante": "301–425 hojas",
+    "unidad": "Trabajo",
+    "precio": 195.0,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-032",
+    "categoria": "Terminación",
+    "servicio": "Corte en guillotina",
+    "formato": "Según trabajo",
+    "variante": "Corte recto",
+    "unidad": "Servicio",
+    "precio": 100.0,
+    "nota": "Las hojas deben llevar los mismos cortes."
+  },
+  {
+    "codigo": "ADSP-033",
+    "categoria": "Terminación",
+    "servicio": "Empastado de tapa blanda",
+    "formato": "Según variante",
+    "variante": "",
+    "unidad": "Trabajo",
+    "precio": null,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-034",
+    "categoria": "Terminación",
+    "servicio": "Empastado de tapa dura a color",
+    "formato": "Según variante",
+    "variante": "",
+    "unidad": "Trabajo",
+    "precio": null,
+    "nota": ""
+  },
+  {
+    "codigo": "ADSP-035",
+    "categoria": "Terminación",
+    "servicio": "Empastado de tapa dura con pan de oro",
+    "formato": "Según variante",
+    "variante": "",
+    "unidad": "Trabajo",
+    "precio": null,
+    "nota": ""
+  }
+]

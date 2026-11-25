@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import CatalogoServicios from '../components/CatalogoServicios'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
@@ -278,9 +279,10 @@ export default function HomeInstitucional() {
             />
           </button>
 
-          <div className="hidden gap-6 font-mono text-[14px] font-medium uppercase tracking-[0.12em] text-[#5b6472] md:flex">
+          <div className="hidden gap-5 text-sm font-semibold text-[#5b6472] lg:flex">
             <button onClick={() => scrollToSection('nosotros')} className="transition-colors hover:text-[#142037]">Nosotros</button>
             <button onClick={() => scrollToSection('servicios')} className="transition-colors hover:text-[#142037]">Servicios</button>
+            <button onClick={() => scrollToSection('catalogo')} className="transition-colors hover:text-[#142037]">Precios</button>
             <button onClick={() => scrollToSection('registro')} className="transition-colors hover:text-[#142037]">Eline</button>
             <button onClick={() => scrollToSection('faq')} className="transition-colors hover:text-[#142037]">Preguntas Frecuentes</button>
             <button onClick={() => scrollToSection('contacto')} className="transition-colors hover:text-[#142037]">Contacto</button>
@@ -290,7 +292,7 @@ export default function HomeInstitucional() {
             <button
               type="button"
               onClick={() => setMostrarMenuMovil((abierto) => !abierto)}
-              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-[#142037] md:hidden"
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 border border-[#142037] lg:hidden"
               aria-label={mostrarMenuMovil ? 'Cerrar menú' : 'Abrir menú'}
               aria-expanded={mostrarMenuMovil}
               aria-controls="menu-movil"
@@ -304,78 +306,58 @@ export default function HomeInstitucional() {
               onClick={abrirLogin}
               className="border border-[#142037] px-3 py-2.5 font-mono text-[11px] font-medium uppercase transition-colors hover:bg-[#142037] hover:text-[#f6f7f9] sm:px-4 sm:text-[12px] md:px-6 md:py-3 md:text-[14px]"
             >
-              <span className="sm:hidden">Acceso</span>
-              <span className="hidden sm:inline">Acceso docente</span>
+              Entrar a ELINE
             </button>
           </div>
         </div>
 
         {mostrarMenuMovil && (
-          <div id="menu-movil" className="border-t border-[#e3e5ea] bg-[#f6f7f9] px-5 py-5 shadow-[0_14px_28px_rgba(20,32,55,0.12)] md:hidden">
+          <div id="menu-movil" className="border-t border-[#e3e5ea] bg-[#f6f7f9] px-5 py-5 shadow-[0_14px_28px_rgba(20,32,55,0.12)] lg:hidden">
             <div className="mx-auto grid max-w-6xl gap-px bg-[#d7dbe2] font-mono text-[13px] font-medium uppercase text-[#142037]">
               <button onClick={() => scrollToSection('nosotros')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Nosotros</button>
               <button onClick={() => scrollToSection('servicios')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Servicios</button>
               <button onClick={() => scrollToSection('registro')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Eline</button>
               <button onClick={() => scrollToSection('faq')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Preguntas frecuentes</button>
               <button onClick={() => scrollToSection('contacto')} className="bg-[#f6f7f9] px-4 py-3.5 text-left">Contacto</button>
-              <a
-                href="https://adsp-tienda-libros.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#ffc107] px-4 py-3.5"
-                onClick={() => setMostrarMenuMovil(false)}
-              >
-                Tienda de libros
-              </a>
+              <button onClick={() => scrollToSection('catalogo')} className="bg-[#ffc107] px-4 py-3.5 text-left">Catálogo y precios</button>
             </div>
           </div>
         )}
       </nav>
 
       <main>
-        <section className="flex min-h-[78vh] items-center justify-center bg-[linear-gradient(135deg,#0056b3_0%,#00a8cc_100%)] px-6 pb-24 pt-44 text-center text-white md:pt-56 lg:pt-64">
-          <div className="mx-auto w-full max-w-[900px]">
-            <span className="mb-5 block font-mono text-[14px] font-bold uppercase tracking-[0.22em] text-[#ffc107]">
-              AD Soluciones Profesionales
-            </span>
-
-            <h1 className="mx-auto mb-6 max-w-3xl text-4xl font-black leading-[1.1] tracking-tight md:text-5xl">
-              Estudia, enseña y gestiona con mayor eficiencia y menos estrés.
-            </h1>
-
-            <p className="mx-auto mb-10 max-w-3xl text-lg font-light leading-relaxed text-[#e0f2f1] md:text-xl">
-              Brindamos soporte profesional y servicios académicos para estudiantes e instituciones. Para los docentes, presentamos <strong className="font-bold text-white">ELINE</strong>: el sistema definitivo que organiza tus plantillas escolares y reportes de notas sin complicaciones.
-            </p>
-
-            <div className="mb-11 flex flex-wrap justify-center gap-4">
-              {['Cálculo Automático', 'Control de Asistencia', 'Generación de Boletines'].map((item) => (
-                <span key={item} className="rounded-full border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm">
-                  {item}
-                </span>
-              ))}
+        <section className="bg-[#101b31] px-5 pb-16 pt-36 text-white md:px-6 md:pb-24 md:pt-52">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.3fr_1fr]">
+            <div>
+              <h1 className="max-w-xl font-serif text-4xl leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                Impresión y apoyo académico
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-200 md:text-lg">
+                Consulta precios de impresión y encuadernación, o cotiza diagramación y asesoría para tu próximo trabajo.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <button onClick={() => scrollToSection('catalogo')} className="rounded-lg bg-[#ffc107] px-5 py-3.5 font-bold text-[#142037] hover:bg-[#ffd04a]">
+                  Ver catálogo y precios
+                </button>
+                <a href="https://wa.me/18496297248?text=Hola%20ADSP%2C%20deseo%20solicitar%20una%20cotizaci%C3%B3n." target="_blank" rel="noopener noreferrer" className="rounded-lg border border-white/50 px-5 py-3.5 font-semibold hover:bg-white/10">
+                  Cotizar por WhatsApp
+                </a>
+              </div>
             </div>
-
-            <div className="mx-auto flex max-w-3xl flex-col justify-center gap-4 sm:flex-row sm:flex-wrap">
-              <button
-                onClick={abrirLogin}
-                className="rounded-lg bg-[#ff9800] px-9 py-4 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#e68a00]"
-              >
-                Acceso docente
-              </button>
-              <button
-                onClick={() => scrollToSection('servicios')}
-                className="rounded-lg border-2 border-white px-9 py-4 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-              >
-                Ver servicios
-              </button>
-              <a
-                href="https://adsp-tienda-libros.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg border-2 border-[#ffc107] bg-[#ffc107] px-9 py-4 text-base font-bold text-[#142037] transition hover:-translate-y-0.5 hover:bg-[#ffd04a]"
-              >
-                Visitar tienda
-              </a>
+            <div className="rounded-2xl border border-white/20 bg-white/10 p-6 sm:p-8">
+              <Image src="/logo.png" alt="" width={64} height={64} className="mb-5 rounded-lg bg-white p-2" />
+              <h2 className="font-serif text-3xl">ELINE para docentes</h2>
+              <p className="mt-3 leading-relaxed text-slate-200">
+                Gestiona asistencia, calificaciones y boletines en tu registro escolar digital.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+                <button onClick={abrirLogin} className="rounded-lg bg-white px-4 py-2.5 font-bold text-[#142037] hover:bg-slate-100">
+                  Entrar a ELINE
+                </button>
+                <button onClick={() => scrollToSection('registro')} className="px-2 py-2.5 font-semibold underline underline-offset-4">
+                  Conocer ELINE
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -425,6 +407,8 @@ export default function HomeInstitucional() {
             </div>
           </div>
         </section>
+
+        <CatalogoServicios />
 
         <section id="registro" className="bg-[#101b31] px-6 py-24 text-white">
           <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
