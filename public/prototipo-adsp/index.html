@@ -68,7 +68,7 @@
         input[type=number]::-webkit-outer-spin-button {
             opacity: 1;
         }
-        section[id] { scroll-margin-top: 5.5rem; }
+        section[id], #planes-eline { scroll-margin-top: 5.5rem; }
     </style>
 </head>
 <body class="font-sans text-slate-800 bg-slate-50 antialiased selection:bg-indigo-600 selection:text-white">
@@ -109,9 +109,9 @@
                     <a href="#inicio" class="hover:text-adsp-navy transition-colors">Inicio</a>
                     <a href="#servicios-academicos" class="hover:text-adsp-navy transition-colors">Servicios Académicos</a>
                     <a href="#impresion" class="hover:text-adsp-navy transition-colors">Impresión y Empastado</a>
-                    <a href="#eline" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1.5 transition-colors">
+                    <a href="#planes-eline" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1.5 transition-colors">
                         <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
-                        ELINE (Docentes)
+                        ELINE
                     </a>
                     <a href="#cotizador" class="hover:text-adsp-navy transition-colors">Cotizar</a>
                 </nav>
@@ -137,7 +137,7 @@
             <a href="#inicio" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Inicio</a>
             <a href="#servicios-academicos" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Servicios Académicos</a>
             <a href="#impresion" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Impresión y Empastado</a>
-            <a href="#eline" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-semibold text-indigo-600 bg-indigo-50/60">ELINE (Gestión para Docentes)</a>
+            <a href="#planes-eline" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-semibold text-indigo-600 bg-indigo-50/60">ELINE</a>
             <a href="#cotizador" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Cotizar Alcance</a>
             <a href="/dashboard" class="block px-3 py-2.5 text-sm font-semibold text-indigo-700">Acceso docente</a>
             <div class="pt-3 border-t border-slate-100">
@@ -267,7 +267,7 @@
                     <div>
                         <h3 class="font-bold text-sm text-amber-950">Evaluación y cotización según alcance</h3>
                         <p class="text-xs text-amber-900/80 mt-1 leading-relaxed">
-                            Evaluamos cada trabajo según su extensión, nivel y complejidad. Similitud desde RD$800 y revisión completa con tope de RD$35,000, previa evaluación.
+                            Evaluamos cada trabajo según su extensión, nivel y complejidad. Revisión de similitud desde RD$800. La revisión completa se cotiza previa evaluación.
                         </p>
                     </div>
                 </div>
@@ -849,7 +849,7 @@
             </div>
 
             <!-- PLANES INDIVIDUALES PARA DOCENTES (OFERTA APROBADA) -->
-            <div class="mb-16">
+            <div id="planes-eline" class="mb-16">
                 <div class="text-center max-w-2xl mx-auto mb-10">
                     <span class="text-cyan-300 font-bold text-xs uppercase tracking-widest">Catálogo Comercial Aprobado · Noviembre 2026</span>
                     <h3 class="font-display font-extrabold text-2xl sm:text-4xl text-white mt-2">
@@ -1182,7 +1182,7 @@
                         <li><a href="#impresion" class="hover:text-white transition-colors">Diagramación e Impresión B/N y Color</a></li>
                         <li><a href="#impresion" class="hover:text-white transition-colors">Encuadernación y Empastado</a></li>
                         <li><a href="#impresion" class="hover:text-white transition-colors">Materiales Promocionales</a></li>
-                        <li><a href="#eline" class="text-indigo-300 hover:text-white font-medium transition-colors">ELINE · 3 Planes Docentes</a></li>
+                        <li><a href="#planes-eline" class="text-indigo-300 hover:text-white font-medium transition-colors">ELINE · 3 Planes Docentes</a></li>
                         <li><button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Gratis / 30 días', 'prueba')" class="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">Prueba ELINE 30 días</button></li>
                     </ul>
                 </div>
