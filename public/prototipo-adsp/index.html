@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>ADSP | Servicios Académicos, Impresión y Plataforma Docente ELINE</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.468.0"></script>
+
+    <!-- Configuración personalizada de Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        adsp: {
+                            navy: '#0B192C',
+                            slate: '#1E293B',
+                            blue: '#1D4ED8',
+                            light: '#F8FAFC'
+                        },
+                        eline: {
+                            primary: '#4F46E5',
+                            dark: '#312E81',
+                            accent: '#06B6D4'
+                        },
+                        whatsapp: {
+                            DEFAULT: '#10B981',
+                            dark: '#059669'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Utilidades suaves y barras de desplazamiento limpias */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .hero-pattern {
+            background-color: #0B192C;
+            background-image: radial-gradient(at 15% 15%, rgba(79, 70, 229, 0.25) 0px, transparent 50%),
+                              radial-gradient(at 85% 80%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+        }
+        .eline-gradient {
+            background: linear-gradient(135deg, #1E1B4B 0%, #312E81 55%, #1E293B 100%);
+        }
+        /* Ocultar flechas numéricas si se desea limpieza visual */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+        section[id] { scroll-margin-top: 5.5rem; }
+    </style>
+</head>
+<body class="font-sans text-slate-800 bg-slate-50 antialiased selection:bg-indigo-600 selection:text-white">
+
+    <!-- Barra superior discreta de estado del catálogo comercial -->
+    <div id="topBanner" class="bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Catálogo Comercial Vigente
+                </span>
+                <span class="text-slate-300">Oferta aprobada (Noviembre 2026) · Servicios Académicos, Impresión y Plataforma ELINE.</span>
+            </div>
+            <div class="hidden sm:flex items-center gap-4 text-slate-400">
+                <a href="#cotizador" class="hover:text-white transition-colors flex items-center gap-1">
+                    <i data-lucide="calculator" class="w-3.5 h-3.5"></i> Evaluación por alcance
+                </a>
+                <span>•</span>
+                <button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Gratis / 30 días', 'prueba')" class="text-indigo-300 hover:text-indigo-200 font-medium transition-colors">
+                    Activar ELINE vía WhatsApp →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. NAVEGACIÓN (HEADER FIJO) -->
+    <header class="sticky top-0 z-40 glass-header border-b border-slate-200/80 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+
+                <!-- Marca / Logo ADSP -->
+                <a href="#inicio" class="flex items-center gap-3 group">
+                    <img src="/logo_adsp.png" alt="" width="44" height="44" class="w-11 h-11 object-contain">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-display font-extrabold text-xl tracking-tight text-adsp-navy">ADSP</span>
+                            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200">Soluciones</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-none mt-0.5">Académico · Impresión · ELINE</p>
+                    </div>
+                </a>
+
+                <!-- Enlaces Escritorio -->
+                <nav class="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-600">
+                    <a href="#inicio" class="hover:text-adsp-navy transition-colors">Inicio</a>
+                    <a href="#servicios-academicos" class="hover:text-adsp-navy transition-colors">Servicios Académicos</a>
+                    <a href="#impresion" class="hover:text-adsp-navy transition-colors">Impresión y Empastado</a>
+                    <a href="#eline" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1.5 transition-colors">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+                        ELINE (Docentes)
+                    </a>
+                    <a href="#cotizador" class="hover:text-adsp-navy transition-colors">Cotizar</a>
+                </nav>
+
+                <!-- Acceso y prueba de ELINE -->
+                <div class="hidden lg:flex items-center gap-3"><a href="/dashboard" class="text-sm font-semibold text-indigo-700">Acceso docente</a>
+                    <button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Sin costo por 30 días', 'prueba')"
+                        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-indigo-600/20 transition-all hover:-translate-y-0.5">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Probar ELINE 30 días
+                    </button>
+                </div>
+
+                <!-- Botón Menú Móvil -->
+                <button id="mobileMenuBtn" aria-controls="mobileMenu" aria-expanded="false" aria-label="Menú" class="lg:hidden p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Menú Desplegable Móvil -->
+        <div id="mobileMenu" class="hidden lg:hidden bg-white border-t border-slate-200 px-4 pt-3 pb-6 space-y-2 shadow-xl">
+            <a href="#inicio" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Inicio</a>
+            <a href="#servicios-academicos" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Servicios Académicos</a>
+            <a href="#impresion" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Impresión y Empastado</a>
+            <a href="#eline" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-semibold text-indigo-600 bg-indigo-50/60">ELINE (Gestión para Docentes)</a>
+            <a href="#cotizador" class="mobile-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Cotizar Alcance</a>
+            <a href="/dashboard" class="block px-3 py-2.5 text-sm font-semibold text-indigo-700">Acceso docente</a>
+            <div class="pt-3 border-t border-slate-100">
+                <button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Sin costo por 30 días', 'prueba')"
+                    class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-3 rounded-xl shadow-md">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    Probar ELINE 30 días gratis
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+    <!-- 2. HERO PRINCIPAL (DOBLE ENFOQUE ESTRATÉGICO) -->
+    <section id="inicio" class="hero-pattern text-white relative overflow-hidden py-16 sm:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+                <!-- Columna Izquierda: Propuesta de Valor -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs sm:text-sm text-indigo-200 font-medium">
+                        <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                        Dos líneas especializadas para impulsar la excelencia educativa
+                    </div>
+
+                    <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-[3.25rem] leading-tight tracking-tight">
+                        Rigor en <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-emerald-300">Servicios Académicos e Impresión</span> y gestión docente con <span class="text-indigo-400">ELINE</span>.
+                    </h1>
+
+                    <p class="text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed">
+                        En <strong>ADSP</strong> acompañamos a investigadores, estudiantes e instituciones desde la revisión metodológica y el formato normativo hasta el empastado final; y potenciamos el aula con <strong>ELINE</strong>, nuestra herramienta digital para docentes.
+                    </p>
+
+                    <!-- Dos llamados a la acción claros -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                        <a href="#cotizador" class="inline-flex items-center justify-center gap-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 text-sm sm:text-base">
+                            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                            Solicitar cotización
+                        </a>
+                        <a href="#eline" class="inline-flex items-center justify-center gap-2.5 bg-indigo-600/90 hover:bg-indigo-500 text-white border border-indigo-400/30 font-semibold px-6 py-4 rounded-xl shadow-lg transition-all hover:-translate-y-0.5 text-sm sm:text-base">
+                            <i data-lucide="laptop" class="w-5 h-5"></i>
+                            Conocer ELINE para Docentes
+                        </a>
+                    </div>
+
+                    <!-- Indicadores rápidos de confianza -->
+                    <div class="pt-6 grid grid-cols-3 gap-4 border-t border-white/10 text-xs sm:text-sm text-slate-300">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Cotización justa según alcance real</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="printer" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
+                            <span>Impresión, diagramación y empastado</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                            <span>ELINE con 30 días de prueba gratis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Tarjetas resumen de las 2 líneas principales -->
+                <div class="lg:col-span-5 space-y-4">
+                    <!-- Tarjeta Línea 1 -->
+                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-6 hover:bg-white/[0.13] transition-all">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-lg bg-emerald-400/20 text-emerald-300 text-xs font-bold uppercase tracking-wider">Línea 1 · Servicios & Producción</span>
+                            <i data-lucide="graduation-cap" class="w-6 h-6 text-emerald-300"></i>
+                        </div>
+                        <h2 class="font-display font-bold text-xl text-white mb-2">Asesoría Académica e Impresión</h2>
+                        <p class="text-sm text-slate-300 mb-4">
+                            Revisión de similitud, normas APA/Vancouver, estadística, revisión de fondo, diagramación y empastado profesional de tesis e informes.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="#servicios-academicos" class="text-xs font-semibold text-emerald-300 hover:text-emerald-200 inline-flex items-center gap-1">
+                                Ver 5 servicios académicos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </a>
+                            <span class="text-slate-500">•</span>
+                            <a href="#impresion" class="text-xs font-semibold text-sky-300 hover:text-sky-200 inline-flex items-center gap-1">
+                                Ver impresión y empastado <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Línea 2 -->
+                    <div class="bg-gradient-to-br from-indigo-600/40 to-slate-900/80 backdrop-blur-md border border-indigo-400/30 rounded-2xl p-6 hover:border-indigo-400/60 transition-all">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-3 py-1 rounded-lg bg-indigo-500/30 text-indigo-200 text-xs font-bold uppercase tracking-wider">Línea 2 · Software Docente</span>
+                            <span class="text-xs font-semibold text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full">Prueba 30 días</span>
+                        </div>
+                        <h2 class="font-display font-bold text-xl text-white mb-2">Plataforma ELINE</h2>
+                        <p class="text-sm text-slate-200 mb-4">
+                            Control integral de estudiantes y secciones, asistencia, calificaciones y boletines en un solo lugar. 3 planes individuales con activación directa vía WhatsApp.
+                        </p>
+                        <button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Sin costo por 30 días', 'prueba')" class="text-xs font-semibold bg-white text-indigo-950 hover:bg-indigo-50 px-4 py-2 rounded-lg inline-flex items-center gap-1.5 transition-colors">
+                            Solicitar prueba de 30 días <i data-lucide="message-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. SECCIÓN: SERVICIOS ACADÉMICOS (EVALUACIÓN SEGÚN ALCANCE) -->
+    <section id="servicios-academicos" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Encabezado de Sección + Banner de Evaluación según Alcance -->
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+                <div class="max-w-2xl">
+                    <span class="text-indigo-600 font-bold text-xs uppercase tracking-widest">Rigor Metodológico y Editorial</span>
+                    <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-adsp-navy mt-2">
+                        Servicios Académicos Especializados
+                    </h2>
+                    <p class="text-slate-600 mt-3 text-base sm:text-lg">
+                        Acompañamos trabajos de grado, posgrado, artículos científicos y proyectos institucionales con total confidencialidad y precisión técnica.
+                    </p>
+                </div>
+
+                <!-- Aviso explícito de política comercial -->
+                <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 sm:p-5 max-w-md flex items-start gap-3.5 shadow-sm">
+                    <div class="p-2 bg-amber-100 text-amber-700 rounded-xl shrink-0">
+                        <i data-lucide="scale" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-amber-950">Evaluación y cotización según alcance</h3>
+                        <p class="text-xs text-amber-900/80 mt-1 leading-relaxed">
+                            Evaluamos cada trabajo según su extensión, nivel y complejidad. Similitud desde RD$800 y revisión completa con tope de RD$35,000, previa evaluación.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid de las 5 actividades documentadas -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <!-- 1. Revisión de similitud -->
+                <div class="group bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-950/5 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                            <i data-lucide="scan-search" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-display font-bold text-xl text-adsp-navy mb-2">Revisión de similitud</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Detección detallada de coincidencias textuales, verificación de citas omitidas e informe técnico con orientaciones claras para garantizar la originalidad académica.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-500 mb-6">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Reporte porcentual y fuentes detectadas</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Guía de paráfrasis y citación correcta</li>
+                        </ul>
+                    </div>
+                    <button onclick="preselectService('academico', 'Revisión de similitud')"
+                        class="w-full py-2.5 px-4 rounded-xl bg-white group-hover:bg-adsp-navy text-adsp-navy group-hover:text-white border border-slate-200 group-hover:border-adsp-navy text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        Cotizar este servicio <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- 2. Formato APA, Vancouver o institucional -->
+                <div class="group bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-950/5 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-display font-bold text-xl text-adsp-navy mb-2">Aplicación de formato normativo</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Adecuación integral bajo estándares <strong>APA, Vancouver o manual institucional</strong>: márgenes, niveles de títulos, tablas, figuras, citas y referencias bibliográficas.
+                        </p>
+                        <div class="flex flex-wrap gap-1.5 mb-6">
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-semibold">Normas APA</span>
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-semibold">Vancouver</span>
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-semibold">Guía Institucional</span>
+                        </div>
+                    </div>
+                    <button onclick="preselectService('academico', 'Formato APA, Vancouver o institucional')"
+                        class="w-full py-2.5 px-4 rounded-xl bg-white group-hover:bg-adsp-navy text-adsp-navy group-hover:text-white border border-slate-200 group-hover:border-adsp-navy text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        Cotizar este servicio <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- 3. Análisis e interpretación de datos -->
+                <div class="group bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-950/5 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-display font-bold text-xl text-adsp-navy mb-2">Análisis e interpretación de datos</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Procesamiento estadístico descriptivo e inferencial o sistematización cualitativa, elaboración de gráficos claros y redacción técnica de hallazgos.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-500 mb-6">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Tabulación, limpieza y pruebas de hipótesis</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Tablas y gráficos listos para defensa</li>
+                        </ul>
+                    </div>
+                    <button onclick="preselectService('academico', 'Análisis e interpretación de datos')"
+                        class="w-full py-2.5 px-4 rounded-xl bg-white group-hover:bg-adsp-navy text-adsp-navy group-hover:text-white border border-slate-200 group-hover:border-adsp-navy text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        Cotizar este servicio <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- 4. Revisión de fondo -->
+                <div class="group bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-950/5 transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                            <i data-lucide="book-open-check" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-display font-bold text-xl text-adsp-navy mb-2">Revisión de fondo</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Evaluación exhaustiva de la coherencia interna entre planteamiento del problema, objetivos, marco teórico, diseño metodológico, discusión y conclusiones.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-500 mb-6">
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Matriz de consistencia y argumentación</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i> Observaciones puntuales capítulo a capítulo</li>
+                        </ul>
+                    </div>
+                    <button onclick="preselectService('academico', 'Revisión de fondo')"
+                        class="w-full py-2.5 px-4 rounded-xl bg-white group-hover:bg-adsp-navy text-adsp-navy group-hover:text-white border border-slate-200 group-hover:border-adsp-navy text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                        Cotizar este servicio <i data-lucide="arrow-down-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- 5. Asesoría de proyectos -->
+                <div class="group bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200/80 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-950/5 transition-all flex flex-col justify-between md:col-span-2 lg:col-span-2">
+                    <div class="grid sm:grid-cols-12 gap-6 items-center h-full">
+                        <div class="sm:col-span-8">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                                <i data-lucide="compass" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="font-display font-bold text-xl text-adsp-navy mb-2">Asesoría integral de proyectos</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                                Acompañamiento personalizado por etapas desde la delimitación del tema y anteproyecto hasta la preparación para la sustentación final. Ideal para investigaciones aplicadas, tesis e informes técnicos.
+                            </p>
+                            <div class="flex flex-wrap gap-3 text-xs text-slate-600">
+                                <span class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200"><i data-lucide="users" class="w-3.5 h-3.5 text-indigo-600"></i> Sesiones de seguimiento</span>
+                                <span class="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200"><i data-lucide="check-square" class="w-3.5 h-3.5 text-indigo-600"></i> Plan de trabajo por entregables</span>
+                            </div>
+                        </div>
+                        <div class="sm:col-span-4 flex flex-col justify-end h-full bg-white p-5 rounded-xl border border-slate-200/80">
+                            <p class="text-xs text-slate-500 mb-3">¿Necesitas combinar asesoría con formato o análisis de datos?</p>
+                            <button onclick="preselectService('academico', 'Asesoría de proyectos')"
+                                class="w-full py-3 px-4 rounded-xl bg-adsp-navy hover:bg-indigo-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                Solicitar evaluación <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. SECCIÓN: IMPRESIÓN, ENCUADERNACIÓN Y MATERIALES PROMOCIONALES -->
+    <section id="impresion" class="py-20 bg-slate-100/80 border-y border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span class="text-sky-700 font-bold text-xs uppercase tracking-widest">Producción Editorial y Acabados</span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-adsp-navy mt-2">
+                    Impresión, Encuadernación y Materiales Promocionales
+                </h2>
+                <p class="text-slate-600 mt-3 text-base sm:text-lg">
+                    Cuidamos la presentación física de tus documentos académicos e institucionales con acabados duraderos, nitidez superior y entrega puntual.
+                </p>
+            </div>
+
+            <!-- 3 Bloques Principales de Servicio Físico -->
+            <div class="grid md:grid-cols-3 gap-6 mb-12">
+                <!-- Diagramación -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                                <i data-lucide="layout-template" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">Pre-prensa</span>
+                        </div>
+                        <h3 class="font-display font-bold text-lg text-adsp-navy mb-2">Diagramación Profesional</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Maquetación limpia de libros, manuales docentes, memorias, tesis y guías de estudio listas para imprenta o distribución digital.
+                        </p>
+                    </div>
+                    <button onclick="preselectService('impresion', 'Diagramación profesional')" class="text-sm font-semibold text-sky-700 hover:text-sky-900 inline-flex items-center gap-1.5 mt-2">
+                        Cotizar diagramación <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Impresión B/N y Color -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                                <i data-lucide="printer" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">Alta resolución</span>
+                        </div>
+                        <h3 class="font-display font-bold text-lg text-adsp-navy mb-2">Impresión B/N y a Color</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Impresión láser nítida en blanco y negro para textos extensos y color de alta fidelidad para gráficos estadísticos, mapas, portadas y anexos.
+                        </p>
+                    </div>
+                    <button onclick="preselectService('impresion', 'Impresión en blanco y negro y a color')" class="text-sm font-semibold text-indigo-700 hover:text-indigo-900 inline-flex items-center gap-1.5 mt-2">
+                        Calcular tiraje e impresión <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Encuadernación y Empastado -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                <i data-lucide="book-marked" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">Acabado final</span>
+                        </div>
+                        <h3 class="font-display font-bold text-lg text-adsp-navy mb-2">Encuadernación y Empastado</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+                            Empastado de lujo en pasta dura con grabado dorado/plateado para tesis reglamentarias, además de encuadernado en espiral, anillado y térmico.
+                        </p>
+                    </div>
+                    <button onclick="preselectService('impresion', 'Encuadernación y empastado')" class="text-sm font-semibold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1.5 mt-2">
+                        Cotizar empastado <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Muestrario Visual Interactivo: Materiales Promocionales y Acabados -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                    <div>
+                        <div class="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+                            <i data-lucide="megaphone" class="w-4 h-4"></i> Muestrario Comercial ADSP
+                        </div>
+                        <h3 class="font-display font-bold text-xl sm:text-2xl text-adsp-navy">
+                            Materiales Promocionales y Catálogo de Acabados
+                        </h3>
+                        <p class="text-sm text-slate-500">Explora las piezas informativas de nuestros servicios y opciones de presentación.</p>
+                    </div>
+                    <!-- Filtros del muestrario -->
+                    <div class="flex flex-wrap gap-2" id="promoFilters">
+                        <button onclick="filterPromo('todos')" data-filter="todos" class="promo-tab bg-adsp-navy text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+                            Todos
+                        </button>
+                        <button onclick="filterPromo('empastados')" data-filter="empastados" class="promo-tab bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+                            Tesis y Empastados
+                        </button>
+                        <button onclick="filterPromo('promocionales')" data-filter="promocionales" class="promo-tab bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
+                            Material Promocional
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tarjetas del muestrario -->
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-6" id="promoGrid">
+                    <!-- Item 1 -->
+                    <div data-category="empastados" class="promo-card group rounded-2xl border border-slate-200 p-4 hover:border-indigo-300 transition-all bg-slate-50/50">
+                        <div class="h-36 rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 p-4 flex flex-col justify-between text-white mb-4 relative overflow-hidden">
+                            <div class="border border-amber-400/50 rounded-lg p-3 h-full flex flex-col justify-between">
+                                <span class="text-[10px] uppercase tracking-widest text-amber-300 font-semibold">Universidad · Tesis</span>
+                                <div class="text-center">
+                                    <div class="w-8 h-0.5 bg-amber-400 mx-auto mb-1"></div>
+                                    <p class="text-xs font-serif text-amber-200 font-semibold">PASTA DURA ESTAMPADA</p>
+                                </div>
+                                <span class="text-[10px] text-slate-400 text-right">Dorado / Plateado</span>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-sm text-adsp-navy">Empastado Reglamentario</h4>
+                        <p class="text-xs text-slate-500 mt-1 mb-3">Tapa rígida percalina o piel sintética con letras grabadas en alto contraste.</p>
+                        <button onclick="preselectService('impresion', 'Empastado pasta dura para tesis')" class="text-xs font-semibold text-indigo-600 hover:underline">Solicitar cotización →</button>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div data-category="empastados" class="promo-card group rounded-2xl border border-slate-200 p-4 hover:border-indigo-300 transition-all bg-slate-50/50">
+                        <div class="h-36 rounded-xl bg-gradient-to-br from-sky-600 to-indigo-800 p-4 flex flex-col justify-between text-white mb-4">
+                            <span class="text-[10px] uppercase tracking-wider bg-white/20 w-fit px-2 py-0.5 rounded">Informes y Manuales</span>
+                            <div>
+                                <p class="font-display font-bold text-sm">Encuadernado Espiral y Anillado</p>
+                                <p class="text-[11px] text-sky-100">Cubierta protectora transparente y respaldo rígido</p>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-sm text-adsp-navy">Guías Docentes y Dossiers</h4>
+                        <p class="text-xs text-slate-500 mt-1 mb-3">Ideal para cuadernos de cátedra, borradores de revisión y reportes técnicos.</p>
+                        <button onclick="preselectService('impresion', 'Encuadernación espiral / informes')" class="text-xs font-semibold text-indigo-600 hover:underline">Solicitar cotización →</button>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div data-category="promocionales" class="promo-card group rounded-2xl border border-slate-200 p-4 hover:border-indigo-300 transition-all bg-slate-50/50">
+                        <div class="h-36 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 p-4 flex flex-col justify-between text-white mb-4">
+                            <span class="text-[10px] uppercase tracking-wider bg-white/20 w-fit px-2 py-0.5 rounded">Difusión ADSP</span>
+                            <div>
+                                <p class="font-display font-bold text-sm">Brochures y Volantes de Servicios</p>
+                                <p class="text-[11px] text-emerald-100">Materiales informativos impresos y digitales</p>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-sm text-adsp-navy">Material Promocional Impreso</h4>
+                        <p class="text-xs text-slate-500 mt-1 mb-3">Trípticos, afiches informativos, separadores académicos y tarjetas de presentación.</p>
+                        <button onclick="preselectService('impresion', 'Materiales promocionales e impresos')" class="text-xs font-semibold text-indigo-600 hover:underline">Solicitar cotización →</button>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div data-category="promocionales" class="promo-card group rounded-2xl border border-slate-200 p-4 hover:border-indigo-300 transition-all bg-slate-50/50">
+                        <div class="h-36 rounded-xl bg-gradient-to-br from-indigo-700 to-purple-900 p-4 flex flex-col justify-between text-white mb-4">
+                            <span class="text-[10px] uppercase tracking-wider bg-amber-400/20 text-amber-200 w-fit px-2 py-0.5 rounded">Pack Completo</span>
+                            <div>
+                                <p class="font-display font-bold text-sm">Combo Tesis: Formato + Impresión</p>
+                                <p class="text-[11px] text-indigo-200">Del archivo Word al ejemplar empastado</p>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-sm text-adsp-navy">Paquete Integral de Entrega</h4>
+                        <p class="text-xs text-slate-500 mt-1 mb-3">Combina revisión de formato, impresión láser a color/BN y ejemplares empastados.</p>
+                        <button onclick="preselectService('impresion', 'Combo Diagramación + Impresión + Empastado')" class="text-xs font-semibold text-indigo-600 hover:underline">Cotizar paquete →</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 5. SECCIÓN ESTRELLA: ELINE — HERRAMIENTA DE GESTIÓN ACADÉMICA PARA DOCENTES -->
+    <section id="eline" class="py-24 eline-gradient text-white relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+            <!-- Encabezado ELINE + Sello Prueba 30 Días -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-14">
+                <div class="max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/30 border border-indigo-400/40 text-xs font-bold uppercase tracking-wider text-indigo-200 mb-3">
+                        <i data-lucide="cpu" class="w-4 h-4 text-cyan-300"></i> Plataforma Propia de ADSP para Docentes
+                    </div>
+                    <h2 class="font-display font-extrabold text-3xl sm:text-5xl tracking-tight">
+                        ELINE: Tu aula organizada, <span class="text-cyan-300">sin hojas de cálculo complejas</span>
+                    </h2>
+                    <p class="text-indigo-100/90 mt-4 text-base sm:text-lg leading-relaxed">
+                        Diseñada específicamente para docentes que buscan gestionar sus secciones, registrar asistencia diaria, calcular calificaciones y emitir boletines listos en minutos.
+                    </p>
+                </div>
+
+                <!-- Destacado Especial: Prueba 30 días -->
+                <div class="bg-white/10 backdrop-blur-md border border-cyan-400/40 rounded-2xl p-5 sm:p-6 max-w-md shadow-xl">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-2.5 py-1 rounded-md bg-emerald-400 text-slate-950 font-extrabold text-xs uppercase">30 Días Gratis</span>
+                        <span class="text-xs text-cyan-200 font-medium">Oferta aprobada para docentes</span>
+                    </div>
+                    <p class="text-sm text-white font-semibold mb-3">
+                        Explora los 4 módulos completos durante 30 días sin compromiso antes de elegir tu plan individual.
+                    </p>
+                    <button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Gratis por 30 días', 'prueba')"
+                        class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        Solicitar Prueba de 30 días por WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA PREVIA INTERACTIVA DEL PANEL ELINE (4 MÓDULOS DOCUMENTADOS) -->
+            <div class="bg-slate-900/95 border border-indigo-400/30 rounded-3xl shadow-2xl overflow-hidden mb-20">
+
+                <!-- Barra superior tipo ventana de aplicación -->
+                <div class="bg-slate-950 px-4 sm:px-6 py-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <span class="ml-3 text-xs font-mono text-slate-400">ELINE Docente · Vista Previa Interactiva</span>
+                    </div>
+                    <div class="text-xs text-indigo-300 flex items-center gap-1.5">
+                        <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i> Haz clic en cada módulo para explorar
+                    </div>
+                </div>
+
+                <!-- Navegación de los 4 Módulos -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 border-b border-slate-800 bg-slate-900/60">
+                    <button onclick="switchElineTab('secciones')" id="tab-secciones" class="eline-tab flex items-center justify-center gap-2.5 py-4 px-3 text-xs sm:text-sm font-semibold border-b-2 border-cyan-400 text-white bg-indigo-950/60 transition-all">
+                        <i data-lucide="users" class="w-4 h-4 text-cyan-400"></i>
+                        <span>1. Estudiantes y Secciones</span>
+                    </button>
+                    <button onclick="switchElineTab('asistencia')" id="tab-asistencia" class="eline-tab flex items-center justify-center gap-2.5 py-4 px-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                        <span>2. Control de Asistencia</span>
+                    </button>
+                    <button onclick="switchElineTab('calificaciones')" id="tab-calificaciones" class="eline-tab flex items-center justify-center gap-2.5 py-4 px-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                        <span>3. Calificaciones</span>
+                    </button>
+                    <button onclick="switchElineTab('boletines')" id="tab-boletines" class="eline-tab flex items-center justify-center gap-2.5 py-4 px-3 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>4. Boletines</span>
+                    </button>
+                </div>
+
+                <!-- Contenido Dinámico del Mockup -->
+                <div class="p-6 sm:p-8">
+
+                    <!-- PANEL 1: Estudiantes y Secciones -->
+                    <div id="panel-secciones" class="eline-panel grid lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-4 space-y-3">
+                            <h3 class="font-display font-bold text-xl text-white">Gestión de Estudiantes y Secciones</h3>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Organiza tus asignaturas, grados o grupos en segundos. Consulta matrículas activas, fichas de estudiantes y cambia de sección con un clic.
+                            </p>
+                            <div class="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-500/20 space-y-2 text-xs text-indigo-200">
+                                <div class="font-bold text-white flex items-center justify-between">
+                                    <span>Secciones Activas del Docente</span>
+                                    <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">3 Grupos</span>
+                                </div>
+                                <div class="p-2.5 rounded-xl bg-indigo-600/40 border border-indigo-400/40 flex justify-between items-center">
+                                    <span>Metodología de Inv. · Sec 01</span>
+                                    <span class="font-bold">28 est.</span>
+                                </div>
+                                <div class="p-2.5 rounded-xl bg-slate-800/70 flex justify-between items-center text-slate-300">
+                                    <span>Estadística Aplicada · Sec 02</span>
+                                    <span>32 est.</span>
+                                </div>
+                                <div class="p-2.5 rounded-xl bg-slate-800/70 flex justify-between items-center text-slate-300">
+                                    <span>Seminario de Tesis · Grupo A</span>
+                                    <span>19 est.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-8 bg-slate-950/80 rounded-2xl border border-slate-800 p-4 sm:p-5">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <span class="text-xs text-cyan-400 font-semibold">Sección seleccionada</span>
+                                    <h4 class="font-bold text-white text-base">Metodología de Investigación — Sección 01</h4>
+                                </div>
+                                <span class="text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg">Período 2026-II Activo</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs sm:text-sm">
+                                    <thead class="text-slate-400 border-b border-slate-800">
+                                        <tr>
+                                            <th class="pb-2.5 font-medium">ID Matrícula</th>
+                                            <th class="pb-2.5 font-medium">Estudiante</th>
+                                            <th class="pb-2.5 font-medium">Estado</th>
+                                            <th class="pb-2.5 font-medium text-right">Seguimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/70 text-slate-200">
+                                        <tr>
+                                            <td class="py-3 font-mono text-xs text-slate-400">EST-1042</td>
+                                            <td class="py-3 font-medium">Camila Rodríguez Pérez</td>
+                                            <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300">Regular</span></td>
+                                            <td class="py-3 text-right text-cyan-300">96% Asist. · Prom. 92</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-3 font-mono text-xs text-slate-400">EST-1048</td>
+                                            <td class="py-3 font-medium">Luis Fernando Gómez</td>
+                                            <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300">Regular</span></td>
+                                            <td class="py-3 text-right text-cyan-300">91% Asist. · Prom. 88</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-3 font-mono text-xs text-slate-400">EST-1053</td>
+                                            <td class="py-3 font-medium">Valeria Méndez Santos</td>
+                                            <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[11px] bg-amber-500/20 text-amber-300">Observación</span></td>
+                                            <td class="py-3 text-right text-amber-300">78% Asist. · Prom. 79</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-3 font-mono text-xs text-slate-400">EST-1061</td>
+                                            <td class="py-3 font-medium">Diego Alejandro Cruz</td>
+                                            <td class="py-3"><span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300">Regular</span></td>
+                                            <td class="py-3 text-right text-cyan-300">100% Asist. · Prom. 95</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 2: Control de Asistencia (Interactivo) -->
+                    <div id="panel-asistencia" class="eline-panel hidden grid lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-4 space-y-4">
+                            <h3 class="font-display font-bold text-xl text-white">Control de Asistencia Diario</h3>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Pasa lista desde tu computador o móvil marcando Presente (P), Tardanza (T) o Ausente (A). ELINE calcula automáticamente el porcentaje acumulado.
+                            </p>
+                            <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
+                                <p class="text-xs text-slate-400 mb-2">Resumen en vivo de la sesión (Interactivo):</p>
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div class="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-2">
+                                        <span id="countP" class="block font-display font-bold text-lg text-emerald-300">3</span>
+                                        <span class="text-[11px] text-emerald-200">Presentes</span>
+                                    </div>
+                                    <div class="bg-amber-500/15 border border-amber-500/30 rounded-xl p-2">
+                                        <span id="countT" class="block font-display font-bold text-lg text-amber-300">1</span>
+                                        <span class="text-[11px] text-amber-200">Tardanzas</span>
+                                    </div>
+                                    <div class="bg-rose-500/15 border border-rose-500/30 rounded-xl p-2">
+                                        <span id="countA" class="block font-display font-bold text-lg text-rose-300">0</span>
+                                        <span class="text-[11px] text-rose-200">Ausentes</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-8 bg-slate-950/80 rounded-2xl border border-slate-800 p-4 sm:p-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm font-bold text-white">Prueba cambiar el estado de asistencia hoy:</span>
+                                <span class="text-xs text-slate-400">Clic en P / T / A</span>
+                            </div>
+                            <div class="space-y-3" id="attendanceList">
+                                <!-- Generado y controlado por JS para interactividad real -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 3: Registro de Calificaciones -->
+                    <div id="panel-calificaciones" class="eline-panel hidden grid lg:grid-cols-12 gap-6 items-start">
+                        <div class="lg:col-span-4 space-y-3">
+                            <h3 class="font-display font-bold text-xl text-white">Registro y Cálculo de Calificaciones</h3>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Configura evaluaciones parciales, trabajos prácticos, asistencia y examen final. El promedio ponderado se actualiza al instante sin errores de fórmula.
+                            </p>
+                            <div class="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-500/20 text-xs space-y-1.5 text-indigo-200">
+                                <div class="font-bold text-white mb-1">Ponderación de ejemplo:</div>
+                                <div class="flex justify-between"><span>Evaluación Parcial 1</span><span>30%</span></div>
+                                <div class="flex justify-between"><span>Proyecto Práctico</span><span>35%</span></div>
+                                <div class="flex justify-between"><span>Evaluación Final</span><span>35%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-8 bg-slate-950/80 rounded-2xl border border-slate-800 p-4 sm:p-5 overflow-x-auto">
+                            <table class="w-full text-left text-xs sm:text-sm">
+                                <thead class="text-slate-400 border-b border-slate-800">
+                                    <tr>
+                                        <th class="pb-3">Estudiante</th>
+                                        <th class="pb-3 text-center">Parcial (30%)</th>
+                                        <th class="pb-3 text-center">Proyecto (35%)</th>
+                                        <th class="pb-3 text-center">Final (35%)</th>
+                                        <th class="pb-3 text-right">Promedio Final</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800 text-slate-200">
+                                    <tr>
+                                        <td class="py-3 font-medium">Camila Rodríguez Pérez</td>
+                                        <td class="py-3 text-center">90</td>
+                                        <td class="py-3 text-center">94</td>
+                                        <td class="py-3 text-center">92</td>
+                                        <td class="py-3 text-right font-bold text-emerald-400">92.1 (A)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 font-medium">Luis Fernando Gómez</td>
+                                        <td class="py-3 text-center">85</td>
+                                        <td class="py-3 text-center">90</td>
+                                        <td class="py-3 text-center">88</td>
+                                        <td class="py-3 text-right font-bold text-emerald-400">87.8 (B+)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 font-medium">Valeria Méndez Santos</td>
+                                        <td class="py-3 text-center">76</td>
+                                        <td class="py-3 text-center">82</td>
+                                        <td class="py-3 text-center">80</td>
+                                        <td class="py-3 text-right font-bold text-cyan-300">79.5 (C+)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 font-medium">Diego Alejandro Cruz</td>
+                                        <td class="py-3 text-center">96</td>
+                                        <td class="py-3 text-center">95</td>
+                                        <td class="py-3 text-center">94</td>
+                                        <td class="py-3 text-right font-bold text-emerald-400">94.9 (A)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PANEL 4: Generación de Boletines -->
+                    <div id="panel-boletines" class="eline-panel hidden grid lg:grid-cols-12 gap-6 items-center">
+                        <div class="lg:col-span-5 space-y-4">
+                            <h3 class="font-display font-bold text-xl text-white">Generación Instantánea de Boletines</h3>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Emite boletines individuales o por sección listos para compartir o imprimir, consolidando calificaciones por período, porcentaje de asistencia y observaciones del docente.
+                            </p>
+                            <button onclick="showToast('Vista previa de boletín generada correctamente en el demostrador de ELINE.')"
+                                class="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-colors">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Simular emisión de boletín
+                            </button>
+                        </div>
+
+                        <div class="lg:col-span-7 bg-white text-slate-800 rounded-2xl p-5 sm:p-6 shadow-lg">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Boletín Académico Oficial · ELINE</span>
+                                    <h4 class="font-display font-bold text-base text-adsp-navy">Camila Rodríguez Pérez (EST-1042)</h4>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs">APROBADO</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 mb-4 text-xs">
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                    <span class="text-slate-500 block">Sección</span>
+                                    <strong class="text-slate-800">Metodología 01</strong>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                    <span class="text-slate-500 block">Asistencia Acum.</span>
+                                    <strong class="text-emerald-700">96% Verificada</strong>
+                                </div>
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                    <span class="text-slate-500 block">Calificación Final</span>
+                                    <strong class="text-indigo-700">92.1 / 100</strong>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                "Excelente desempeño en el planteamiento metodológico y entrega puntual de avances durante todo el período."
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PLANES INDIVIDUALES PARA DOCENTES (OFERTA APROBADA) -->
+            <div class="mb-16">
+                <div class="text-center max-w-2xl mx-auto mb-10">
+                    <span class="text-cyan-300 font-bold text-xs uppercase tracking-widest">Catálogo Comercial Aprobado · Noviembre 2026</span>
+                    <h3 class="font-display font-extrabold text-2xl sm:text-4xl text-white mt-2">
+                        3 Planes Individuales para Docentes + Prueba de 30 Días
+                    </h3>
+                    <p class="text-indigo-200 text-sm sm:text-base mt-2">
+                        Todos los planes incluyen acceso completo a gestión de estudiantes/secciones, asistencia, calificaciones y boletines.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 items-stretch">
+                    <article class="bg-slate-900/90 border border-indigo-400/25 rounded-3xl p-6 sm:p-7">
+                        <h4 class="font-display font-bold text-2xl text-white">Docente Esencial</h4>
+                        <p class="text-indigo-200 mt-2">Hasta 2 secciones · 45 estudiantes por sección</p>
+                        <ul class="mt-5 space-y-2 text-indigo-100">
+                            <li class="flex justify-between gap-3"><span>Mensual</span><strong>RD$299</strong></li>
+                            <li class="flex justify-between gap-3"><span>Trimestral</span><strong>RD$850</strong></li>
+                            <li class="flex justify-between gap-3"><span>Anual</span><strong>RD$2,990</strong></li>
+                        </ul>
+                        <button type="button" onclick="openElineModal('Docente Esencial · Mensual · RD$299', '', 'activar')" class="mt-6 w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3 text-sm font-bold text-white">Solicitar activación</button>
+                    </article>
+                    <article class="bg-slate-900/90 border border-indigo-400/25 rounded-3xl p-6 sm:p-7">
+                        <h4 class="font-display font-bold text-2xl text-white">Docente Multisección</h4>
+                        <p class="text-indigo-200 mt-2">Hasta 8 secciones · 45 estudiantes por sección</p>
+                        <ul class="mt-5 space-y-2 text-indigo-100">
+                            <li class="flex justify-between gap-3"><span>Mensual</span><strong>RD$399</strong></li>
+                            <li class="flex justify-between gap-3"><span>Trimestral</span><strong>RD$1,100</strong></li>
+                            <li class="flex justify-between gap-3"><span>Anual</span><strong>RD$3,990</strong></li>
+                        </ul>
+                        <button type="button" onclick="openElineModal('Docente Multisección · Mensual · RD$399', '', 'activar')" class="mt-6 w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3 text-sm font-bold text-white">Solicitar activación</button>
+                    </article>
+                    <article class="bg-slate-900/90 border border-indigo-400/25 rounded-3xl p-6 sm:p-7">
+                        <h4 class="font-display font-bold text-2xl text-white">Docente Especialista</h4>
+                        <p class="text-indigo-200 mt-2">Hasta 24 secciones · 45 estudiantes por sección</p>
+                        <ul class="mt-5 space-y-2 text-indigo-100">
+                            <li class="flex justify-between gap-3"><span>Mensual</span><strong>RD$599</strong></li>
+                            <li class="flex justify-between gap-3"><span>Trimestral</span><strong>RD$1,650</strong></li>
+                            <li class="flex justify-between gap-3"><span>Anual</span><strong>RD$5,990</strong></li>
+                        </ul>
+                        <button type="button" onclick="openElineModal('Docente Especialista · Mensual · RD$599', '', 'activar')" class="mt-6 w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-3 text-sm font-bold text-white">Solicitar activación</button>
+                    </article>
+                </div>
+                <p class="mt-5 text-center text-sm text-indigo-200">Impuestos incluidos. La prueba dura 30 días e incluye hasta 2 secciones y reportes de los primeros 5 estudiantes por sección.</p>
+            </div>
+
+            <!-- FLUJO REAL DE ACTIVACIÓN Y RENOVACIÓN POR WHATSAPP (3 PASOS ACORDADOS) -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6 sm:p-8">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-300">Proceso Transparente y Directo</span>
+                        <h3 class="font-display font-bold text-xl sm:text-2xl text-white mt-1">
+                            ¿Cómo se activa o renueva tu cuenta en ELINE?
+                        </h3>
+                        <p class="text-sm text-indigo-100/80 mt-1">
+                            Sin pasarelas automáticas complicadas ni cargos sorpresa: atención humana directa con el equipo de ADSP.
+                        </p>
+                    </div>
+                    <button onclick="openElineModal('Renovación de Plan Docente ELINE', 'Según plan vigente', 'renovar')"
+                        class="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-adsp-navy hover:bg-indigo-50 font-bold text-sm px-5 py-3 rounded-xl transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i> Ya soy usuario · Renovar Plan
+                    </button>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Paso 1 -->
+                    <div class="bg-slate-950/50 rounded-2xl p-5 border border-white/10">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500 text-white font-display font-extrabold flex items-center justify-center mb-3">1</div>
+                        <h4 class="font-bold text-base text-white mb-1.5">Elige tu plan o prueba de 30 días</h4>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Selecciona cualquiera de los 3 planes individuales para docentes o solicita tu período inicial gratuito de 30 días.
+                        </p>
+                    </div>
+                    <!-- Paso 2 -->
+                    <div class="bg-slate-950/50 rounded-2xl p-5 border border-white/10">
+                        <div class="w-9 h-9 rounded-xl bg-cyan-500 text-slate-950 font-display font-extrabold flex items-center justify-center mb-3">2</div>
+                        <h4 class="font-bold text-base text-white mb-1.5">Realiza el pago y envía comprobante</h4>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Para planes activos o renovaciones, efectúa tu transferencia/pago por los medios autorizados de ADSP y comparte el comprobante en nuestro chat.
+                        </p>
+                    </div>
+                    <!-- Paso 3 -->
+                    <div class="bg-slate-950/50 rounded-2xl p-5 border border-emerald-400/30">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-400 text-slate-950 font-display font-extrabold flex items-center justify-center mb-3">3</div>
+                        <h4 class="font-bold text-base text-white mb-1.5">Activación manual por WhatsApp</h4>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Previa confirmación del pago, nuestro equipo habilita o renueva manualmente tu acceso docente de forma inmediata por WhatsApp.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 6. COTIZADOR / FORMULARIO INTERACTIVO DE ALCANCE (ACADÉMICO E IMPRESIÓN) -->
+    <section id="cotizador" class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div class="max-w-3xl mb-12">
+                <span class="text-indigo-600 font-bold text-xs uppercase tracking-widest">Solicitud Personalizada</span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-adsp-navy mt-2">
+                    Cotizador Interactivo según Alcance
+                </h2>
+                <p class="text-slate-600 mt-2 text-base sm:text-lg">
+                    Indícanos las características de tu documento o tiraje. Generaremos al instante el resumen técnico para evaluar tu caso y enviarte la cotización exacta.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-8 items-start">
+
+                <!-- Formulario de Alcance (Izquierda) -->
+                <form id="quoteForm" onsubmit="handleQuoteSubmit(event)" class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+
+                    <!-- Selector de Línea de Negocio -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">1. Selecciona la línea de servicio</label>
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <button type="button" onclick="setQuoteLine('academico')" id="btnLineAcademico"
+                                class="flex items-center gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/60 text-left transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                                    <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <span class="block font-bold text-sm text-adsp-navy">Servicios Académicos</span>
+                                    <span class="text-xs text-slate-500">Similitud, APA, datos, fondo, asesoría</span>
+                                </div>
+                            </button>
+
+                            <button type="button" onclick="setQuoteLine('impresion')" id="btnLineImpresion"
+                                class="flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition-all">
+                                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0" id="iconLineImpresion">
+                                    <i data-lucide="printer" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <span class="block font-bold text-sm text-adsp-navy">Impresión y Empastado</span>
+                                    <span class="text-xs text-slate-500">Diagramación, color/BN, tesis, promo</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Servicio Específico -->
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="serviceSelect" class="block text-sm font-semibold text-slate-700 mb-1.5">2. Actividad requerida</label>
+                            <select id="serviceSelect" onchange="updateQuoteSummary()" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none bg-white">
+                                <!-- Opciones pobladas dinámicamente según línea -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="pagesInput" class="block text-sm font-semibold text-slate-700 mb-1.5">Extensión aprox. (Páginas)</label>
+                            <input type="number" id="pagesInput" min="1" value="60" oninput="updateQuoteSummary()" placeholder="Ej. 80"
+                                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Campos Condicionales: Línea Académica -->
+                    <div id="academicFields" class="grid sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div>
+                            <label for="academicLevel" class="block text-xs font-semibold text-slate-600 mb-1.5">Nivel académico / Proyecto</label>
+                            <select id="academicLevel" onchange="updateQuoteSummary()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-indigo-600">
+                                <option value="Grado / Licenciatura">Grado / Licenciatura</option>
+                                <option value="Maestría / Posgrado">Maestría / Posgrado</option>
+                                <option value="Doctorado">Doctorado</option>
+                                <option value="Artículo Científico / Institucional">Artículo Científico / Institucional</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="normativeSelect" class="block text-xs font-semibold text-slate-600 mb-1.5">Normativa o estilo de referencia</label>
+                            <select id="normativeSelect" onchange="updateQuoteSummary()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-indigo-600">
+                                <option value="Normas APA (7ma ed.)">Normas APA (7ma ed.)</option>
+                                <option value="Estilo Vancouver">Estilo Vancouver</option>
+                                <option value="Manual Institucional propio">Manual Institucional propio</option>
+                                <option value="Por definir con asesor">Por definir con asesor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Campos Condicionales: Línea Impresión -->
+                    <div id="printFields" class="hidden grid sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div>
+                            <label for="printColor" class="block text-xs font-semibold text-slate-600 mb-1.5">Tipo de impresión</label>
+                            <select id="printColor" onchange="updateQuoteSummary()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-indigo-600">
+                                <option value="Blanco y Negro">Blanco y Negro</option>
+                                <option value="A Color completo">A Color completo</option>
+                                <option value="Mixto (Texto B/N + Gráficos Color)">Mixto (B/N + Color)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="printCopies" class="block text-xs font-semibold text-slate-600 mb-1.5">Cantidad / Ejemplares</label>
+                            <input type="number" id="printCopies" min="1" value="3" oninput="updateQuoteSummary()"
+                                class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-indigo-600">
+                        </div>
+                        <div>
+                            <label for="printBinding" class="block text-xs font-semibold text-slate-600 mb-1.5">Acabado / Empastado</label>
+                            <select id="printBinding" onchange="updateQuoteSummary()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-indigo-600">
+                                <option value="Empastado Pasta Dura (Tesis)">Pasta Dura (Tesis)</option>
+                                <option value="Encuadernado en Espiral / Anillado">Espiral / Anillado</option>
+                                <option value="Solo Impresión / Diagramación">Solo Impresión / Diagramación</option>
+                                <option value="Material Promocional">Pieza Promocional</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones de alcance -->
+                    <div>
+                        <p class="text-sm text-slate-600 mb-3">ADSP confirma el precio y el plazo tras evaluar la solicitud. La vigencia de la cotización es de hasta 30 días y el trabajo comienza al recibir el anticipo del 50 % y los insumos necesarios.</p>
+                        <label for="scopeNotes" class="block text-sm font-semibold text-slate-700 mb-1.5">Detalles adicionales del alcance (fecha deseada, requerimientos especiales)</label>
+                        <textarea id="scopeNotes" rows="2" oninput="updateQuoteSummary()" placeholder="Ej. Necesito entrega para revisión de jurado la próxima semana..."
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none"></textarea>
+                    </div>
+
+                    <!-- Datos de Contacto -->
+                    <div class="grid sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                        <div>
+                            <label for="clientName" class="block text-sm font-semibold text-slate-700 mb-1.5">Tu nombre completo *</label>
+                            <input type="text" id="clientName" required oninput="updateQuoteSummary()" placeholder="Ej. Dra. Laura Martínez"
+                                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none">
+                        </div>
+                        <div>
+                            <label for="clientContact" class="block text-sm font-semibold text-slate-700 mb-1.5">WhatsApp o Correo electrónico *</label>
+                            <input type="text" id="clientContact" required oninput="updateQuoteSummary()" placeholder="Ej. +1 809 555 0199"
+                                class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Botones de Envío -->
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-md transition-colors text-sm">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                            Enviar Solicitud por WhatsApp
+                        </button>
+                        <button type="button" onclick="sendQuoteByEmail()" class="inline-flex items-center justify-center gap-2 bg-adsp-navy hover:bg-slate-800 text-white font-semibold py-3.5 px-5 rounded-xl transition-colors text-sm">
+                            <i data-lucide="mail" class="w-4 h-4"></i>
+                            Preparar por Correo
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Resumen Instantáneo de la Solicitud (Derecha) -->
+                <div class="lg:col-span-5 bg-adsp-navy text-white rounded-3xl p-6 sm:p-8 shadow-xl sticky top-28">
+                    <div class="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Ficha de Evaluación</span>
+                            <h3 class="font-display font-bold text-xl">Resumen de Alcance ADSP</h3>
+                        </div>
+                        <button type="button" onclick="copyQuoteSummary()" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 transition-colors" title="Copiar resumen">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+                        </button>
+                    </div>
+
+                    <div class="space-y-3.5 text-sm">
+                        <div class="flex justify-between gap-4 py-2 border-b border-white/10">
+                            <span class="text-slate-400">Línea seleccionada:</span>
+                            <span id="sumLine" class="font-semibold text-right text-emerald-300">Servicios Académicos</span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2 border-b border-white/10">
+                            <span class="text-slate-400">Servicio principal:</span>
+                            <span id="sumService" class="font-semibold text-right">Revisión de similitud</span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2 border-b border-white/10">
+                            <span class="text-slate-400">Extensión estimada:</span>
+                            <span id="sumPages" class="font-semibold text-right">60 páginas</span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2 border-b border-white/10">
+                            <span class="text-slate-400">Especificaciones:</span>
+                            <span id="sumSpecs" class="font-semibold text-right text-indigo-200">Grado / Licenciatura · Normas APA (7ma ed.)</span>
+                        </div>
+                        <div class="flex justify-between gap-4 py-2 border-b border-white/10">
+                            <span class="text-slate-400">Solicitante:</span>
+                            <span id="sumClient" class="font-semibold text-right text-slate-200">Pendiente de completar</span>
+                        </div>
+                        <div class="pt-1">
+                            <span class="text-xs text-slate-400 block mb-1">Notas de alcance:</span>
+                            <p id="sumNotes" class="text-xs text-slate-300 bg-white/5 rounded-xl p-3 border border-white/10 italic">
+                                Sin observaciones adicionales por el momento.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 rounded-2xl bg-indigo-600/20 border border-indigo-400/30 text-xs text-indigo-100 flex items-start gap-3">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <p>
+                            <strong>Compromiso de confidencialidad:</strong> Tus archivos e investigaciones son tratados únicamente para fines de evaluación técnica y presupuesto.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    </main>
+    <!-- 7. PIE DE PÁGINA COMPLETO -->
+    <footer id="contacto" class="bg-adsp-navy text-slate-300 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+
+                <!-- Columna 1: Marca ADSP -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="/logo_footer_gris.png" alt="" width="40" height="40" class="w-10 h-10 object-contain">
+                        <span class="font-display font-extrabold text-xl text-white">ADSP</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                        Soluciones integrales en asesoría académica, producción editorial e innovación tecnológica para la gestión docente con ELINE.
+                    </p>
+                    <div class="inline-flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Catálogo Comercial Aprobado 2026
+                    </div>
+                </div>
+
+                <!-- Columna 2: Servicios Académicos -->
+                <div>
+                    <h4 class="font-display font-bold text-sm uppercase tracking-wider text-white mb-4">Servicios Académicos</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-400">
+                        <li><button onclick="preselectService('academico', 'Revisión de similitud')" class="hover:text-white transition-colors">Revisión de similitud</button></li>
+                        <li><button onclick="preselectService('academico', 'Formato APA, Vancouver o institucional')" class="hover:text-white transition-colors">Formato APA / Vancouver</button></li>
+                        <li><button onclick="preselectService('academico', 'Análisis e interpretación de datos')" class="hover:text-white transition-colors">Análisis e interpretación de datos</button></li>
+                        <li><button onclick="preselectService('academico', 'Revisión de fondo')" class="hover:text-white transition-colors">Revisión de fondo</button></li>
+                        <li><button onclick="preselectService('academico', 'Asesoría de proyectos')" class="hover:text-white transition-colors">Asesoría de proyectos</button></li>
+                    </ul>
+                </div>
+
+                <!-- Columna 3: Impresión y ELINE -->
+                <div>
+                    <h4 class="font-display font-bold text-sm uppercase tracking-wider text-white mb-4">Impresión y ELINE</h4>
+                    <ul class="space-y-2.5 text-sm text-slate-400">
+                        <li><a href="#impresion" class="hover:text-white transition-colors">Diagramación e Impresión B/N y Color</a></li>
+                        <li><a href="#impresion" class="hover:text-white transition-colors">Encuadernación y Empastado</a></li>
+                        <li><a href="#impresion" class="hover:text-white transition-colors">Materiales Promocionales</a></li>
+                        <li><a href="#eline" class="text-indigo-300 hover:text-white font-medium transition-colors">ELINE · 3 Planes Docentes</a></li>
+                        <li><button onclick="openElineModal('Prueba Gratuita de 30 Días', 'Gratis / 30 días', 'prueba')" class="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">Prueba ELINE 30 días</button></li>
+                    </ul>
+                </div>
+
+                <!-- Columna 4: Atención Directa -->
+                <div>
+                    <h4 class="font-display font-bold text-sm uppercase tracking-wider text-white mb-4">Atención y Activaciones</h4>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                        Cotizaciones según alcance y activación/renovación manual de planes ELINE previa confirmación de pago.
+                    </p>
+                    <button onclick="window.open('https://wa.me/18496297248', '_blank', 'noopener,noreferrer')"
+                        class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2 shadow-md">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i> Contactar por WhatsApp
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+                <p>© 2026 ADSP — Servicios Académicos, Impresión y Plataforma ELINE. Todos los derechos reservados.</p>
+                <p>Prototipo Web Corporativo · Oferta Comercial Vigente</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL INTERACTIVO WHATSAPP PARA ELINE (PRUEBA 30 DÍAS / ACTIVACIÓN / RENOVACIÓN) -->
+    <div id="elineModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-labelledby="modalTitle" class="max-h-[90vh] overflow-y-auto bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-fadeIn">
+
+            <button onclick="closeElineModal()" aria-label="Cerrar ventana" class="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-2.5 mb-2">
+                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Gestión Manual vía WhatsApp</span>
+            </div>
+
+            <h3 id="modalTitle" class="font-display font-extrabold text-2xl text-adsp-navy">Solicitar Prueba de 30 Días</h3>
+            <p id="modalSubtitle" class="text-xs sm:text-sm text-slate-500 mt-1 mb-5">
+                Completa tus datos docentes para generar el mensaje directo de activación con el equipo de ADSP.
+            </p>
+
+            <form onsubmit="submitElineWhatsApp(event)" class="space-y-4">
+                <div>
+                    <label for="modalPlanSelect" class="block text-xs font-bold uppercase text-slate-500 mb-1">Solicitud seleccionada</label>
+                    <select id="modalPlanSelect" onchange="updateModalPreview()" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold text-adsp-navy bg-slate-50 outline-none focus:border-indigo-600">
+                        <option value="Prueba Gratuita de 30 Días">Prueba Gratuita de 30 Días (Sin costo)</option>
+                        <option>Docente Esencial · Mensual · RD$299</option>
+                        <option>Docente Esencial · Trimestral · RD$850</option>
+                        <option>Docente Esencial · Anual · RD$2,990</option>
+                        <option>Docente Multisección · Mensual · RD$399</option>
+                        <option>Docente Multisección · Trimestral · RD$1,100</option>
+                        <option>Docente Multisección · Anual · RD$3,990</option>
+                        <option>Docente Especialista · Mensual · RD$599</option>
+                        <option>Docente Especialista · Trimestral · RD$1,650</option>
+                        <option>Docente Especialista · Anual · RD$5,990</option>
+                        <option value="Renovación de Plan Docente ELINE">Renovación de Plan Vigente (Adjuntar comprobante)</option>
+                    </select>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="teacherName" class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Docente *</label>
+                        <input type="text" id="teacherName" required oninput="updateModalPreview()" placeholder="Ej. Prof. Carlos Mejía"
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm outline-none focus:border-indigo-600">
+                    </div>
+                    <div>
+                        <label for="teacherInst" class="block text-xs font-semibold text-slate-700 mb-1">Institución o Nivel</label>
+                        <input type="text" id="teacherInst" oninput="updateModalPreview()" placeholder="Ej. Nivel Secundario / Univ."
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm outline-none focus:border-indigo-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="teacherEmail" class="block text-xs font-semibold text-slate-700 mb-1">Correo para tu usuario ELINE *</label>
+                    <input type="email" id="teacherEmail" required oninput="updateModalPreview()" placeholder="docente@correo.edu"
+                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm outline-none focus:border-indigo-600">
+                </div>
+
+                <!-- Vista previa del mensaje prellenado -->
+                <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200">
+                    <span class="text-[11px] font-bold uppercase text-slate-400 block mb-1">Vista previa del mensaje de WhatsApp:</span>
+                    <p id="whatsappPreviewText" class="text-xs text-slate-700 whitespace-pre-line leading-relaxed"></p>
+                </div>
+
+                <div class="text-[11px] text-slate-500 bg-amber-50 border border-amber-200/70 rounded-xl p-3">
+                    <strong>Nota comercial:</strong> En planes pagos o renovaciones, recuerda adjuntar la foto o PDF del comprobante de pago al abrir el chat para completar la activación manual inmediata.
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md transition-colors">
+                        <i data-lucide="external-link" class="w-4 h-4"></i> Abrir WhatsApp Ahora
+                    </button>
+                    <button type="button" onclick="copyModalMessage()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-1.5 transition-colors">
+                        <i data-lucide="copy" class="w-4 h-4"></i> Copiar mensaje
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIÓN FLOTANTE (TOAST SIN USAR ALERT) -->
+    <div role="status" id="toastBox" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700 items-center gap-3">
+        <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        </div>
+        <p id="toastMessage" class="text-xs sm:text-sm font-medium text-slate-100"></p>
+    </div>
+
+    <!-- LÓGICA INTERACTIVA COMPLETA -->
+    <script>
+        // WhatsApp comercial de ADSP
+        const ADSP_WHATSAPP_NUMBER = "18496297248";
+
+        // Catálogo documentado por línea de negocio
+        const CATALOG_SERVICES = {
+            academico: [
+                "Revisión de similitud",
+                "Formato APA, Vancouver o institucional",
+                "Análisis e interpretación de datos",
+                "Revisión de fondo",
+                "Asesoría de proyectos"
+            ],
+            impresion: [
+                "Diagramación profesional",
+                "Impresión en blanco y negro y a color",
+                "Encuadernación y empastado",
+                "Empastado pasta dura para tesis",
+                "Encuadernación espiral / informes",
+                "Materiales promocionales e impresos",
+                "Combo Diagramación + Impresión + Empastado"
+            ]
+        };
+
+        let modalTrigger;
+        let currentQuoteLine = 'academico';
+
+        // Estado interactivo para la demostración de asistencia en ELINE
+        const demoStudents = [
+            { id: 'EST-1042', name: 'Camila Rodríguez Pérez', status: 'P' },
+            { id: 'EST-1048', name: 'Luis Fernando Gómez', status: 'P' },
+            { id: 'EST-1053', name: 'Valeria Méndez Santos', status: 'T' },
+            { id: 'EST-1061', name: 'Diego Alejandro Cruz', status: 'P' }
+        ];
+
+        // Inicialización al cargar DOM
+        window.addEventListener('DOMContentLoaded', () => {
+            window.lucide?.createIcons();
+            setupMobileMenu();
+            setQuoteLine('academico');
+            renderAttendanceDemo();
+            updateModalPreview();
+        });
+
+        // Menú móvil
+        function setupMobileMenu() {
+            const btn = document.getElementById('mobileMenuBtn');
+            const menu = document.getElementById('mobileMenu');
+            btn.addEventListener('click', () => {
+                const closed = menu.classList.toggle('hidden');
+                btn.setAttribute('aria-expanded', String(!closed));
+            });
+            document.querySelectorAll('.mobile-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    menu.classList.add('hidden');
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+
+        // Notificación limpia (sustituye alert)
+        let toastTimer = null;
+        function showToast(msg) {
+            const box = document.getElementById('toastBox');
+            const text = document.getElementById('toastMessage');
+            text.textContent = msg;
+            box.classList.remove('hidden');
+            box.classList.add('flex');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
+                box.classList.remove('flex');
+            }, 4000);
+        }
+
+        // Copiar texto al portapapeles de forma compatible con iframes
+        function copyTextSafe(text, successMsg) {
+            try {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                tempInput.style.position = 'fixed';
+                tempInput.style.opacity = '0';
+                document.body.appendChild(tempInput);
+                tempInput.focus();
+                tempInput.select();
+                const copied = document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                if (!copied) throw new Error('Clipboard unavailable');
+                showToast(successMsg);
+            } catch (err) {
+                showToast('No se pudo copiar automáticamente, selecciona el texto manualmente.');
+            }
+        }
+
+        // Filtro del muestrario de impresión y promocionales
+        function filterPromo(category) {
+            document.querySelectorAll('.promo-tab').forEach(btn => {
+                if (btn.dataset.filter === category) {
+                    btn.className = "promo-tab bg-adsp-navy text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors";
+                } else {
+                    btn.className = "promo-tab bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition-colors";
+                }
+            });
+
+            document.querySelectorAll('.promo-card').forEach(card => {
+                if (category === 'todos' || card.dataset.category === category) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // Tabs interactivos de la vista previa de ELINE
+        function switchElineTab(tabId) {
+            const tabs = ['secciones', 'asistencia', 'calificaciones', 'boletines'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const panel = document.getElementById('panel-' + t);
+                if (t === tabId) {
+                    btn.classList.add('border-cyan-400', 'text-white', 'bg-indigo-950/60');
+                    btn.classList.remove('border-transparent', 'text-slate-400');
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-cyan-400', 'text-white', 'bg-indigo-950/60');
+                    btn.classList.add('border-transparent', 'text-slate-400');
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        // Renderizado e interacción en vivo del módulo de Asistencia de ELINE
+        function renderAttendanceDemo() {
+            const container = document.getElementById('attendanceList');
+            container.innerHTML = '';
+
+            let countP = 0, countT = 0, countA = 0;
+
+            demoStudents.forEach((st, idx) => {
+                if (st.status === 'P') countP++;
+                if (st.status === 'T') countT++;
+                if (st.status === 'A') countA++;
+
+                const row = document.createElement('div');
+                row.className = "flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800";
+
+                const activeBtnClass = (code, colorClass) => st.status === code
+                    ? `${colorClass} font-bold ring-2 ring-white/30`
+                    : `bg-slate-800 text-slate-400 hover:text-white`;
+
+                row.innerHTML = `
+                    <div>
+                        <span class="text-xs font-mono text-slate-400 mr-2">${st.id}</span>
+                        <span class="text-sm font-medium text-white">${st.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="setStudentStatus(${idx}, 'P')" class="w-9 h-8 rounded-lg text-xs transition-all ${activeBtnClass('P', 'bg-emerald-500 text-slate-950')}">P</button>
+                        <button type="button" onclick="setStudentStatus(${idx}, 'T')" class="w-9 h-8 rounded-lg text-xs transition-all ${activeBtnClass('T', 'bg-amber-400 text-slate-950')}">T</button>
+                        <button type="button" onclick="setStudentStatus(${idx}, 'A')" class="w-9 h-8 rounded-lg text-xs transition-all ${activeBtnClass('A', 'bg-rose-500 text-white')}">A</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            document.getElementById('countP').textContent = countP;
+            document.getElementById('countT').textContent = countT;
+            document.getElementById('countA').textContent = countA;
+        }
+
+        function setStudentStatus(index, newStatus) {
+            demoStudents[index].status = newStatus;
+            renderAttendanceDemo();
+        }
+
+        // Cotizador: Cambiar entre línea Académica e Impresión
+        function setQuoteLine(line, preferredService = null) {
+            currentQuoteLine = line;
+            const btnAcad = document.getElementById('btnLineAcademico');
+            const btnImp = document.getElementById('btnLineImpresion');
+            const acadFields = document.getElementById('academicFields');
+            const printFields = document.getElementById('printFields');
+            const select = document.getElementById('serviceSelect');
+
+            if (line === 'academico') {
+                btnAcad.className = "flex items-center gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/60 text-left transition-all";
+                btnImp.className = "flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition-all";
+                acadFields.classList.remove('hidden');
+                printFields.classList.add('hidden');
+            } else {
+                btnImp.className = "flex items-center gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/60 text-left transition-all";
+                btnAcad.className = "flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition-all";
+                acadFields.classList.add('hidden');
+                printFields.classList.remove('hidden');
+            }
+
+            // Poblar opciones del selector
+            select.innerHTML = '';
+            CATALOG_SERVICES[line].forEach(srv => {
+                const opt = document.createElement('option');
+                opt.value = srv;
+                opt.textContent = srv;
+                if (preferredService && srv === preferredService) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+
+            updateQuoteSummary();
+        }
+
+        // Preseleccionar servicio desde cualquier tarjeta y desplazar suavemente al cotizador
+        function preselectService(line, serviceName) {
+            setQuoteLine(line, serviceName);
+            const target = document.getElementById('cotizador');
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            showToast(`Servicio seleccionado: "${serviceName}". Completa el alcance abajo.`);
+        }
+
+        // Construir texto estructurado de cotización
+        function buildQuoteData() {
+            const lineLabel = currentQuoteLine === 'academico' ? 'Servicios Académicos' : 'Impresión y Encuadernación';
+            const service = document.getElementById('serviceSelect').value;
+            const pages = document.getElementById('pagesInput').value || 'Por definir';
+            const notes = document.getElementById('scopeNotes').value.trim();
+            const name = document.getElementById('clientName').value.trim();
+            const contact = document.getElementById('clientContact').value.trim();
+
+            let specs = '';
+            if (currentQuoteLine === 'academico') {
+                const level = document.getElementById('academicLevel').value;
+                const norm = document.getElementById('normativeSelect').value;
+                specs = `${level} · ${norm}`;
+            } else {
+                const color = document.getElementById('printColor').value;
+                const copies = document.getElementById('printCopies').value || '1';
+                const binding = document.getElementById('printBinding').value;
+                specs = `${copies} ejemplar(es) · ${color} · ${binding}`;
+            }
+
+            return { lineLabel, service, pages, specs, notes, name, contact };
+        }
+
+        // Actualizar tarjeta de resumen en tiempo real
+        function updateQuoteSummary() {
+            const data = buildQuoteData();
+            document.getElementById('sumLine').textContent = data.lineLabel;
+            document.getElementById('sumService').textContent = data.service;
+            document.getElementById('sumPages').textContent = `${data.pages} páginas aprox.`;
+            document.getElementById('sumSpecs').textContent = data.specs;
+            document.getElementById('sumClient').textContent = data.name ? `${data.name} (${data.contact || 'Sin contacto'})` : 'Pendiente de completar';
+            document.getElementById('sumNotes').textContent = data.notes || 'Sin observaciones adicionales por el momento.';
+        }
+
+        function formatQuoteMessage(data) {
+            return `Hola equipo ADSP, deseo solicitar una cotización según alcance:\n\n` +
+                   `• Línea: ${data.lineLabel}\n` +
+                   `• Servicio: ${data.service}\n` +
+                   `• Extensión estimada: ${data.pages} páginas\n` +
+                   `• Especificaciones: ${data.specs}\n` +
+                   `• Observaciones: ${data.notes || 'Ninguna'}\n` +
+                   `• Solicitante: ${data.name}\n` +
+                   `• Contacto: ${data.contact}`;
+        }
+
+        function handleQuoteSubmit(e) {
+            e.preventDefault();
+            const data = buildQuoteData();
+            const message = formatQuoteMessage(data);
+            const waUrl = `https://wa.me/${ADSP_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+            showToast('Abriendo WhatsApp con el resumen técnico de tu cotización...');
+        }
+
+        function sendQuoteByEmail() {
+            const data = buildQuoteData();
+            if (!data.name || !data.contact) {
+                showToast('Por favor ingresa tu nombre y medio de contacto antes de preparar el correo.');
+                document.getElementById('clientName').focus();
+                return;
+            }
+            const subject = `Solicitud de Cotización ADSP - ${data.service}`;
+            const body = formatQuoteMessage(data);
+            window.location.href = `mailto:info@adsp.com.do?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            showToast('Abriendo tu cliente de correo con los detalles del alcance.');
+        }
+
+        function copyQuoteSummary() {
+            const data = buildQuoteData();
+            const text = formatQuoteMessage({
+                ...data,
+                name: data.name || 'Por indicar',
+                contact: data.contact || 'Por indicar'
+            });
+            copyTextSafe(text, 'Resumen de cotización copiado al portapapeles.');
+        }
+
+        // Modal ELINE: Apertura y prellenado inteligente para WhatsApp
+        function openElineModal(planName, priceNote, mode) {
+            const modal = document.getElementById('elineModal');
+            const select = document.getElementById('modalPlanSelect');
+            const title = document.getElementById('modalTitle');
+
+            if (mode === 'prueba') {
+                title.textContent = 'Solicitar Prueba ELINE de 30 Días';
+                select.value = 'Prueba Gratuita de 30 Días';
+            } else if (mode === 'renovar') {
+                title.textContent = 'Renovar Suscripción Docente ELINE';
+                select.value = 'Renovación de Plan Docente ELINE';
+            } else if (mode === 'activar') {
+                title.textContent = 'Solicitar activación de ELINE';
+                select.value = planName;
+            } else {
+                title.textContent = 'Consulta sobre ELINE';
+            }
+
+            updateModalPreview();
+            modalTrigger = document.activeElement;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            select.focus();
+        }
+
+        function closeElineModal() {
+            const modal = document.getElementById('elineModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modalTrigger?.focus();
+        }
+
+        function buildElineWhatsAppMessage() {
+            const plan = document.getElementById('modalPlanSelect').value;
+            const name = document.getElementById('teacherName').value.trim() || '[Nombre del Docente]';
+            const inst = document.getElementById('teacherInst').value.trim() || 'Docente independiente';
+            const email = document.getElementById('teacherEmail').value.trim() || '[correo@ejemplo.com]';
+
+            const isTrial = plan.includes('Prueba Gratuita');
+            const paymentLine = isTrial
+                ? 'Solicito habilitar mi acceso de prueba por 30 días.'
+                : 'Adjunto / enviaré mi comprobante de pago para la activación o renovación manual.';
+
+            return `Hola equipo ADSP, deseo gestionar mi cuenta en la plataforma docente ELINE:\n\n` +
+                   `• Solicitud: ${plan}\n` +
+                   `• Docente: ${name}\n` +
+                   `• Institución / Nivel: ${inst}\n` +
+                   `• Correo de acceso: ${email}\n` +
+                   `• Estado: ${paymentLine}`;
+        }
+
+        function updateModalPreview() {
+            const preview = document.getElementById('whatsappPreviewText');
+            if (preview) {
+                preview.textContent = buildElineWhatsAppMessage();
+            }
+        }
+
+        function submitElineWhatsApp(e) {
+            e.preventDefault();
+            const msg = buildElineWhatsAppMessage();
+            const waUrl = `https://wa.me/${ADSP_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+            closeElineModal();
+            showToast('Redirigiendo a WhatsApp para completar la activación con ADSP.');
+        }
+
+        function copyModalMessage() {
+            const msg = buildElineWhatsAppMessage();
+            copyTextSafe(msg, 'Mensaje de activación ELINE copiado al portapapeles.');
+        }
+
+        document.addEventListener('keydown', event => {
+            const modal = document.getElementById('elineModal');
+            if (modal.classList.contains('hidden')) return;
+            if (event.key === 'Escape') closeElineModal();
+            if (event.key !== 'Tab') return;
+            const controls = modal.querySelectorAll('button, input, select');
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera de la tarjeta
+        document.getElementById('elineModal').addEventListener('click', (e) => {
+            if (e.target.id === 'elineModal') closeElineModal();
+        });
+    </script>
+</body>
+</html>
